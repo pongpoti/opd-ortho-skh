@@ -119,7 +119,7 @@ export function OpdWaitTimeCalculator() {
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-            <div className="grid gap-2">
+            <div className="grid gap-2 self-center">
               <Label htmlFor="month-select">เดือน</Label>
               <Select value={month} onValueChange={setMonth}>
                 <SelectTrigger id="month-select" className="w-full">
@@ -135,7 +135,7 @@ export function OpdWaitTimeCalculator() {
               </Select>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 self-center">
               <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
               <Input
                 id="buddhist-year"
