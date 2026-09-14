@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
+import { AuthProvider } from "@/components/auth-provider";
 import { SiteHeader } from "@/components/site-header";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
@@ -24,8 +25,10 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${notoSansThai.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-muted/30">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <AuthProvider>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">{children}</div>
+        </AuthProvider>
       </body>
     </html>
   );
