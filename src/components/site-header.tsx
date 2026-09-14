@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Activity } from "lucide-react"
+import { Bone } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { siteConfig } from "@/config/site"
@@ -17,7 +17,7 @@ export function SiteHeader() {
           href="/"
           className="flex min-w-0 items-center gap-2 font-semibold tracking-tight"
         >
-          <Activity className="size-5 shrink-0 text-primary" aria-hidden="true" />
+          <Bone className="size-5 shrink-0 text-primary" aria-hidden="true" />
           <span className="truncate sm:hidden">{siteConfig.shortName}</span>
           <span className="hidden truncate sm:inline">{siteConfig.name}</span>
         </Link>
