@@ -103,7 +103,7 @@ export function OpdWaitTimeCalculator() {
     : "ยังไม่ได้เลือกไฟล์"
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           เวลารอคอย OPD ORTHO รพ. สค.
@@ -228,6 +228,6 @@ export function OpdWaitTimeCalculator() {
           </CardContent>
         </Card>
       ) : null}
-    </div>
+    </main>
   )
 }
