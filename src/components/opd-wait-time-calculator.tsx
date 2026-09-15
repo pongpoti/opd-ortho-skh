@@ -230,12 +230,9 @@ export function OpdWaitTimeCalculator() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           เวลารอคอย OPD ORTHO รพ. สค.
         </h1>
-        <p className="mt-1 text-muted-foreground">
-          กรุณาเลือกเดือน และอัปโหลดไฟล์ CSV ของเดือนนั้น
-        </p>
       </div>
 
       <Card>

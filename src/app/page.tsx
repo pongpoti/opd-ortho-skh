@@ -21,7 +21,14 @@ export default function DashboardPage() {
                   <item.icon className="size-5" aria-hidden="true" />
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="font-medium">{item.title}</span>
+                  <span className="flex items-center gap-2 font-medium">
+                    {item.title}
+                    {item.comingSoon ? (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                        เร็ว ๆ นี้
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="text-sm text-muted-foreground">{item.description}</span>
                 </div>
                 <ChevronRight className="mt-1.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
