@@ -64,16 +64,11 @@ type FilePartState =
   | { status: "valid"; fileName: string; parsed: ParsedFile; range: string }
   | { status: "error"; fileName: string; message: string }
 
+const BUDDHIST_YEAR_PATTERN = /^25\d{2}$/
+
 function hasValidDateSelection(month: string, buddhistYearInput: string) {
-  const buddhistYear = Number(buddhistYearInput)
   const selectedMonth = Number(month)
-  return (
-    selectedMonth >= 1 &&
-    selectedMonth <= 12 &&
-    Number.isInteger(buddhistYear) &&
-    buddhistYear >= 2500 &&
-    buddhistYear <= 2700
-  )
+  return selectedMonth >= 1 && selectedMonth <= 12 && BUDDHIST_YEAR_PATTERN.test(buddhistYearInput)
 }
 
 function FileUploadStep({
@@ -165,8 +160,9 @@ export function OpdWaitTimeCalculator() {
     resetFileSteps()
   }
 
-  function handleYearChange(value: string) {
-    setBuddhistYear(value)
+  function handleYearChange(rawValue: string) {
+    const digitsOnly = rawValue.replace(/\D/g, "").slice(0, 4)
+    setBuddhistYear(digitsOnly)
     resetFileSteps()
   }
 
@@ -260,10 +256,11 @@ export function OpdWaitTimeCalculator() {
             <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
             <Input
               id="buddhist-year"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={2500}
-              max={2700}
+              pattern="25[0-9]{2}"
+              maxLength={4}
+              placeholder="เช่น 2568"
               value={buddhistYear}
               onChange={(event) => handleYearChange(event.target.value)}
             />
