@@ -37,6 +37,9 @@ import {
   type CalculationResult,
   type ParsedFile,
 } from "@/lib/opd-calculator"
+import { siteConfig } from "@/config/site"
+
+const PageIcon = siteConfig.nav.find((item) => item.href === "/waitingtime")!.icon
 
 const MONTHS = [
   { value: "1", label: "มกราคม" },
@@ -225,7 +228,10 @@ export function OpdWaitTimeCalculator() {
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <div>
+      <div className="flex items-center gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <PageIcon className="size-5" aria-hidden="true" />
+        </span>
         <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
           ระยะเวลารอคอย
         </h1>
@@ -271,10 +277,6 @@ export function OpdWaitTimeCalculator() {
       <Card>
         <CardHeader>
           <CardTitle>2. อัปโหลดไฟล์ CSV</CardTitle>
-          <CardDescription>
-            อัปโหลดทีละไฟล์ตามลำดับ ระบบจะตรวจสอบวันที่ในไฟล์ก่อนให้อัปโหลดไฟล์ถัดไป
-            (ตั้งชื่อไฟล์อะไรก็ได้ ระบบตรวจสอบจากข้อมูลวันที่ในไฟล์)
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <FileUploadStep
