@@ -68,6 +68,7 @@ type FilePartState =
   | { status: "error"; fileName: string; message: string }
 
 const BUDDHIST_YEAR_PATTERN = /^25\d{2}$/
+const BUDDHIST_YEAR_PREFIX_PATTERN = /^(2(5\d{0,2})?)?$/
 
 function hasValidDateSelection(month: string, buddhistYearInput: string) {
   const selectedMonth = Number(month)
@@ -150,6 +151,7 @@ export function OpdWaitTimeCalculator() {
   const validDate = hasValidDateSelection(month, buddhistYear)
   const monthKey = validDate ? toMonthKey(Number(buddhistYear), Number(month)) : ""
   const lastDay = monthKey ? getLastDayOfMonth(monthKey) : 31
+  const yearFormatError = buddhistYear !== "" && !BUDDHIST_YEAR_PREFIX_PATTERN.test(buddhistYear)
 
   function resetFileSteps() {
     setFirstPart({ status: "idle" })
@@ -260,16 +262,25 @@ export function OpdWaitTimeCalculator() {
 
           <div className="grid gap-2">
             <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
-            <Input
-              id="buddhist-year"
-              type="text"
-              inputMode="numeric"
-              pattern="25[0-9]{2}"
-              maxLength={4}
-              placeholder="เช่น 2568"
-              value={buddhistYear}
-              onChange={(event) => handleYearChange(event.target.value)}
-            />
+            <div className="relative">
+              <Input
+                id="buddhist-year"
+                type="text"
+                inputMode="numeric"
+                pattern="25[0-9]{2}"
+                maxLength={4}
+                placeholder="เช่น 2568"
+                value={buddhistYear}
+                aria-invalid={yearFormatError}
+                className={yearFormatError ? "pr-28" : undefined}
+                onChange={(event) => handleYearChange(event.target.value)}
+              />
+              {yearFormatError ? (
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-destructive">
+                  รูปแบบไม่ถูกต้อง
+                </span>
+              ) : null}
+            </div>
           </div>
         </CardContent>
       </Card>
