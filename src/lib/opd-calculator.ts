@@ -157,6 +157,16 @@ export function dateText(month: string, day: number): string {
   return month + "-" + String(day).padStart(2, "0")
 }
 
+export function toMonthKey(buddhistYear: number, selectedMonth: number): string {
+  const gregorianYear = buddhistYear - 543
+  return String(gregorianYear) + "-" + String(selectedMonth).padStart(2, "0")
+}
+
+export function getLastDayOfMonth(month: string): number {
+  const [year, monthNumber] = month.split("-").map(Number)
+  return new Date(year, monthNumber, 0).getDate()
+}
+
 export function validateFileDates(
   rows: CsvRow[],
   fileName: string,
@@ -190,6 +200,23 @@ export function validateFileDates(
   return dateText(month, startDay) + " ถึง " + dateText(month, endDay)
 }
 
+export interface ValidatedFilePart {
+  parsed: ParsedFile
+  range: string
+}
+
+export function parseAndValidateFilePart(
+  text: string,
+  label: string,
+  month: string,
+  startDay: number,
+  endDay: number
+): ValidatedFilePart {
+  const parsed = parseFile(text, label)
+  const range = validateFileDates(parsed.rows, label, month, startDay, endDay)
+  return { parsed, range }
+}
+
 function makeSummary(label: string, group: CsvRow[]): SummaryRow {
   const waits = group.map((row) => waitSeconds(row["ระยะเวลารอ"]) as number)
   const avg = average(waits)
@@ -205,65 +232,20 @@ function waitSeconds(value: unknown): number | null {
   return timeSeconds(value)
 }
 
-export interface SourceFile {
-  name: string
-  text: string
-}
-
 export function calculateWaitTimes(
-  files: SourceFile[],
-  buddhistYear: number,
-  selectedMonth: number
+  firstFile: ParsedFile,
+  secondFile: ParsedFile,
+  firstRange: string,
+  secondRange: string
 ): CalculationResult {
-  if (
-    !Number.isInteger(buddhistYear) ||
-    buddhistYear < 2500 ||
-    buddhistYear > 2700 ||
-    !selectedMonth
-  ) {
-    throw new Error("กรุณาเลือกเดือนและกรอกปี พ.ศ. ให้ถูกต้อง")
-  }
-  if (files.length !== 2) {
-    throw new Error("กรุณาเลือกไฟล์ CSV จำนวน 2 ไฟล์เท่านั้น")
-  }
-  if (files.some((file) => !file.name.endsWith(".csv"))) {
-    throw new Error("ไฟล์ทั้งสองต้องมีนามสกุล .csv")
-  }
-  const selectedNames = files.map((file) => file.name).sort()
-  if (selectedNames.join("|") !== "1.csv|2.csv") {
-    throw new Error("ชื่อไฟล์ต้องเป็น 1.csv และ 2.csv เท่านั้น")
+  if (firstFile.headers.join("|") !== secondFile.headers.join("|")) {
+    throw new Error("ไฟล์ CSV ทั้งสองไฟล์ต้องมีคอลัมน์และลำดับคอลัมน์เดียวกัน")
   }
 
-  const gregorianYear = buddhistYear - 543
-  const month = String(gregorianYear) + "-" + String(selectedMonth).padStart(2, "0")
-
-  const parsed = files.map((file) => parseFile(file.text, file.name))
-  const headers = parsed[0].headers
-  if (parsed.some((file) => file.headers.join("|") !== headers.join("|"))) {
-    throw new Error("ไฟล์ CSV ทุกไฟล์ต้องมีคอลัมน์และลำดับคอลัมน์เดียวกัน")
-  }
-
-  const firstFile = parsed.find((file) => file.name === "1.csv")
-  const secondFile = parsed.find((file) => file.name === "2.csv")
-  if (!firstFile || !secondFile) {
-    throw new Error("ไม่พบไฟล์ 1.csv หรือ 2.csv")
-  }
-
-  const [year, monthNumber] = month.split("-").map(Number)
-  const lastDay = new Date(year, monthNumber, 0).getDate()
-
-  const firstRange = validateFileDates(firstFile.rows, "1.csv", month, 1, 15)
-  const secondRange = validateFileDates(secondFile.rows, "2.csv", month, 16, lastDay)
   const precheck =
-    "ตรวจสอบเบื้องต้นผ่าน: 1.csv (" + firstRange + ") และ 2.csv (" + secondRange + ")"
+    "ตรวจสอบเบื้องต้นผ่าน: ไฟล์ที่ 1 (" + firstRange + ") และไฟล์ที่ 2 (" + secondRange + ")"
 
-  const sourceRows = parsed.flatMap((file) => file.rows)
-  const wrongMonth = sourceRows.filter((row) => !normalize(row.Date).startsWith(month + "-"))
-  if (wrongMonth.length) {
-    throw new Error(
-      "พบข้อมูล " + wrongMonth.length + " รายการที่อยู่นอกเดือน " + month + " กรุณาเลือกเดือนหรือไฟล์ให้ถูกต้อง"
-    )
-  }
+  const sourceRows = [...firstFile.rows, ...secondFile.rows]
 
   const filteredByClinic = sourceRows.filter((row) => normalize(row["พบแพทย์ที่แผนก"]) === CLINIC)
   const afterDepartmentExclusions = filteredByClinic.filter(

@@ -29,7 +29,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { calculateWaitTimes, type CalculationResult } from "@/lib/opd-calculator"
+import {
+  calculateWaitTimes,
+  getLastDayOfMonth,
+  parseAndValidateFilePart,
+  toMonthKey,
+  type CalculationResult,
+  type ParsedFile,
+} from "@/lib/opd-calculator"
 
 const MONTHS = [
   { value: "1", label: "มกราคม" },
@@ -51,6 +58,12 @@ type StatusState = {
   type: "error" | "success" | ""
 }
 
+type FilePartState =
+  | { status: "idle" }
+  | { status: "validating"; fileName: string }
+  | { status: "valid"; fileName: string; parsed: ParsedFile; range: string }
+  | { status: "error"; fileName: string; message: string }
+
 function hasValidDateSelection(month: string, buddhistYearInput: string) {
   const buddhistYear = Number(buddhistYearInput)
   const selectedMonth = Number(month)
@@ -63,32 +76,146 @@ function hasValidDateSelection(month: string, buddhistYearInput: string) {
   )
 }
 
+function FileUploadStep({
+  label,
+  hint,
+  disabled,
+  part,
+  onFileSelected,
+}: {
+  label: string
+  hint: string
+  disabled: boolean
+  part: FilePartState
+  onFileSelected: (file: File) => void
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  return (
+    <div className="grid gap-2">
+      <Label>{label}</Label>
+      <p className="text-sm text-muted-foreground">{hint}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="sr-only"
+          disabled={disabled}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            event.target.value = ""
+            if (file) onFileSelected(file)
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          onClick={() => inputRef.current?.click()}
+        >
+          <Upload />
+          เลือกไฟล์
+        </Button>
+        {part.status !== "idle" ? (
+          <span className="text-sm text-muted-foreground">{part.fileName}</span>
+        ) : null}
+      </div>
+      {part.status === "validating" ? (
+        <p className="text-sm text-muted-foreground">กำลังตรวจสอบไฟล์…</p>
+      ) : null}
+      {part.status === "valid" ? (
+        <Alert variant="success">
+          <CheckCircle2 />
+          <AlertDescription>ตรวจสอบผ่าน: {part.range}</AlertDescription>
+        </Alert>
+      ) : null}
+      {part.status === "error" ? (
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertDescription>{part.message}</AlertDescription>
+        </Alert>
+      ) : null}
+    </div>
+  )
+}
+
 export function OpdWaitTimeCalculator() {
   const [month, setMonth] = React.useState("")
   const [buddhistYear, setBuddhistYear] = React.useState("")
-  const [files, setFiles] = React.useState<File[]>([])
+  const [firstPart, setFirstPart] = React.useState<FilePartState>({ status: "idle" })
+  const [secondPart, setSecondPart] = React.useState<FilePartState>({ status: "idle" })
   const [status, setStatus] = React.useState<StatusState>({ message: "", type: "" })
   const [result, setResult] = React.useState<CalculationResult | null>(null)
   const [isProcessing, setIsProcessing] = React.useState(false)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const validDate = hasValidDateSelection(month, buddhistYear)
-  const canPickFile = validDate
-  const canProcess = validDate && files.length > 0 && !isProcessing
+  const monthKey = validDate ? toMonthKey(Number(buddhistYear), Number(month)) : ""
+  const lastDay = monthKey ? getLastDayOfMonth(monthKey) : 31
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setFiles(Array.from(event.target.files ?? []))
+  function resetFileSteps() {
+    setFirstPart({ status: "idle" })
+    setSecondPart({ status: "idle" })
+    setResult(null)
+    setStatus({ message: "", type: "" })
+  }
+
+  function handleMonthChange(value: string) {
+    setMonth(value)
+    resetFileSteps()
+  }
+
+  function handleYearChange(value: string) {
+    setBuddhistYear(value)
+    resetFileSteps()
+  }
+
+  async function handleFirstFile(file: File) {
+    setSecondPart({ status: "idle" })
+    setResult(null)
+    setStatus({ message: "", type: "" })
+    setFirstPart({ status: "validating", fileName: file.name })
+    try {
+      const text = await file.text()
+      const { parsed, range } = parseAndValidateFilePart(text, "ไฟล์ที่ 1", monthKey, 1, 15)
+      setFirstPart({ status: "valid", fileName: file.name, parsed, range })
+    } catch (error) {
+      setFirstPart({
+        status: "error",
+        fileName: file.name,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  async function handleSecondFile(file: File) {
+    setResult(null)
+    setStatus({ message: "", type: "" })
+    setSecondPart({ status: "validating", fileName: file.name })
+    try {
+      const text = await file.text()
+      const { parsed, range } = parseAndValidateFilePart(text, "ไฟล์ที่ 2", monthKey, 16, lastDay)
+      setSecondPart({ status: "valid", fileName: file.name, parsed, range })
+    } catch (error) {
+      setSecondPart({
+        status: "error",
+        fileName: file.name,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   async function handleProcess() {
-    setResult(null)
+    if (firstPart.status !== "valid" || secondPart.status !== "valid") return
     setIsProcessing(true)
+    setResult(null)
     try {
-      setStatus({ message: "กำลังอ่านไฟล์…", type: "" })
-      const sourceFiles = await Promise.all(
-        files.map(async (file) => ({ name: file.name, text: await file.text() }))
+      const calculation = calculateWaitTimes(
+        firstPart.parsed,
+        secondPart.parsed,
+        firstPart.range,
+        secondPart.range
       )
-      const calculation = calculateWaitTimes(sourceFiles, Number(buddhistYear), Number(month))
       setResult(calculation)
       setStatus({ message: "ประมวลผลเสร็จสิ้น", type: "success" })
     } catch (error) {
@@ -98,9 +225,7 @@ export function OpdWaitTimeCalculator() {
     }
   }
 
-  const fileNamesLabel = files.length
-    ? "เลือกแล้ว: " + files.map((file) => file.name).join(", ")
-    : "ยังไม่ได้เลือกไฟล์"
+  const canProcess = firstPart.status === "valid" && secondPart.status === "valid" && !isProcessing
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -115,69 +240,76 @@ export function OpdWaitTimeCalculator() {
 
       <Card>
         <CardHeader>
-          <CardTitle>1. เลือกเดือนและไฟล์</CardTitle>
+          <CardTitle>1. เลือกเดือนและปี พ.ศ.</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="month-select">เดือน</Label>
+            <Select value={month} onValueChange={handleMonthChange}>
+              <SelectTrigger id="month-select" className="w-full">
+                <SelectValue placeholder="เลือกเดือน" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
+            <Input
+              id="buddhist-year"
+              type="number"
+              inputMode="numeric"
+              min={2500}
+              max={2700}
+              value={buddhistYear}
+              onChange={(event) => handleYearChange(event.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>2. อัปโหลดไฟล์ CSV</CardTitle>
+          <CardDescription>
+            อัปโหลดทีละไฟล์ตามลำดับ ระบบจะตรวจสอบวันที่ในไฟล์ก่อนให้อัปโหลดไฟล์ถัดไป
+            (ตั้งชื่อไฟล์อะไรก็ได้ ระบบตรวจสอบจากข้อมูลวันที่ในไฟล์)
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-            <div className="grid gap-2 self-center">
-              <Label htmlFor="month-select">เดือน</Label>
-              <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger id="month-select" className="w-full">
-                  <SelectValue placeholder="เลือกเดือน" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <FileUploadStep
+            label="ไฟล์ที่ 1 (วันที่ 1–15)"
+            hint={
+              validDate
+                ? "อัปโหลดข้อมูลวันที่ 1 ถึง 15 ของเดือนที่เลือก"
+                : "กรุณาเลือกเดือนและปี พ.ศ. ก่อน"
+            }
+            disabled={!validDate}
+            part={firstPart}
+            onFileSelected={handleFirstFile}
+          />
 
-            <div className="grid gap-2 self-center">
-              <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
-              <Input
-                id="buddhist-year"
-                type="number"
-                inputMode="numeric"
-                min={2500}
-                max={2700}
-                required
-                value={buddhistYear}
-                onChange={(event) => setBuddhistYear(event.target.value)}
-              />
-            </div>
+          <FileUploadStep
+            label={`ไฟล์ที่ 2 (วันที่ 16–${lastDay})`}
+            hint={
+              firstPart.status === "valid"
+                ? `อัปโหลดข้อมูลวันที่ 16 ถึง ${lastDay} ของเดือนที่เลือก`
+                : "กรุณาอัปโหลดไฟล์ที่ 1 ให้ผ่านการตรวจสอบก่อน"
+            }
+            disabled={firstPart.status !== "valid"}
+            part={secondPart}
+            onFileSelected={handleSecondFile}
+          />
 
-            <div className="grid gap-2 sm:col-span-2 lg:col-span-1">
-              <Label>ไฟล์ CSV</Label>
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  multiple
-                  required
-                  className="sr-only"
-                  onChange={handleFileChange}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!canPickFile}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload />
-                  เลือกไฟล์ CSV
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">{fileNamesLabel}</p>
-            </div>
-
-            <Button type="button" disabled={!canProcess} onClick={handleProcess}>
-              ประมวลผล
-            </Button>
-          </div>
+          <Button type="button" disabled={!canProcess} onClick={handleProcess}>
+            {isProcessing ? "กำลังประมวลผล…" : "ประมวลผล"}
+          </Button>
 
           {status.message ? (
             <Alert
@@ -194,7 +326,7 @@ export function OpdWaitTimeCalculator() {
       {result ? (
         <Card>
           <CardHeader>
-            <CardTitle>2. สรุปผลการคำนวณ</CardTitle>
+            <CardTitle>3. สรุปผลการคำนวณ</CardTitle>
             <CardDescription>{result.detailStatus}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
