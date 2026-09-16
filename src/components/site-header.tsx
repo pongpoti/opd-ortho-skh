@@ -30,11 +30,15 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40">
-      {/* iOS 26 Safari's Liquid Glass toolbar tinting scans fixed/sticky
-          elements for background-color/backdrop-filter and can render the
-          element invisible right after navigation when those live on the
-          positioned element itself. Keep them on this backing layer instead. */}
+    <header className="sticky top-0 z-40 [transform:translateZ(0)]">
+      {/* iOS Safari (incl. Chrome on iOS, same WebKit engine) can fail to
+          paint a sticky/fixed element on initial load — it only appears
+          after the user manually scrolls. Forcing this onto its own
+          compositing layer via translateZ(0) avoids that stale first paint.
+          Separately, iOS 26's "Liquid Glass" toolbar tinting scans
+          fixed/sticky elements for background-color/backdrop-filter and can
+          misrender the element when those live on it directly, so keep them
+          on this backing layer instead. */}
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
