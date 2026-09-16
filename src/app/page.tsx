@@ -37,6 +37,12 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Temporary — for troubleshooting the mobile header display issue.
+          Remove once resolved. */}
+      <Link href="/debug" className="text-sm text-muted-foreground underline underline-offset-4">
+        ตรวจสอบปัญหาการแสดงผล
+      </Link>
     </main>
   )
 }
