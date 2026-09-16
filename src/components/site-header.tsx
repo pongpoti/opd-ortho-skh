@@ -31,15 +31,18 @@ export function SiteHeader() {
 
   return (
     <>
-      {/* On the reporter's device (iOS 26 Chrome/WebKit), a diagnostic page
-          confirmed this header's own elements are correctly laid out and
-          topmost per hit-testing, yet not painted — while a plain element
-          right next to it painted fine. That isolates the bug to WebKit's
-          position:sticky paint path specifically, which two different
-          repaint-forcing fixes on the sticky element didn't get around.
-          position:fixed doesn't share that code path. Since fixed removes
-          the header from normal flow, the spacer below reserves its height. */}
-      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)]">
+      {/* iOS 26 floats its translucent chrome over the page instead of above
+          it: the viewport spans the full screen (visualViewport reports the
+          whole 852pt screen with offsetTop 0), so a header at top:0 is
+          painted underneath the address bar rather than below it. That's why
+          it looks missing until a scroll collapses the bar. Pad by the safe
+          area inset so the bar's height is reserved; the spacer below then
+          matches the header's total height, since fixed takes it out of
+          normal flow. */}
+      <header
+        className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)]"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         {/* iOS 26's "Liquid Glass" toolbar tinting scans fixed/sticky
             elements for background-color/backdrop-filter and can misrender
             the element when those live on it directly, so keep them on this
@@ -117,7 +120,10 @@ export function SiteHeader() {
           </div>
         </div>
       </header>
-      <div className="h-14" aria-hidden="true" />
+      <div
+        aria-hidden="true"
+        style={{ height: "calc(3.5rem + env(safe-area-inset-top, 0px))" }}
+      />
     </>
   )
 }
