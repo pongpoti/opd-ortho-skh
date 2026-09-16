@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
@@ -18,6 +18,17 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.shortName}`,
   },
   description: "แดชบอร์ดระบบงาน OPD ศัลยกรรมกระดูก โรงพยาบาลสมุทรสาคร",
+};
+
+// iOS 26 floats its translucent browser chrome over the page rather than
+// above it, so the viewport spans the whole screen and the top of the page
+// renders underneath the address bar. viewport-fit=cover is what makes the
+// env(safe-area-inset-*) values report that overlap, which the header then
+// pads for.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

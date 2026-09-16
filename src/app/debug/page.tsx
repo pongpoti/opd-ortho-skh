@@ -38,6 +38,29 @@ export default function DebugPage() {
       const bodyCs = getComputedStyle(document.body)
       const htmlCs = getComputedStyle(document.documentElement)
 
+      // env() values aren't readable directly, so measure them via a probe
+      // element sized by each inset. These say how much of the page the
+      // browser's floating chrome is overlapping.
+      function measureInset(name: string) {
+        const probe = document.createElement("div")
+        probe.style.cssText = `position:absolute;visibility:hidden;height:env(${name}, 0px)`
+        document.body.appendChild(probe)
+        const h = probe.getBoundingClientRect().height
+        probe.remove()
+        return h
+      }
+
+      const insets = [
+        "safe-area-inset-top",
+        "safe-area-inset-bottom",
+        "safe-area-inset-left",
+        "safe-area-inset-right",
+      ].map((n) => `${n}: ${measureInset(n)}`)
+
+      const viewportMeta = document
+        .querySelector('meta[name="viewport"]')
+        ?.getAttribute("content")
+
       const lines = [
         `เวลา: ${new Date().toLocaleTimeString()}`,
         `UA: ${navigator.userAgent}`,
@@ -54,6 +77,11 @@ export default function DebugPage() {
         vv
           ? `width=${vv.width} height=${vv.height} offsetTop=${vv.offsetTop} offsetLeft=${vv.offsetLeft} scale=${vv.scale}`
           : "ไม่รองรับ",
+        "",
+        "--- safe area insets (chrome overlap) ---",
+        ...insets,
+        `viewport meta: ${viewportMeta ?? "(none)"}`,
+        `screen: ${window.screen.width} x ${window.screen.height}`,
         "",
         "--- elementFromPoint (what's actually on top) ---",
         ...hits,
