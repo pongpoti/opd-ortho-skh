@@ -118,12 +118,56 @@ export default function DebugPage() {
     }
   }, [])
 
+  // Two rulers in 20px bands, labelled with their offset. "D" bands are
+  // positioned in document coordinates, "V" bands in viewport coordinates.
+  // Whichever labels are the first readable ones say, in CSS pixels, how much
+  // of each coordinate space the browser chrome is covering.
+  const bands = Array.from({ length: 9 }, (_, i) => i * 20)
+
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
+      {bands.map((y, i) => (
+        <div
+          key={`d${y}`}
+          style={{
+            position: "absolute",
+            top: y,
+            left: 0,
+            width: "50%",
+            height: 20,
+            background: i % 2 ? "#1f6feb" : "#0a3069",
+            color: "#fff",
+            font: "700 12px/20px monospace",
+            paddingLeft: 6,
+            zIndex: 9998,
+          }}
+        >
+          D{y}
+        </div>
+      ))}
+      {bands.map((y, i) => (
+        <div
+          key={`v${y}`}
+          style={{
+            position: "fixed",
+            top: y,
+            right: 0,
+            width: "50%",
+            height: 20,
+            background: i % 2 ? "#1a7f37" : "#0b4f22",
+            color: "#fff",
+            font: "700 12px/20px monospace",
+            paddingLeft: 6,
+            zIndex: 9999,
+          }}
+        >
+          V{y}
+        </div>
+      ))}
       {/* Canary: plain element, inline styles only, no Tailwind, no
           sticky/fixed/transform. If even this fails to show up, the cause
           isn't our CSS — something else is covering this region entirely. */}
-      <div style={{ background: "#ff0000", color: "#ffffff", fontSize: 24, fontWeight: 700, padding: 12 }}>
+      <div style={{ background: "#ff0000", color: "#ffffff", fontSize: 24, fontWeight: 700, padding: 12, marginTop: 190 }}>
         CANARY TEST 123
       </div>
       <h1 className="mb-1 text-xl font-semibold">หน้าตรวจสอบชั่วคราว</h1>
