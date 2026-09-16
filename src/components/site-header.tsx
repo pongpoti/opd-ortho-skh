@@ -30,7 +30,15 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40">
+      {/* iOS 26 Safari's Liquid Glass toolbar tinting scans fixed/sticky
+          elements for background-color/backdrop-filter and can render the
+          element invisible right after navigation when those live on the
+          positioned element itself. Keep them on this backing layer instead. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      />
       <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
