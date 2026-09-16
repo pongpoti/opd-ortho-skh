@@ -3,13 +3,18 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 
-// Some in-app browsers (notably LINE's) re-assert a previously restored
-// scroll offset a frame after the page settles, which wins a race against a
-// single synchronous `scrollTo(0, 0)`. Scheduling a follow-up call on the
-// next frame reliably beats that late restore.
+// iOS Safari/Chrome (WebKit) can leave sticky/fixed elements unpainted on
+// initial load — confirmed on this app by the header only reappearing once
+// the user manually scrolls down and back up. Asserting scrollTo(0, 0) when
+// the page is already at (0, 0) is a no-op with no scroll delta, so it can't
+// trigger the repaint a real scroll does. Nudge the position away from 0 and
+// immediately back to reproduce that motion programmatically.
 function resetScroll() {
   window.scrollTo(0, 0)
-  requestAnimationFrame(() => window.scrollTo(0, 0))
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 1)
+    requestAnimationFrame(() => window.scrollTo(0, 0))
+  })
 }
 
 export function ScrollToTop() {
