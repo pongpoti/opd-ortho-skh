@@ -7,5 +7,6 @@ export default withAuth({
 })
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|signin).*)"],
+  // viewport-check is a temporary public diagnostic page — see that page.
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|signin|viewport-check).*)"],
 }

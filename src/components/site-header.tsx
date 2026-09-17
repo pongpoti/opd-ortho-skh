@@ -14,7 +14,8 @@ export function SiteHeader() {
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
 
-  if (pathname === "/signin") {
+  // viewport-check renders its own replica header to measure — see that page.
+  if (pathname === "/signin" || pathname === "/viewport-check") {
     return null
   }
 
