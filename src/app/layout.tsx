@@ -25,7 +25,10 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="th" className={`${notoSansThai.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-muted/30">
+      {/* +4px over 100%: guarantees a sliver of scrollable overflow on even
+          the shortest page, so ScrollToTop's scroll nudge (see that file)
+          always has somewhere to move instead of silently no-oping. */}
+      <body className="flex min-h-[calc(100%_+_4px)] flex-col bg-muted/30">
         <ScrollToTop />
         <AuthProvider>
           <SiteHeader />
