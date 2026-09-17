@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
+import { Flex } from "@chakra-ui/react"
 
 import { SignInCard } from "@/components/sign-in-card"
 
@@ -9,10 +10,10 @@ export const metadata: Metadata = {
 
 export default function SignInPage() {
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 py-16">
+    <Flex as="main" mx="auto" w="full" maxW="4xl" flex="1" direction="column" align="center" justify="center" px="4" py="16">
       <Suspense>
         <SignInCard />
       </Suspense>
-    </main>
+    </Flex>
   )
 }

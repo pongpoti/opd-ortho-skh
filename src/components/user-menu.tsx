@@ -2,23 +2,13 @@
 
 import { LogIn, LogOut } from "lucide-react"
 import { signIn, signOut, useSession } from "next-auth/react"
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Avatar, Box, Button, Menu, Portal } from "@chakra-ui/react"
 
 export function UserMenu() {
   const { data: session, status } = useSession()
 
   if (status === "loading") {
-    return <div className="size-9 shrink-0 animate-pulse rounded-full bg-muted" aria-hidden="true" />
+    return <Box boxSize="9" flexShrink="0" borderRadius="full" bg="bg.muted" aria-hidden="true" />
   }
 
   if (!session) {
@@ -30,9 +20,8 @@ export function UserMenu() {
         onClick={() => signIn("line")}
         aria-label="เข้าสู่ระบบด้วย LINE"
       >
-        <LogIn />
-        <span className="hidden sm:inline">เข้าสู่ระบบด้วย LINE</span>
-        <span className="hidden min-[380px]:inline sm:hidden">เข้าสู่ระบบ</span>
+        <LogIn size={16} />
+        <Box display={{ base: "none", sm: "inline" }}>เข้าสู่ระบบด้วย LINE</Box>
       </Button>
     )
   }
@@ -41,27 +30,35 @@ export function UserMenu() {
   const initial = displayName.charAt(0).toUpperCase()
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <Button
           type="button"
-          className="rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          variant="plain"
+          p="0"
+          borderRadius="full"
           aria-label="เมนูบัญชีผู้ใช้"
         >
-          <Avatar>
-            <AvatarImage src={session.user?.image ?? undefined} alt={displayName} />
-            <AvatarFallback>{initial}</AvatarFallback>
-          </Avatar>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => signOut()}>
-          <LogOut />
-          ออกจากระบบ
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <Avatar.Root>
+            <Avatar.Image src={session.user?.image ?? undefined} alt={displayName} />
+            <Avatar.Fallback>{initial}</Avatar.Fallback>
+          </Avatar.Root>
+        </Button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="56">
+            <Box px="2" py="1.5" fontSize="sm" fontWeight="medium" truncate>
+              {displayName}
+            </Box>
+            <Menu.Separator />
+            <Menu.Item value="sign-out" color="fg.error" onSelect={() => signOut()}>
+              <LogOut size={16} />
+              ออกจากระบบ
+            </Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
   )
 }

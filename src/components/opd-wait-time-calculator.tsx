@@ -1,21 +1,22 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, CheckCircle2, Upload } from "lucide-react"
-
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Upload } from "lucide-react"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+  Alert,
+  Button,
+  Card,
+  Code,
+  Field,
+  Flex,
+  Heading,
+  HStack,
+  Input,
+  NativeSelect,
+  Table,
+  Text,
+} from "@chakra-ui/react"
+
 import {
   calculateWaitTimes,
   getLastDayOfMonth,
@@ -64,9 +65,19 @@ function hasValidDateSelection(month: string, buddhistYearInput: string) {
 
 function StepNumber({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+    <Flex
+      boxSize="6"
+      flexShrink="0"
+      align="center"
+      justify="center"
+      borderRadius="full"
+      bg="brand.solid"
+      color="brand.contrast"
+      fontSize="xs"
+      fontWeight="semibold"
+    >
       {children}
-    </span>
+    </Flex>
   )
 }
 
@@ -86,51 +97,52 @@ function FileUploadStep({
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   return (
-    <div className="grid gap-2 rounded-lg border bg-muted/30 p-4">
-      <Label className="font-medium">{label}</Label>
-      <p className="text-sm text-muted-foreground">{hint}</p>
-      <div className="mt-1 flex flex-wrap items-center gap-3">
-        <input
+    <Flex direction="column" gap="2" borderWidth="1px" borderRadius="lg" bg="bg.muted/30" p="4">
+      <Text fontWeight="medium">{label}</Text>
+      <Text fontSize="sm" color="fg.muted">
+        {hint}
+      </Text>
+      <HStack mt="1" wrap="wrap" gap="3">
+        <Input
           ref={inputRef}
           type="file"
           accept=".csv,text/csv"
-          className="sr-only"
           disabled={disabled}
+          srOnly
           onChange={(event) => {
             const file = event.target.files?.[0]
             event.target.value = ""
             if (file) onFileSelected(file)
           }}
         />
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-        >
-          <Upload />
+        <Button type="button" variant="outline" disabled={disabled} onClick={() => inputRef.current?.click()}>
+          <Upload size={16} />
           เลือกไฟล์
         </Button>
         {part.status !== "idle" ? (
-          <span className="min-w-0 truncate text-sm text-muted-foreground">{part.fileName}</span>
+          <Text minW="0" truncate fontSize="sm" color="fg.muted">
+            {part.fileName}
+          </Text>
         ) : null}
-      </div>
+      </HStack>
       {part.status === "validating" ? (
-        <p className="text-sm text-muted-foreground">กำลังตรวจสอบไฟล์…</p>
+        <Text fontSize="sm" color="fg.muted">
+          กำลังตรวจสอบไฟล์…
+        </Text>
       ) : null}
       {part.status === "valid" ? (
-        <Alert variant="success">
-          <CheckCircle2 />
-          <AlertDescription>ตรวจสอบผ่าน: {part.range}</AlertDescription>
-        </Alert>
+        <Alert.Root status="success">
+          <Alert.Indicator />
+          <Alert.Description>ตรวจสอบผ่าน: {part.range}</Alert.Description>
+        </Alert.Root>
       ) : null}
       {part.status === "error" ? (
-        <Alert variant="destructive">
-          <AlertCircle />
-          <AlertDescription>{part.message}</AlertDescription>
-        </Alert>
+        <Alert.Root status="error">
+          <Alert.Indicator />
+          <Alert.Description>{part.message}</Alert.Description>
+        </Alert.Root>
       ) : null}
-    </div>
+    </Flex>
   )
 }
 
@@ -224,66 +236,64 @@ export function OpdWaitTimeCalculator() {
   const canProcess = firstPart.status === "valid" && secondPart.status === "valid" && !isProcessing
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-          <PageIcon className="size-5" aria-hidden="true" />
-        </span>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">ระยะเวลารอคอย</h1>
-      </div>
+    <Flex as="main" mx="auto" w="full" maxW="5xl" flex="1" direction="column" gap="6" px={{ base: "4", sm: "6" }} py="8">
+      <HStack gap="3">
+        <Flex boxSize="10" flexShrink="0" align="center" justify="center" borderRadius="lg" bg="brand.muted" color="brand.fg">
+          <PageIcon size={20} aria-hidden="true" />
+        </Flex>
+        <Heading size={{ base: "lg", sm: "xl" }}>ระยะเวลารอคอย</Heading>
+      </HStack>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2.5">
+      <Card.Root>
+        <Card.Header>
+          <Card.Title display="flex" alignItems="center" gap="2.5">
             <StepNumber>1</StepNumber>
             เลือกเดือนและปี พ.ศ.
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="month-select">เดือน</Label>
-            <Select value={month} onValueChange={handleMonthChange}>
-              <SelectTrigger id="month-select" className="w-full">
-                <SelectValue placeholder="เลือกเดือน" />
-              </SelectTrigger>
-              <SelectContent>
+          </Card.Title>
+        </Card.Header>
+        <Card.Body display="grid" gap="4" gridTemplateColumns={{ base: "1fr", sm: "1fr 1fr" }}>
+          <Field.Root>
+            <Field.Label>เดือน</Field.Label>
+            <NativeSelect.Root>
+              <NativeSelect.Field
+                value={month}
+                onChange={(event) => handleMonthChange(event.target.value)}
+                placeholder="เลือกเดือน"
+              >
                 {MONTHS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
+                  <option key={item.value} value={item.value}>
                     {item.label}
-                  </SelectItem>
+                  </option>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Field.Root>
 
-          <div className="grid gap-2">
-            <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
+          <Field.Root invalid={yearFormatError}>
+            <Field.Label>ปี พ.ศ.</Field.Label>
             <Input
-              id="buddhist-year"
               type="text"
               inputMode="numeric"
               pattern="25[0-9]{2}"
               maxLength={4}
               placeholder="เช่น 2568"
               value={buddhistYear}
-              aria-invalid={yearFormatError}
               onChange={(event) => handleYearChange(event.target.value)}
             />
-            {yearFormatError ? (
-              <p className="text-xs font-medium text-destructive">รูปแบบไม่ถูกต้อง</p>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+            {yearFormatError ? <Field.ErrorText>รูปแบบไม่ถูกต้อง</Field.ErrorText> : null}
+          </Field.Root>
+        </Card.Body>
+      </Card.Root>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2.5">
+      <Card.Root>
+        <Card.Header>
+          <Card.Title display="flex" alignItems="center" gap="2.5">
             <StepNumber>2</StepNumber>
             อัปโหลดไฟล์ CSV
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+          </Card.Title>
+        </Card.Header>
+        <Card.Body display="flex" flexDir="column" gap="4">
           <FileUploadStep
             label="ไฟล์ที่ 1 (วันที่ 1–15)"
             hint={
@@ -308,63 +318,61 @@ export function OpdWaitTimeCalculator() {
             onFileSelected={handleSecondFile}
           />
 
-          <Button type="button" size="lg" disabled={!canProcess} onClick={handleProcess}>
-            {isProcessing ? "กำลังประมวลผล…" : "ประมวลผล"}
+          <Button type="button" size="lg" disabled={!canProcess} loading={isProcessing} loadingText="กำลังประมวลผล…" onClick={handleProcess}>
+            ประมวลผล
           </Button>
 
           {status.message ? (
-            <Alert
-              variant={
-                status.type === "error" ? "destructive" : status.type === "success" ? "success" : "default"
-              }
-            >
-              {status.type === "error" ? <AlertCircle /> : status.type === "success" ? <CheckCircle2 /> : null}
-              <AlertDescription>{status.message}</AlertDescription>
-            </Alert>
+            <Alert.Root status={status.type === "error" ? "error" : status.type === "success" ? "success" : "info"}>
+              <Alert.Indicator />
+              <Alert.Description>{status.message}</Alert.Description>
+            </Alert.Root>
           ) : null}
-        </CardContent>
-      </Card>
+        </Card.Body>
+      </Card.Root>
 
       {result ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2.5">
+        <Card.Root>
+          <Card.Header>
+            <Card.Title display="flex" alignItems="center" gap="2.5">
               <StepNumber>3</StepNumber>
               สรุปผลการคำนวณ
-            </CardTitle>
-            <CardDescription>{result.detailStatus}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="overflow-hidden rounded-lg border">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead>รายการคำนวณ</TableHead>
-                    <TableHead>ระยะเวลารอเฉลี่ย</TableHead>
-                    <TableHead>ระยะเวลารอเฉลี่ย (นาที)</TableHead>
-                    <TableHead>จำนวนรายการที่ใช้คำนวณ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            </Card.Title>
+            <Card.Description>{result.detailStatus}</Card.Description>
+          </Card.Header>
+          <Card.Body display="flex" flexDir="column" gap="4">
+            <Table.ScrollArea borderWidth="1px" borderRadius="lg">
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row bg="bg.muted/50">
+                    <Table.ColumnHeader>รายการคำนวณ</Table.ColumnHeader>
+                    <Table.ColumnHeader>ระยะเวลารอเฉลี่ย</Table.ColumnHeader>
+                    <Table.ColumnHeader>ระยะเวลารอเฉลี่ย (นาที)</Table.ColumnHeader>
+                    <Table.ColumnHeader>จำนวนรายการที่ใช้คำนวณ</Table.ColumnHeader>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {result.summaryRows.map((row) => (
-                    <TableRow key={row.calculation}>
-                      <TableCell className="font-medium">{row.calculation}</TableCell>
-                      <TableCell>{row.averageDurationText}</TableCell>
-                      <TableCell>{row.averageMinutes}</TableCell>
-                      <TableCell>{row.recordCount}</TableCell>
-                    </TableRow>
+                    <Table.Row key={row.calculation}>
+                      <Table.Cell fontWeight="medium">{row.calculation}</Table.Cell>
+                      <Table.Cell>{row.averageDurationText}</Table.Cell>
+                      <Table.Cell>{row.averageMinutes}</Table.Cell>
+                      <Table.Cell>{row.recordCount}</Table.Cell>
+                    </Table.Row>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              <strong className="font-medium text-foreground">หมายเหตุ:</strong> ใช้เฉพาะรายการที่มีเวลา{" "}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Time</code> ตั้งแต่
-              06:00:00 ถึง 16:00:00 (รวมเวลาเริ่มต้นและสิ้นสุด)
-            </p>
-          </CardContent>
-        </Card>
+                </Table.Body>
+              </Table.Root>
+            </Table.ScrollArea>
+            <Text fontSize="sm" color="fg.muted">
+              <Text as="strong" fontWeight="medium" color="fg">
+                หมายเหตุ:
+              </Text>{" "}
+              ใช้เฉพาะรายการที่มีเวลา <Code fontSize="xs">Time</Code> ตั้งแต่ 06:00:00 ถึง 16:00:00
+              (รวมเวลาเริ่มต้นและสิ้นสุด)
+            </Text>
+          </Card.Body>
+        </Card.Root>
       ) : null}
-    </main>
+    </Flex>
   )
 }

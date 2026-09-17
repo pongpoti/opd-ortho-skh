@@ -2,7 +2,7 @@
 
 เครื่องมือคำนวณระยะเวลารอคอยเฉลี่ยของห้องตรวจศัลยกรรมกระดูก (OPD ORTHO) โรงพยาบาลสมุทรสาคร จากไฟล์ CSV รายเดือน
 
-สร้างด้วย [Next.js](https://nextjs.org), TypeScript และ [shadcn/ui](https://ui.shadcn.com) ประมวลผลไฟล์ทั้งหมดฝั่ง client ในเบราว์เซอร์ ไม่มีการอัปโหลดข้อมูลขึ้นเซิร์ฟเวอร์
+สร้างด้วย [Next.js](https://nextjs.org), TypeScript และ [Chakra UI](https://www.chakra-ui.com) (mobile-first) ประมวลผลไฟล์ทั้งหมดฝั่ง client ในเบราว์เซอร์ ไม่มีการอัปโหลดข้อมูลขึ้นเซิร์ฟเวอร์
 
 ## วิธีใช้งาน
 
@@ -23,7 +23,8 @@ npm run dev
 
 - `src/app` – Next.js App Router entrypoints
 - `src/components/opd-wait-time-calculator.tsx` – UI หลักของเครื่องมือ
-- `src/components/ui` – shadcn/ui components
+- `src/theme.ts` – Chakra UI design system (สี, ฟอนต์, breakpoint แบบ mobile-first)
+- `src/components/ui/provider.tsx` – ChakraProvider + color mode provider
 - `src/lib/opd-calculator.ts` – ตรรกะการแปลง CSV, กรอง และคำนวณค่าเฉลี่ย (pure TypeScript, ไม่ผูกกับ UI)
 
 ## Build
