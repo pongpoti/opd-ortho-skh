@@ -30,7 +30,11 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    // No backdrop-blur here: position:sticky + backdrop-filter on the same
+    // element is a known WebKit paint bug (the element can fail to render
+    // after navigation until a manual scroll forces a repaint) — see the
+    // hit-testing evidence in eb63ed4. A solid background sidesteps it.
+    <header className="sticky top-0 z-40 border-b bg-background">
       <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
