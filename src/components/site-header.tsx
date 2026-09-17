@@ -3,11 +3,13 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Bone, Menu, X } from "lucide-react"
-import { Badge, Button, Dialog, DialogPanel } from "@tremor/react"
+import { Bone, Menu } from "lucide-react"
 
-import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
+import { siteConfig } from "@/config/site"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { UserMenu } from "@/components/user-menu"
 
 export function SiteHeader() {
@@ -24,13 +26,15 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-tremor-border bg-tremor-background dark:border-dark-tremor-border dark:bg-dark-tremor-background">
-      <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b bg-background">
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
-          className="flex min-w-0 items-center gap-2 font-semibold tracking-tight text-tremor-content-strong dark:text-dark-tremor-content-strong"
+          className="flex min-w-0 items-center gap-2.5 rounded-md font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          <Bone className="size-5 shrink-0 text-tremor-brand dark:text-dark-tremor-brand" aria-hidden="true" />
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Bone className="size-4.5" aria-hidden="true" />
+          </span>
           <span className="hidden truncate min-[380px]:inline md:hidden">{siteConfig.shortName}</span>
           <span className="hidden truncate md:inline">{siteConfig.name}</span>
         </Link>
@@ -43,10 +47,10 @@ export function SiteHeader() {
                 href={item.href}
                 aria-current={isActive(item.href) ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-10 items-center whitespace-nowrap rounded-tremor-default px-3 text-sm font-medium transition-colors hover:bg-tremor-background-subtle dark:hover:bg-dark-tremor-background-subtle",
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                   isActive(item.href)
-                    ? "bg-tremor-background-subtle text-tremor-content-strong dark:bg-dark-tremor-background-subtle dark:text-dark-tremor-content-strong"
-                    : "text-tremor-content dark:text-dark-tremor-content"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {item.title}
@@ -54,60 +58,51 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <Button
-            type="button"
-            variant="light"
-            icon={Menu}
-            aria-label="เปิดเมนู"
-            className="md:hidden"
-            onClick={() => setMobileNavOpen(true)}
-          />
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="md:hidden" aria-label="เปิดเมนู">
+                <Menu />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader className="border-b">
+                <SheetTitle className="flex items-center gap-2.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                    <Bone className="size-4.5" aria-hidden="true" />
+                  </span>
+                  {siteConfig.name}
+                </SheetTitle>
+              </SheetHeader>
+              <nav aria-label="เมนูหลัก" className="flex flex-col gap-1 px-3">
+                {siteConfig.nav.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive(item.href) ? "page" : undefined}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                      isActive(item.href)
+                        ? "bg-accent text-accent-foreground"
+                        : "text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="flex-1">{item.title}</span>
+                    {item.comingSoon ? (
+                      <Badge variant="secondary" className="font-normal">
+                        เร็ว ๆ นี้
+                      </Badge>
+                    ) : null}
+                  </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
 
           <UserMenu />
         </div>
       </div>
-
-      <Dialog open={mobileNavOpen} onClose={() => setMobileNavOpen(false)}>
-        <DialogPanel className="absolute inset-x-4 top-16 max-w-none p-2 sm:inset-x-auto sm:right-6 sm:w-72">
-          <div className="mb-1 flex items-center justify-between px-2 py-1.5">
-            <span className="flex items-center gap-2 text-sm font-semibold text-tremor-content-strong dark:text-dark-tremor-content-strong">
-              <Bone className="size-4 text-tremor-brand dark:text-dark-tremor-brand" aria-hidden="true" />
-              {siteConfig.name}
-            </span>
-            <Button
-              type="button"
-              variant="light"
-              icon={X}
-              aria-label="ปิดเมนู"
-              onClick={() => setMobileNavOpen(false)}
-            />
-          </div>
-          <nav aria-label="เมนูหลัก" className="flex flex-col gap-1">
-            {siteConfig.nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(item.href) ? "page" : undefined}
-                onClick={() => setMobileNavOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-tremor-default px-3 py-2.5 text-sm font-medium transition-colors hover:bg-tremor-background-subtle dark:hover:bg-dark-tremor-background-subtle",
-                  isActive(item.href)
-                    ? "bg-tremor-background-subtle text-tremor-content-strong dark:bg-dark-tremor-background-subtle dark:text-dark-tremor-content-strong"
-                    : "text-tremor-content dark:text-dark-tremor-content"
-                )}
-              >
-                <item.icon className="size-4 shrink-0" aria-hidden="true" />
-                <span className="flex-1">{item.title}</span>
-                {item.comingSoon ? (
-                  <Badge size="xs" color="slate">
-                    เร็ว ๆ นี้
-                  </Badge>
-                ) : null}
-              </Link>
-            ))}
-          </nav>
-        </DialogPanel>
-      </Dialog>
     </header>
   )
 }

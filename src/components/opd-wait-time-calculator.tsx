@@ -2,24 +2,20 @@
 
 import * as React from "react"
 import { AlertCircle, CheckCircle2, Upload } from "lucide-react"
-import {
-  Button,
-  Callout,
-  Card,
-  Icon,
-  Select,
-  SelectItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
-  Text,
-  TextInput,
-  Title,
-} from "@tremor/react"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   calculateWaitTimes,
   getLastDayOfMonth,
@@ -61,20 +57,17 @@ type FilePartState =
 const BUDDHIST_YEAR_PATTERN = /^25\d{2}$/
 const BUDDHIST_YEAR_PREFIX_PATTERN = /^(2(5\d{0,2})?)?$/
 
-// Tremor's Callout tints its background via the legacy `bg-opacity-*`
-// utility, which Tailwind v4 dropped in favor of the `/opacity` modifier —
-// without this override it renders as a solid, fully-opaque block instead
-// of a soft tint. tremorTwMerge resolves the conflict in our favor since
-// this className is applied after Tremor's own.
-const CALLOUT_BG: Record<"emerald" | "red" | "slate", string> = {
-  emerald: "bg-emerald-500/10 dark:bg-emerald-500/20",
-  red: "bg-red-500/10 dark:bg-red-500/20",
-  slate: "bg-slate-500/10 dark:bg-slate-500/20",
-}
-
 function hasValidDateSelection(month: string, buddhistYearInput: string) {
   const selectedMonth = Number(month)
   return selectedMonth >= 1 && selectedMonth <= 12 && BUDDHIST_YEAR_PATTERN.test(buddhistYearInput)
+}
+
+function StepNumber({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+      {children}
+    </span>
+  )
 }
 
 function FileUploadStep({
@@ -93,10 +86,10 @@ function FileUploadStep({
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   return (
-    <div className="flex flex-col gap-2">
-      <Text className="font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">{label}</Text>
-      <Text>{hint}</Text>
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="grid gap-2 rounded-lg border bg-muted/30 p-4">
+      <Label className="font-medium">{label}</Label>
+      <p className="text-sm text-muted-foreground">{hint}</p>
+      <div className="mt-1 flex flex-wrap items-center gap-3">
         <input
           ref={inputRef}
           type="file"
@@ -111,26 +104,31 @@ function FileUploadStep({
         />
         <Button
           type="button"
-          variant="secondary"
-          icon={Upload}
+          variant="outline"
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
         >
+          <Upload />
           เลือกไฟล์
         </Button>
-        {part.status !== "idle" ? <Text>{part.fileName}</Text> : null}
+        {part.status !== "idle" ? (
+          <span className="min-w-0 truncate text-sm text-muted-foreground">{part.fileName}</span>
+        ) : null}
       </div>
-      {part.status === "validating" ? <Text>กำลังตรวจสอบไฟล์…</Text> : null}
+      {part.status === "validating" ? (
+        <p className="text-sm text-muted-foreground">กำลังตรวจสอบไฟล์…</p>
+      ) : null}
       {part.status === "valid" ? (
-        <Callout
-          title={`ตรวจสอบผ่าน: ${part.range}`}
-          icon={CheckCircle2}
-          color="emerald"
-          className={CALLOUT_BG.emerald}
-        />
+        <Alert variant="success">
+          <CheckCircle2 />
+          <AlertDescription>ตรวจสอบผ่าน: {part.range}</AlertDescription>
+        </Alert>
       ) : null}
       {part.status === "error" ? (
-        <Callout title={part.message} icon={AlertCircle} color="red" className={CALLOUT_BG.red} />
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertDescription>{part.message}</AlertDescription>
+        </Alert>
       ) : null}
     </div>
   )
@@ -226,49 +224,66 @@ export function OpdWaitTimeCalculator() {
   const canProcess = firstPart.status === "valid" && secondPart.status === "valid" && !isProcessing
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div className="flex items-center gap-3">
-        <Icon icon={PageIcon} variant="light" color="blue" size="md" className="bg-blue-500/10 dark:bg-blue-500/20" />
-        <Title>ระยะเวลารอคอย</Title>
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+          <PageIcon className="size-5" aria-hidden="true" />
+        </span>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">ระยะเวลารอคอย</h1>
       </div>
 
       <Card>
-        <Title className="text-tremor-default">1. เลือกเดือนและปี พ.ศ.</Title>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Text className="font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
-              เดือน
-            </Text>
-            <Select value={month} onValueChange={handleMonthChange} placeholder="เลือกเดือน">
-              {MONTHS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2.5">
+            <StepNumber>1</StepNumber>
+            เลือกเดือนและปี พ.ศ.
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="month-select">เดือน</Label>
+            <Select value={month} onValueChange={handleMonthChange}>
+              <SelectTrigger id="month-select" className="w-full">
+                <SelectValue placeholder="เลือกเดือน" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Text className="font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
-              ปี พ.ศ.
-            </Text>
-            <TextInput
+          <div className="grid gap-2">
+            <Label htmlFor="buddhist-year">ปี พ.ศ.</Label>
+            <Input
+              id="buddhist-year"
               type="text"
               inputMode="numeric"
+              pattern="25[0-9]{2}"
               maxLength={4}
               placeholder="เช่น 2568"
               value={buddhistYear}
-              error={yearFormatError}
-              errorMessage="รูปแบบไม่ถูกต้อง"
-              onValueChange={handleYearChange}
+              aria-invalid={yearFormatError}
+              onChange={(event) => handleYearChange(event.target.value)}
             />
+            {yearFormatError ? (
+              <p className="text-xs font-medium text-destructive">รูปแบบไม่ถูกต้อง</p>
+            ) : null}
           </div>
-        </div>
+        </CardContent>
       </Card>
 
       <Card>
-        <Title className="text-tremor-default">2. อัปโหลดไฟล์ CSV</Title>
-        <div className="mt-4 flex flex-col gap-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2.5">
+            <StepNumber>2</StepNumber>
+            อัปโหลดไฟล์ CSV
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
           <FileUploadStep
             label="ไฟล์ที่ 1 (วันที่ 1–15)"
             hint={
@@ -293,59 +308,61 @@ export function OpdWaitTimeCalculator() {
             onFileSelected={handleSecondFile}
           />
 
-          <Button type="button" disabled={!canProcess} onClick={handleProcess}>
+          <Button type="button" size="lg" disabled={!canProcess} onClick={handleProcess}>
             {isProcessing ? "กำลังประมวลผล…" : "ประมวลผล"}
           </Button>
 
           {status.message ? (
-            <Callout
-              title={status.message}
-              icon={status.type === "error" ? AlertCircle : status.type === "success" ? CheckCircle2 : undefined}
-              color={status.type === "error" ? "red" : status.type === "success" ? "emerald" : "slate"}
-              className={status.type === "error" ? CALLOUT_BG.red : status.type === "success" ? CALLOUT_BG.emerald : CALLOUT_BG.slate}
-            />
+            <Alert
+              variant={
+                status.type === "error" ? "destructive" : status.type === "success" ? "success" : "default"
+              }
+            >
+              {status.type === "error" ? <AlertCircle /> : status.type === "success" ? <CheckCircle2 /> : null}
+              <AlertDescription>{status.message}</AlertDescription>
+            </Alert>
           ) : null}
-        </div>
+        </CardContent>
       </Card>
 
       {result ? (
         <Card>
-          <Title className="text-tremor-default">3. สรุปผลการคำนวณ</Title>
-          <Text className="mt-1">{result.detailStatus}</Text>
-          <div className="mt-4 flex flex-col gap-4">
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>รายการคำนวณ</TableHeaderCell>
-                  <TableHeaderCell>ระยะเวลารอเฉลี่ย</TableHeaderCell>
-                  <TableHeaderCell>ระยะเวลารอเฉลี่ย (นาที)</TableHeaderCell>
-                  <TableHeaderCell>จำนวนรายการที่ใช้คำนวณ</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {result.summaryRows.map((row) => (
-                  <TableRow key={row.calculation}>
-                    <TableCell className="font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
-                      {row.calculation}
-                    </TableCell>
-                    <TableCell>{row.averageDurationText}</TableCell>
-                    <TableCell>{row.averageMinutes}</TableCell>
-                    <TableCell>{row.recordCount}</TableCell>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2.5">
+              <StepNumber>3</StepNumber>
+              สรุปผลการคำนวณ
+            </CardTitle>
+            <CardDescription>{result.detailStatus}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="overflow-hidden rounded-lg border">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead>รายการคำนวณ</TableHead>
+                    <TableHead>ระยะเวลารอเฉลี่ย</TableHead>
+                    <TableHead>ระยะเวลารอเฉลี่ย (นาที)</TableHead>
+                    <TableHead>จำนวนรายการที่ใช้คำนวณ</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <Text>
-              <strong className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
-                หมายเหตุ:
-              </strong>{" "}
-              ใช้เฉพาะรายการที่มีเวลา{" "}
-              <code className="rounded bg-tremor-background-subtle px-1.5 py-0.5 font-mono text-xs dark:bg-dark-tremor-background-subtle">
-                Time
-              </code>{" "}
-              ตั้งแต่ 06:00:00 ถึง 16:00:00 (รวมเวลาเริ่มต้นและสิ้นสุด)
-            </Text>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {result.summaryRows.map((row) => (
+                    <TableRow key={row.calculation}>
+                      <TableCell className="font-medium">{row.calculation}</TableCell>
+                      <TableCell>{row.averageDurationText}</TableCell>
+                      <TableCell>{row.averageMinutes}</TableCell>
+                      <TableCell>{row.recordCount}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              <strong className="font-medium text-foreground">หมายเหตุ:</strong> ใช้เฉพาะรายการที่มีเวลา{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Time</code> ตั้งแต่
+              06:00:00 ถึง 16:00:00 (รวมเวลาเริ่มต้นและสิ้นสุด)
+            </p>
+          </CardContent>
         </Card>
       ) : null}
     </main>

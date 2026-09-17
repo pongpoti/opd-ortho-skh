@@ -39,11 +39,10 @@ export default function RootLayout({
         />
       </head>
       {/* +4px over 100%: guarantees a sliver of scrollable overflow on even
-          the shortest page, so ScrollToTop's scroll nudge (see that file)
-          always has somewhere to move instead of silently no-oping.
+          the shortest page, so the browser always has somewhere to scroll.
           pt-[var(--chrome-inset,0px)]: reserves space below the browser's
           own chrome overlay when ChromeInset detects one — see that file. */}
-      <body className="flex min-h-[calc(100%_+_4px)] flex-col pt-[var(--chrome-inset,0px)] bg-tremor-background-muted dark:bg-dark-tremor-background-muted">
+      <body className="flex min-h-[calc(100%_+_4px)] flex-col bg-background pt-[var(--chrome-inset,0px)]">
         <ChromeInset />
         <ScrollToTop />
         <AuthProvider>

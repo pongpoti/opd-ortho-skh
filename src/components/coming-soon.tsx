@@ -1,33 +1,32 @@
-import type { ReactNode } from "react"
-import { Card, Text, Title } from "@tremor/react"
+import type { LucideIcon } from "lucide-react"
 
-// icon is a pre-rendered element, not a component reference: this file has
-// no "use client", and a Server Component can't pass a bare function/
-// component reference as a prop into a Client Component (Tremor's Card/
-// Title are client components) — only an already-rendered node crosses
-// that boundary cleanly.
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
 export function ComingSoon({
-  icon,
+  icon: Icon,
   title,
   description,
 }: {
-  icon: ReactNode
+  icon: LucideIcon
   title: string
   description: string
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center">
-      <Card className="w-full max-w-sm">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="inline-flex shrink-0 items-center justify-center rounded-tremor-default bg-blue-500/10 p-2.5 text-tremor-brand dark:bg-blue-500/20 dark:text-dark-tremor-brand">
-            {icon}
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 py-16">
+      <Card className="w-full max-w-sm text-center">
+        <CardHeader className="items-center gap-3">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <Icon className="size-6" aria-hidden="true" />
           </span>
-          <Title>{title}</Title>
-          <Text>{description}</Text>
-        </div>
-        <div className="mt-4 border-t border-tremor-border pt-4 dark:border-dark-tremor-border">
-          <Text>หน้านี้อยู่ระหว่างการพัฒนา เร็ว ๆ นี้</Text>
-        </div>
+          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Badge variant="secondary" className="font-normal">
+            อยู่ระหว่างการพัฒนา เร็ว ๆ นี้
+          </Badge>
+        </CardContent>
       </Card>
     </main>
   )
