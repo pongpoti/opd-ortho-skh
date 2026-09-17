@@ -1,38 +1,55 @@
+"use client"
+
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
+import { Badge, Card, Icon, Title } from "@tremor/react"
 
-import { Card, CardContent } from "@/components/ui/card"
 import { siteConfig } from "@/config/site"
 
 export default function DashboardPage() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">แดชบอร์ด</h1>
-        <p className="mt-1 text-muted-foreground">เลือกระบบงานที่ต้องการใช้งาน</p>
+        <Title>แดชบอร์ด</Title>
+        <p className="mt-1 text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+          เลือกระบบงานที่ต้องการใช้งาน
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {siteConfig.nav.map((item) => (
           <Link key={item.href} href={item.href} className="block focus:outline-none">
-            <Card className="h-full transition-colors hover:border-primary/50 hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50">
-              <CardContent className="flex items-start gap-4">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <item.icon className="size-5" aria-hidden="true" />
-                </span>
+            <Card
+              className="h-full transition-colors hover:bg-tremor-background-subtle focus-visible:ring-2 focus-visible:ring-tremor-brand/50 dark:hover:bg-dark-tremor-background-subtle"
+              decoration="left"
+              decorationColor="blue"
+            >
+              <div className="flex items-start gap-4">
+                <Icon
+                  icon={item.icon}
+                  variant="light"
+                  color="blue"
+                  size="lg"
+                  className="bg-blue-500/10 dark:bg-blue-500/20"
+                />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="flex items-center gap-2 font-medium">
+                  <span className="flex items-center gap-2 font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
                     {item.title}
                     {item.comingSoon ? (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                      <Badge size="xs" color="slate">
                         เร็ว ๆ นี้
-                      </span>
+                      </Badge>
                     ) : null}
                   </span>
-                  <span className="text-sm text-muted-foreground">{item.description}</span>
+                  <span className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                    {item.description}
+                  </span>
                 </div>
-                <ChevronRight className="mt-1.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              </CardContent>
+                <ChevronRight
+                  className="mt-1.5 size-4 shrink-0 text-tremor-content-subtle dark:text-dark-tremor-content-subtle"
+                  aria-hidden="true"
+                />
+              </div>
             </Card>
           </Link>
         ))}
