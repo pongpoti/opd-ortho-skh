@@ -22,12 +22,25 @@ const brand = {
 const config = defineConfig({
   cssVarsPrefix: "opd",
   globalCss: {
-    "html, body": {
+    html: {
       minHeight: "100dvh",
     },
     body: {
       bg: "bg",
       color: "fg",
+      // +4px over the viewport: guarantees a sliver of scrollable overflow
+      // on every page, even a short one like the dashboard. iOS WebKit can
+      // hand a fresh page a layout viewport that's mis-placed relative to
+      // the visual one (covering the top, and putting `position: fixed`
+      // elements against the wrong reference frame) and only re-syncs once
+      // it registers an actual scroll — see chrome-inset.tsx's git history
+      // for the device measurements. A page with no overflow at all never
+      // gets that scroll, so it never settles; that's why this showed up on
+      // the short dashboard specifically, and why a reload (which re-lays
+      // out from scratch) "fixed" it. Content still can't rely on this: the
+      // navigation lives in a bottom bar precisely because that's the one
+      // placement that stayed visible across every prior attempt.
+      minHeight: "calc(100dvh + 4px)",
       // Mobile only, where navigation lives in a fixed bottom bar (see
       // site-header.tsx) instead of a top header. paddingBottom clears that
       // bar; paddingTop clears real hardware safe areas (notch, Dynamic
