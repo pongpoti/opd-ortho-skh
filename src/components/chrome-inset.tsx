@@ -24,12 +24,31 @@ import { useEffect } from "react"
 // costs a thin strip above it — and the whole inset collapses back to 0 as
 // soon as the browser hands back a viewport it isn't covering, which the
 // good-state numbers above confirm happens on the first real scroll.
-const TOP_SHARE = 0.65
-const MIN_GAP = 20
+// Recalibrated against the dashboard, which is the page that actually breaks.
+// Earlier versions took innerHeight - clientHeight as the amount to reserve;
+// on the dashboard that difference is 4px while ~104px is covered, so they
+// reserved nothing. The readings there were:
+//
+//   outerHeight 852  innerHeight 669  clientHeight 665  covered ~104
+//
+// outerHeight - innerHeight (183) is the browser's whole chrome, top bar plus
+// bottom toolbar, and ~104 of it is the top — the same ~0.57 share seen on
+// /viewport-check. So use innerHeight - clientHeight only as a yes/no signal
+// that the viewport is being covered (4 here, 187 there, 0 once the browser
+// hands back an uncovered viewport) and take the amount from outerHeight.
+//
+// This is best-effort only. It moves page headings clear of the chrome when
+// it fires; the navigation does not depend on it, and lives in a bottom bar
+// on mobile precisely because no signal here proved reliable.
+const TOP_SHARE = 0.57
+const MIN_GAP = 2
+const MAX_INSET = 160
 
 export function chromeInsetPx() {
-  const gap = window.innerHeight - document.documentElement.clientHeight
-  return gap > MIN_GAP ? Math.round(gap * TOP_SHARE) : 0
+  const covered = window.innerHeight - document.documentElement.clientHeight > MIN_GAP
+  if (!covered) return 0
+  const chrome = window.outerHeight - window.innerHeight
+  return Math.min(Math.round(chrome * TOP_SHARE), MAX_INSET)
 }
 
 function updateInset() {

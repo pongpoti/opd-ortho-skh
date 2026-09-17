@@ -110,11 +110,19 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Whichever is larger: the safe-area inset the browser reports once
-       viewport-fit=cover is declared (see layout.tsx), or the measured
-       fallback ChromeInset computes. Written here rather than as a Tailwind
-       arbitrary value so the env() and custom property compose cleanly. */
-    padding-top: max(var(--chrome-inset, 0px), env(safe-area-inset-top, 0px));
+  }
+  /* Mobile only, where the browser covers the top of the viewport and puts
+     the navigation in a bottom bar (see site-header.tsx).
+
+     padding-bottom clears that fixed bar. padding-top is best-effort: it
+     pushes page headings out from under the browser's chrome when the offset
+     can be inferred, but nothing on the device reports that offset reliably,
+     so the navigation deliberately does not depend on it. */
+  @media (width < 48rem) {
+    body {
+      padding-top: max(var(--chrome-inset, 0px), env(safe-area-inset-top, 0px));
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    }
   }
   /* Thai text sets tone marks above the ascender; the default leading clips
      them in tight rows like buttons and table headers. */
