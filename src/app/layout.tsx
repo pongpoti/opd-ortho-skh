@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense, type ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
@@ -22,6 +22,20 @@ export const metadata: Metadata = {
   description: "แดชบอร์ดระบบงาน OPD ศัลยกรรมกระดูก โรงพยาบาลสมุทรสาคร",
 };
 
+// Measured on the reporter's phone: the browser hands this app a viewport
+// anchored at screen y=0, with its own status bar and address bar painted
+// over the first ~104px — the header, at rows 0-57, lands entirely inside
+// that strip. That is edge-to-edge presentation, and without declaring
+// viewport-fit=cover the browser does it anyway while reporting
+// env(safe-area-inset-*) as 0, leaving the page no way to compensate.
+// Declaring it is what makes those insets report real values, which the
+// body rule in globals.css then pads by.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
@@ -41,9 +55,9 @@ export default function RootLayout({
       </head>
       {/* +4px over 100%: guarantees a sliver of scrollable overflow on even
           the shortest page, so the browser always has somewhere to scroll.
-          pt-[var(--chrome-inset,0px)]: reserves space below the browser's
-          own chrome overlay when ChromeInset detects one — see that file. */}
-      <body className="flex min-h-[calc(100%_+_4px)] flex-col bg-background pt-[var(--chrome-inset,0px)]">
+          The top inset itself lives in globals.css, since it combines a
+          CSS env() with a custom property — see the body rule there. */}
+      <body className="flex min-h-[calc(100%_+_4px)] flex-col bg-background">
         <ChromeInset />
         <ScrollToTop />
         <AuthProvider>

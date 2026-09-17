@@ -110,6 +110,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Whichever is larger: the safe-area inset the browser reports once
+       viewport-fit=cover is declared (see layout.tsx), or the measured
+       fallback ChromeInset computes. Written here rather than as a Tailwind
+       arbitrary value so the env() and custom property compose cleanly. */
+    padding-top: max(var(--chrome-inset, 0px), env(safe-area-inset-top, 0px));
   }
   /* Thai text sets tone marks above the ascender; the default leading clips
      them in tight rows like buttons and table headers. */

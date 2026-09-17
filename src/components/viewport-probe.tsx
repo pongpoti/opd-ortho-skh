@@ -35,6 +35,16 @@ function ProbeOverlay() {
       const selfRect = selfRef.current?.getBoundingClientRect()
       const r = (n: number | undefined) => (n === undefined ? "?" : String(Math.round(n)))
 
+      // env() is only readable by applying it and measuring the result.
+      const envProbe = document.createElement("div")
+      envProbe.style.cssText =
+        "position:absolute;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)"
+      document.body.appendChild(envProbe)
+      const envStyle = getComputedStyle(envProbe)
+      const safeTop = envStyle.paddingTop
+      const safeBottom = envStyle.paddingBottom
+      envProbe.remove()
+
       return [
         { k: "inner/client", v: `${window.innerHeight}/${doc.clientHeight}` },
         { k: "outer/screen", v: `${window.outerHeight}/${window.screen.height}` },
@@ -54,6 +64,8 @@ function ProbeOverlay() {
         },
         { k: "h1 top", v: heading ? r(heading.getBoundingClientRect().top) : "none" },
         { k: "probe top", v: r(selfRect?.top) },
+        { k: "SAFE t/b", v: `${safeTop}/${safeBottom}` },
+        { k: "body padTop", v: getComputedStyle(document.body).paddingTop },
         { k: "inset", v: getComputedStyle(doc).getPropertyValue("--chrome-inset").trim() || "unset" },
       ]
     }
