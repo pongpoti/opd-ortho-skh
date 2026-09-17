@@ -61,8 +61,13 @@ export default function DebugPage() {
         .querySelector('meta[name="viewport"]')
         ?.getAttribute("content")
 
+      const matches = window.innerHeight === document.documentElement.clientHeight
+
       const lines = [
         `เวลา: ${new Date().toLocaleTimeString()}`,
+        `innerHeight vs clientHeight: ${matches ? "MATCH (ok)" : "MISMATCH (bug signature)"}`,
+        `innerHeight=${window.innerHeight} clientHeight=${document.documentElement.clientHeight}`,
+        "",
         `UA: ${navigator.userAgent}`,
         "",
         "--- window ---",
