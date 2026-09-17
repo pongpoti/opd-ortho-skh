@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { ChromeInset } from "@/components/chrome-inset";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SiteHeader } from "@/components/site-header";
+import { ViewportProbe } from "@/components/viewport-probe";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
@@ -34,7 +35,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var g=window.innerHeight-document.documentElement.clientHeight;document.documentElement.style.setProperty('--chrome-inset',(g>20?Math.round(g*0.65):0)+'px')}catch(e){}})();",
+              "(function(){try{var g=window.innerHeight-document.documentElement.clientHeight;var v=(g>20?Math.round(g*0.65):0)+'px';document.documentElement.style.setProperty('--chrome-inset',v);window.__chromeInsetBoot=window.innerHeight+'/'+document.documentElement.clientHeight+' gap '+g+' -> '+v}catch(e){}})();",
           }}
         />
       </head>
@@ -49,6 +50,9 @@ export default function RootLayout({
           <SiteHeader />
           <div className="flex flex-1 flex-col">{children}</div>
         </AuthProvider>
+        <Suspense>
+          <ViewportProbe />
+        </Suspense>
       </body>
     </html>
   );
