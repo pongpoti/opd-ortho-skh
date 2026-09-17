@@ -1,13 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, Bone, LogIn } from "lucide-react"
+import { Bone, LogIn } from "lucide-react"
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, Button, Card, Flex, Heading, Text } from "@chakra-ui/react"
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthCallback: "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (กดปุ่มเข้าสู่ระบบเพียงครั้งเดียวแล้วรอสักครู่)",
@@ -29,26 +26,34 @@ export function SignInCard() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="items-center gap-3 text-center">
-        <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Bone className="size-6" aria-hidden="true" />
-        </span>
-        <CardTitle className="text-lg">เข้าสู่ระบบ</CardTitle>
-        <CardDescription>ลงชื่อเข้าใช้ด้วยบัญชี LINE เพื่อใช้งานระบบ</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <Card.Root w="full" maxW="sm">
+      <Card.Header alignItems="center" gap="3" textAlign="center">
+        <Flex
+          mx="auto"
+          boxSize="12"
+          align="center"
+          justify="center"
+          borderRadius="xl"
+          bg="brand.solid"
+          color="brand.contrast"
+        >
+          <Bone size={24} aria-hidden="true" />
+        </Flex>
+        <Heading size="md">เข้าสู่ระบบ</Heading>
+        <Text color="fg.muted">ลงชื่อเข้าใช้ด้วยบัญชี LINE เพื่อใช้งานระบบ</Text>
+      </Card.Header>
+      <Card.Body display="flex" flexDir="column" gap="4">
         {error ? (
-          <Alert variant="destructive">
-            <AlertCircle />
-            <AlertDescription>{ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default}</AlertDescription>
-          </Alert>
+          <Alert.Root status="error">
+            <Alert.Indicator />
+            <Alert.Description>{ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default}</Alert.Description>
+          </Alert.Root>
         ) : null}
-        <Button className="w-full" size="lg" onClick={handleSignIn} disabled={isSigningIn}>
-          <LogIn />
-          {isSigningIn ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบด้วย LINE"}
+        <Button w="full" size="lg" onClick={handleSignIn} loading={isSigningIn} loadingText="กำลังเข้าสู่ระบบ…">
+          <LogIn size={18} />
+          เข้าสู่ระบบด้วย LINE
         </Button>
-      </CardContent>
-    </Card>
+      </Card.Body>
+    </Card.Root>
   )
 }
