@@ -10,5 +10,11 @@ export const metadata: Metadata = {
 }
 
 export default function SettingsPage() {
-  return <ComingSoon icon={item.icon} title={item.title} description={item.description} />
+  return (
+    <ComingSoon
+      icon={<item.icon className="size-6" aria-hidden="true" />}
+      title={item.title}
+      description={item.description}
+    />
+  )
 }

@@ -1,19 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, Bone, LogIn } from "lucide-react"
+import { Bone, LogIn } from "lucide-react"
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Button, Callout, Card, Text, Title } from "@tremor/react"
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthCallback: "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (กดปุ่มเข้าสู่ระบบเพียงครั้งเดียวแล้วรอสักครู่)",
@@ -36,23 +27,21 @@ export function SignInCard() {
 
   return (
     <Card className="w-full max-w-sm">
-      <CardHeader className="items-center text-center">
-        <Bone className="size-8 text-primary" aria-hidden="true" />
-        <CardTitle className="text-xl">เข้าสู่ระบบ</CardTitle>
-        <CardDescription>ลงชื่อเข้าใช้ด้วยบัญชี LINE เพื่อใช้งานระบบ</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <Bone className="size-8 text-tremor-brand dark:text-dark-tremor-brand" aria-hidden="true" />
+        <Title>เข้าสู่ระบบ</Title>
+        <Text>ลงชื่อเข้าใช้ด้วยบัญชี LINE เพื่อใช้งานระบบ</Text>
+      </div>
+      <div className="mt-6 flex flex-col gap-4">
         {error ? (
-          <Alert variant="destructive">
-            <AlertCircle />
-            <AlertDescription>{ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default}</AlertDescription>
-          </Alert>
+          <Callout title="เข้าสู่ระบบไม่สำเร็จ" color="red" className="bg-red-500/10 dark:bg-red-500/20">
+            {ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default}
+          </Callout>
         ) : null}
-        <Button className="w-full" onClick={handleSignIn} disabled={isSigningIn}>
-          <LogIn />
+        <Button className="w-full justify-center" icon={LogIn} onClick={handleSignIn} disabled={isSigningIn}>
           {isSigningIn ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบด้วย LINE"}
         </Button>
-      </CardContent>
+      </div>
     </Card>
   )
 }
