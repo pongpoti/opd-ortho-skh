@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
@@ -20,23 +20,19 @@ export const metadata: Metadata = {
   description: "แดชบอร์ดระบบงาน OPD ศัลยกรรมกระดูก โรงพยาบาลสมุทรสาคร",
 };
 
-// iOS 26 floats its translucent browser chrome over the page rather than
-// above it, so the viewport spans the whole screen and the top of the page
-// renders underneath the address bar. viewport-fit=cover is what makes the
-// env(safe-area-inset-*) values report that overlap, which the header then
-// pads for.
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-};
 
+// No height:100% on <html>: pinning the root to a percentage of the initial
+// containing block makes the page's height depend on how the browser resolves
+// that box, which on iOS differs from the layout viewport it positions content
+// in — the sort of mismatch that can leave the top of the page sitting behind
+// the browser chrome. min-h-dvh on the body gives the same full-height layout
+// by measuring the viewport directly instead.
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="th" className={`${notoSansThai.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-muted/30">
+    <html lang="th" className={`${notoSansThai.variable} antialiased`}>
+      <body className="flex min-h-dvh flex-col bg-muted/30">
         <ScrollToTop />
         <AuthProvider>
           <SiteHeader />
