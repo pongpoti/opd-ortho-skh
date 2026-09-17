@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Bone, Menu } from "lucide-react"
 
@@ -16,10 +17,6 @@ import {
 } from "@/components/ui/sheet"
 import { UserMenu } from "@/components/user-menu"
 
-// Navigation uses plain <a>, not next/link. A client-side navigation scrolls
-// to the top programmatically, and on iOS 26 a programmatic scroll doesn't
-// re-expand the collapsed address bar — leaving the page at scrollY 0 with the
-// bar floating over the top ~100px of content. A real page load resets it.
 export function SiteHeader() {
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
@@ -33,25 +30,21 @@ export function SiteHeader() {
   }
 
   return (
-    <header
-      className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-      style={{ paddingTop: "var(--chrome-inset, 0px)" }}
-    >
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-4 px-4 sm:px-6">
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full page load is the point, see note above */}
-        <a
+        <Link
           href="/"
           className="flex min-w-0 items-center gap-2 font-semibold tracking-tight"
         >
           <Bone className="size-5 shrink-0 text-primary" aria-hidden="true" />
           <span className="hidden truncate min-[380px]:inline md:hidden">{siteConfig.shortName}</span>
           <span className="hidden truncate md:inline">{siteConfig.name}</span>
-        </a>
+        </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <nav aria-label="เมนูหลัก" className="hidden items-center gap-1 md:flex">
             {siteConfig.nav.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 aria-current={isActive(item.href) ? "page" : undefined}
@@ -61,7 +54,7 @@ export function SiteHeader() {
                 )}
               >
                 {item.title}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -80,7 +73,7 @@ export function SiteHeader() {
               </SheetHeader>
               <nav aria-label="เมนูหลัก" className="flex flex-col gap-1 px-2">
                 {siteConfig.nav.map((item) => (
-                  <a
+                  <Link
                     key={item.href}
                     href={item.href}
                     aria-current={isActive(item.href) ? "page" : undefined}
@@ -97,7 +90,7 @@ export function SiteHeader() {
                         เร็ว ๆ นี้
                       </span>
                     ) : null}
-                  </a>
+                  </Link>
                 ))}
               </nav>
             </SheetContent>
