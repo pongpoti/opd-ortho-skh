@@ -171,8 +171,13 @@ export default function DebugPage() {
         CANARY TEST 123
       </div>
       <h1 className="mb-1 text-xl font-semibold">หน้าตรวจสอบชั่วคราว</h1>
-      <p className="mb-4 text-sm text-muted-foreground">
+      <p className="mb-2 text-sm text-muted-foreground">
         กรุณาแคปหน้าจอนี้ทั้งหมด (รวมส่วนบนสุด) แล้วส่งกลับมาให้ดู
+      </p>
+      <p className="mb-4 text-sm">
+        <a href="/plain.html" className="underline underline-offset-4">
+          เปิดหน้าทดสอบแบบธรรมดา (plain.html) →
+        </a>
       </p>
       <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md border bg-white p-4 text-xs leading-relaxed">
         {info}
