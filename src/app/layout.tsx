@@ -29,12 +29,12 @@ export default function RootLayout({
       <head>
         {/* Runs before first paint, ahead of React hydration, so the page
             never flashes uninset before ChromeInset's own effect catches up
-            on a later navigation. Duplicates that file's threshold/reserve
-            values — see it for why they're set the way they are. */}
+            on a later navigation. Mirrors that file's formula — see it for
+            the device measurements the 0.65 share is derived from. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var c=window.innerHeight-document.documentElement.clientHeight>20;document.documentElement.style.setProperty('--chrome-inset',c?'96px':'0px')}catch(e){}})();",
+              "(function(){try{var g=window.innerHeight-document.documentElement.clientHeight;document.documentElement.style.setProperty('--chrome-inset',(g>20?Math.round(g*0.65):0)+'px')}catch(e){}})();",
           }}
         />
       </head>

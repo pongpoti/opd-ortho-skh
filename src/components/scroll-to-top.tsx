@@ -3,20 +3,14 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 
-// iOS WebKit browsers (Safari and Chrome-for-iOS alike) can leave their
-// address bar collapsed and floating over the top of the page when it's
-// shown at scroll 0 without a real touch-scroll gesture — which is how every
-// client-side navigation, and the LINE Login OAuth redirect, land here. A
-// genuine scroll reconciles it; a bare scrollTo(0, 0) doesn't. Nudging the
-// scroll position to 1px and back reproduces that reconciling motion, but
-// only if the page actually has something to scroll — see the extra 4px of
-// min-height on <body> in layout.tsx, which guarantees it does.
+// This used to nudge the scroll position to 1px and back, on the theory that
+// a programmatic scroll could make iOS re-collapse its floating address bar.
+// Device measurements (see chrome-inset.tsx) disproved it: the page sits at
+// scrollY 0 with a correctly positioned layout, and the browser simply paints
+// its chrome over the top. Worse, the nudge parked the page a pixel down,
+// which blocked ChromeInset from ever re-measuring. Plain reset only.
 function resetScroll() {
   window.scrollTo(0, 0)
-  requestAnimationFrame(() => {
-    window.scrollTo(0, 1)
-    requestAnimationFrame(() => window.scrollTo(0, 0))
-  })
 }
 
 export function ScrollToTop() {
