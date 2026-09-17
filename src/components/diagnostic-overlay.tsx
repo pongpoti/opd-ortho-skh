@@ -44,8 +44,21 @@ function readMetrics(): Metrics {
     el.getBoundingClientRect()
   )
 
+  const vhProbe = document.createElement("div")
+  vhProbe.style.cssText = "position:absolute;visibility:hidden;width:0"
+  document.body.appendChild(vhProbe)
+  const measure = (unit: string) => {
+    vhProbe.style.height = `100${unit}`
+    return vhProbe.getBoundingClientRect().height
+  }
+  const svh = measure("svh")
+  const lvh = measure("lvh")
+  const dvh = measure("dvh")
+  vhProbe.remove()
+
   return {
     "inner/client": `${window.innerHeight}/${doc.clientHeight}`,
+    "svh/lvh/dvh": `${r(svh)}/${r(lvh)}/${r(dvh)}`,
     "outer/screen": `${window.outerHeight}/${window.screen.height}`,
     "scrollY": r(window.scrollY),
     "scrollHeight": String(doc.scrollHeight),

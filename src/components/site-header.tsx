@@ -84,60 +84,88 @@ export function SiteHeader() {
         </Flex>
       </Box>
 
-      <Flex
-        as="nav"
-        aria-label="เมนูหลัก"
+      {/*
+        The nav itself is NOT position:fixed against the raw viewport.
+        Measured on the reporter's phone (Chrome for iOS): on a cold load,
+        window.innerHeight optimistically reports the viewport as if
+        Safari's chrome were already collapsed (852px) while it is still
+        painted expanded, with only 665px (document.documentElement.
+        clientHeight) actually visible — a `fixed; bottom: 0` element gets
+        positioned against that wrong 852px frame and lands underneath the
+        real, still-onscreen toolbar. It self-corrects after a scroll or a
+        reload, once innerHeight catches up to clientHeight.
+
+        `svh` (small viewport height) is defined to always report the
+        smallest guaranteed-visible height regardless of chrome state, so
+        anchoring against it instead of raw `bottom: 0` should place the
+        nav correctly even before Safari's chrome settles. This wrapper is
+        the fixed, full-height, invisible frame; flex pushes the actual
+        nav to its bottom edge, which lands at the safe height. The wrapper
+        ignores pointer events everywhere except where the nav itself is.
+      */}
+      <Box
         hideFrom="md"
         position="fixed"
         insetX="0"
-        bottom="0"
+        top="0"
+        height="100svh"
         zIndex="40"
-        borderTopWidth="1px"
-        bg="bg"
-        pb="env(safe-area-inset-bottom, 0px)"
+        display="flex"
+        flexDir="column"
+        justifyContent="flex-end"
+        pointerEvents="none"
       >
-        <Flex mx="auto" h="16" w="full" maxW="5xl" align="stretch">
-          {siteConfig.nav.map((item) => (
-            <ChakraLink
-              key={item.href}
-              asChild
-              flex="1"
-              display="flex"
-              flexDir="column"
-              alignItems="center"
-              justifyContent="center"
-              gap="1"
-              px="1"
-              outline="none"
-              textDecoration="none"
-              color={isActive(item.href) ? "brand.fg" : "fg.muted"}
-              _focusVisible={{ bg: "bg.muted" }}
-            >
-              <NextLink href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
-                <Box position="relative">
-                  <item.icon size={20} aria-hidden="true" />
-                  {item.comingSoon ? (
-                    <Box
-                      position="absolute"
-                      top="-0.5"
-                      right="-1"
-                      boxSize="1.5"
-                      borderRadius="full"
-                      bg="fg.subtle"
-                    />
-                  ) : null}
-                </Box>
-                <Text w="full" truncate textAlign="center" fontSize="10px" fontWeight="medium" lineHeight="1">
-                  {item.title}
-                </Text>
-              </NextLink>
-            </ChakraLink>
-          ))}
-          <Flex flex="1" flexDir="column" align="center" justify="center" gap="1">
-            <UserMenu />
+        <Flex
+          as="nav"
+          aria-label="เมนูหลัก"
+          pointerEvents="auto"
+          borderTopWidth="1px"
+          bg="bg"
+          pb="env(safe-area-inset-bottom, 0px)"
+        >
+          <Flex mx="auto" h="16" w="full" maxW="5xl" align="stretch">
+            {siteConfig.nav.map((item) => (
+              <ChakraLink
+                key={item.href}
+                asChild
+                flex="1"
+                display="flex"
+                flexDir="column"
+                alignItems="center"
+                justifyContent="center"
+                gap="1"
+                px="1"
+                outline="none"
+                textDecoration="none"
+                color={isActive(item.href) ? "brand.fg" : "fg.muted"}
+                _focusVisible={{ bg: "bg.muted" }}
+              >
+                <NextLink href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
+                  <Box position="relative">
+                    <item.icon size={20} aria-hidden="true" />
+                    {item.comingSoon ? (
+                      <Box
+                        position="absolute"
+                        top="-0.5"
+                        right="-1"
+                        boxSize="1.5"
+                        borderRadius="full"
+                        bg="fg.subtle"
+                      />
+                    ) : null}
+                  </Box>
+                  <Text w="full" truncate textAlign="center" fontSize="10px" fontWeight="medium" lineHeight="1">
+                    {item.title}
+                  </Text>
+                </NextLink>
+              </ChakraLink>
+            ))}
+            <Flex flex="1" flexDir="column" align="center" justify="center" gap="1">
+              <UserMenu />
+            </Flex>
           </Flex>
         </Flex>
-      </Flex>
+      </Box>
     </>
   )
 }
