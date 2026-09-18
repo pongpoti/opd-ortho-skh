@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 
+import { Provider } from "@/components/ui/provider";
 import { AppShell } from "@/components/app-shell";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -23,12 +24,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="th"
-      className={`${notoSansThai.variable} ${notoSans.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <AppShell>{children}</AppShell>
+    <html lang="th" className={`${notoSansThai.variable} ${notoSans.variable}`} suppressHydrationWarning>
+      <body>
+        <Provider>
+          <AppShell>{children}</AppShell>
+        </Provider>
       </body>
     </html>
   );
