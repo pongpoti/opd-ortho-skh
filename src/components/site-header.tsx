@@ -8,27 +8,19 @@ import { Box, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react"
 import { siteConfig } from "@/config/site"
 import { UserMenu } from "@/components/user-menu"
 
-// A single sticky top header at every screen width — no fixed-to-viewport
-// bottom bar.
+// A single top header at every screen width — no fixed-to-viewport bottom
+// bar, and no position:sticky/fixed on this element at all.
 //
-// This app used to put navigation in a fixed bottom bar on mobile,
-// specifically to dodge a real iOS WebKit quirk: right after a cold load,
-// window.innerHeight can briefly report a larger, wrong viewport height
-// before Safari's chrome settles, and a `position: fixed` element computed
-// against that wrong frame lands in the wrong place — hidden under the
-// chrome, or (once anchored to a value that itself changes on scroll)
-// stuck floating above a gap. Every attempt at that fixed-position math
-// (see git history: chrome-inset.tsx, then svh-anchoring, then dvh) fixed
-// one symptom and re-exposed another, because the root instability is in
-// `position: fixed`'s relationship to a viewport that's still settling.
-//
-// `position: sticky` doesn't have that problem: it's part of normal
-// document flow (just "sticks" once scrolled to), computed relative to the
-// page's own layout rather than re-anchored against a live, transiently
-// wrong viewport measurement. This is the same positioning the desktop
-// header already used throughout every round of this — never once
-// reported as broken. Using it everywhere, instead of chasing the fixed
-// bottom bar's edge cases further, is the fix.
+// Every past round of "header hidden on mobile" (fixed positioned against
+// a viewport still settling after cold load; sticky+backdrop-filter
+// WebKit paint bugs; iOS floating its collapsed address bar over the
+// document after a client-side route change scrolls it programmatically)
+// came from the same place: this header lived inside a document that
+// could itself scroll. RootLayout now locks html/body from scrolling and
+// gives this header a fixed-height, non-scrolling flex shell to sit in
+// (see globalCss in theme.ts) — so the header is just a normal-flow flex
+// child that's never behind anything or fighting a moving viewport, and
+// doesn't need sticky/fixed positioning to stay visible.
 export function SiteHeader() {
   const pathname = usePathname()
 
@@ -43,9 +35,7 @@ export function SiteHeader() {
   return (
     <Box
       as="header"
-      position="sticky"
-      top="0"
-      zIndex="40"
+      flexShrink="0"
       borderBottomWidth="1px"
       bg="bg"
       pt="env(safe-area-inset-top, 0px)"

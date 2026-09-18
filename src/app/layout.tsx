@@ -36,9 +36,11 @@ export default function RootLayout({
         <Provider>
           <ScrollToTop />
           <AuthProvider>
-            <Box colorPalette="brand" display="flex" minH="100svh" flexDir="column">
+            <Box colorPalette="brand" display="flex" h="100dvh" flexDir="column" overflow="hidden">
               <SiteHeader />
-              <Box display="flex" flex="1" flexDir="column">
+              {/* The one scrolling region in the whole app — see globalCss in
+                  theme.ts. scroll-to-top.tsx resets this id on navigation. */}
+              <Box id="app-scroll" display="flex" flex="1" minH="0" flexDir="column" overflowY="auto">
                 {children}
               </Box>
             </Box>
