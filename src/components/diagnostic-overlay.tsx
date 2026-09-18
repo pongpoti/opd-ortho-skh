@@ -95,7 +95,7 @@ export function DiagnosticOverlay() {
 
   return (
     <>
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 2147483647 }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 2147483647, pointerEvents: "none" }}>
         {BANDS.map((offset, index) => (
           <div
             key={offset}
@@ -126,6 +126,7 @@ export function DiagnosticOverlay() {
           lineHeight: "24px",
           paddingLeft: 6,
           zIndex: 2147483647,
+          pointerEvents: "none",
         }}
       >
         BOTTOM STRIPE (diagnostic — should always be visible)
@@ -146,6 +147,7 @@ export function DiagnosticOverlay() {
           borderRadius: 6,
           maxHeight: "50vh",
           overflow: "auto",
+          pointerEvents: "none",
         }}
       >
         {Object.entries(metrics).map(([key, value]) => (
