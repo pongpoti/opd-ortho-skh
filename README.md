@@ -7,7 +7,7 @@ independent module under `src/modules/<name>`, rendered through routes in
 ## Stack
 
 - **Framework**: Next.js (App Router) + TypeScript
-- **UI**: Tailwind CSS + DaisyUI (`cupcake` light theme / `coffee` dark theme, `src/app/globals.css`). Font: Noto Sans Thai.
+- **UI**: Chakra UI v3, stock `defaultSystem` theme (no customization, `src/components/ui/provider.tsx`). Font: Noto Sans Thai, applied as a page-level CSS override in `globals.css` (independent of Chakra's theme).
 - **Database**: Postgres via Neon, accessed with Drizzle ORM (`src/db`)
 - **Deploy**: Vercel
 
