@@ -39,18 +39,18 @@ import {
 } from "../lib/opd-calculator";
 
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
 ];
 
 export function OpdWaitTimeCalculator() {
@@ -97,7 +97,7 @@ export function OpdWaitTimeCalculator() {
       setResult(calcResult);
       setSummary(makeSummary(calcResult));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error.");
+      setError(e instanceof Error ? e.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
     } finally {
       setLoading(false);
     }
@@ -107,19 +107,19 @@ export function OpdWaitTimeCalculator() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Waiting Time Calculator</CardTitle>
+          <CardTitle>เครื่องคำนวณระยะเวลารอคอย</CardTitle>
           <CardDescription>
-            Upload the two half-month CSV exports to compute average OPD waiting time.
-            Everything runs in your browser — nothing is uploaded or stored.
+            อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
+            ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="month">Month</Label>
+              <Label htmlFor="month">เดือน</Label>
               <Select value={month} onValueChange={setMonth}>
                 <SelectTrigger id="month" className="w-full">
-                  <SelectValue placeholder="Select month" />
+                  <SelectValue placeholder="เลือกเดือน" />
                 </SelectTrigger>
                 <SelectContent>
                   {MONTHS.map((name, i) => (
@@ -131,11 +131,11 @@ export function OpdWaitTimeCalculator() {
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="year">Year (Buddhist Era)</Label>
+              <Label htmlFor="year">ปี (พ.ศ.)</Label>
               <Input
                 id="year"
                 inputMode="numeric"
-                placeholder="e.g. 2568"
+                placeholder="เช่น 2568"
                 value={buddhistYear}
                 onChange={(e) => setBuddhistYear(e.target.value)}
               />
@@ -144,7 +144,7 @@ export function OpdWaitTimeCalculator() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="file1">File 1 (days 1–15)</Label>
+              <Label htmlFor="file1">ไฟล์ที่ 1 (วันที่ 1–15)</Label>
               <Input
                 id="file1"
                 type="file"
@@ -153,7 +153,7 @@ export function OpdWaitTimeCalculator() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="file2">File 2 (days 16–end of month)</Label>
+              <Label htmlFor="file2">ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</Label>
               <Input
                 id="file2"
                 type="file"
@@ -164,7 +164,7 @@ export function OpdWaitTimeCalculator() {
           </div>
 
           <Button onClick={handleSubmit} disabled={!canSubmit} className="w-fit">
-            {loading ? "Calculating…" : "Calculate"}
+            {loading ? "กำลังคำนวณ…" : "คำนวณ"}
           </Button>
 
           {error && (
@@ -178,34 +178,34 @@ export function OpdWaitTimeCalculator() {
       {result && (
         <Card>
           <CardHeader>
-            <CardTitle>Results</CardTitle>
+            <CardTitle>ผลลัพธ์</CardTitle>
             {summary && <CardDescription>{summary}</CardDescription>}
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Group</TableHead>
-                  <TableHead>Average (HH:MM:SS)</TableHead>
-                  <TableHead>Average (minutes)</TableHead>
-                  <TableHead>Records</TableHead>
+                  <TableHead>กลุ่ม</TableHead>
+                  <TableHead>ค่าเฉลี่ย (ชม:นาที:วินาที)</TableHead>
+                  <TableHead>ค่าเฉลี่ย (นาที)</TableHead>
+                  <TableHead>จำนวนรายการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell>Overall</TableCell>
+                  <TableCell>โดยรวม</TableCell>
                   <TableCell>{result.all.durationHms}</TableCell>
                   <TableCell>{result.all.durationMinutes}</TableCell>
                   <TableCell>{result.all.count}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell>Staff</TableCell>
+                  <TableCell>แพทย์ประจำ</TableCell>
                   <TableCell>{result.staff.durationHms}</TableCell>
                   <TableCell>{result.staff.durationMinutes}</TableCell>
                   <TableCell>{result.staff.count}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell>Non-staff</TableCell>
+                  <TableCell>แพทย์หมุนเวียน</TableCell>
                   <TableCell>{result.nonStaff.durationHms}</TableCell>
                   <TableCell>{result.nonStaff.durationMinutes}</TableCell>
                   <TableCell>{result.nonStaff.count}</TableCell>

@@ -58,7 +58,7 @@ export function getLastDayOfMonth(gregorianYear: number, month: number): number 
 
 export function buddhistYearToGregorian(buddhistYear: number): number {
   if (!Number.isInteger(buddhistYear) || buddhistYear < 2500 || buddhistYear > 2599) {
-    throw new Error("Year must be a 4-digit Buddhist Era year between 2500 and 2599.");
+    throw new Error("ปีต้องเป็นปี พ.ศ. 4 หลัก ระหว่าง 2500 ถึง 2599");
   }
   return buddhistYear - 543;
 }
@@ -105,7 +105,7 @@ function parseCsvLine(line: string): string[] {
   }
 
   if (inQuotes) {
-    throw new Error("CSV has an unterminated quoted field.");
+    throw new Error("ไฟล์ CSV มีเครื่องหมายคำพูดที่ไม่ได้ปิด");
   }
 
   cells.push(current);
@@ -115,7 +115,7 @@ function parseCsvLine(line: string): string[] {
 export function parseCsv(text: string): { headers: string[]; rows: string[][] } {
   const lines = splitLines(text);
   if (lines.length < 2) {
-    throw new Error("File has fewer than 2 rows (header only, or empty).");
+    throw new Error("ไฟล์มีน้อยกว่า 2 แถว (มีแค่หัวตาราง หรือไฟล์ว่างเปล่า)");
   }
 
   const headers = parseCsvLine(lines[0]);
@@ -123,7 +123,7 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
 
   for (const row of rows) {
     if (row.length !== headers.length) {
-      throw new Error("A data row's cell count doesn't match the header's cell count.");
+      throw new Error("จำนวนคอลัมน์ในแถวข้อมูลไม่ตรงกับจำนวนคอลัมน์ของหัวตาราง");
     }
   }
 
@@ -135,7 +135,7 @@ export function parseFile(text: string): ParsedFile {
 
   const missing = REQUIRED_COLUMNS.filter((col) => !headers.includes(col));
   if (missing.length > 0) {
-    throw new Error(`File is missing required column(s): ${missing.join(", ")}.`);
+    throw new Error(`ไฟล์ขาดคอลัมน์ที่จำเป็น: ${missing.join(", ")}`);
   }
 
   const objectRows = rows.map((cells) => {
@@ -162,9 +162,9 @@ export function validateFileDates(
     const day = match ? Number(match[1]) : NaN;
     if (!match || day < range.startDay || day > range.endDay) {
       throw new Error(
-        `Row date "${row.Date}" is outside the expected range (${monthKey}-${String(
+        `วันที่ "${row.Date}" อยู่นอกช่วงที่กำหนด (${monthKey}-${String(
           range.startDay
-        ).padStart(2, "0")} to ${monthKey}-${String(range.endDay).padStart(2, "0")}).`
+        ).padStart(2, "0")} ถึง ${monthKey}-${String(range.endDay).padStart(2, "0")})`
       );
     }
     daysSeen.add(day);
@@ -173,7 +173,7 @@ export function validateFileDates(
   for (let day = range.startDay; day <= range.endDay; day++) {
     if (!daysSeen.has(day)) {
       throw new Error(
-        `Missing all rows for ${monthKey}-${String(day).padStart(2, "0")}.`
+        `ไม่มีข้อมูลของวันที่ ${monthKey}-${String(day).padStart(2, "0")} เลยแม้แต่แถวเดียว`
       );
     }
   }
@@ -225,7 +225,7 @@ export function calculateWaitTimes(
     first.parsed.headers.length !== second.parsed.headers.length ||
     first.parsed.headers.some((h, i) => h !== second.parsed.headers[i])
   ) {
-    throw new Error("The two files' headers don't match exactly (content or order).");
+    throw new Error("หัวตารางของไฟล์ทั้งสองไม่ตรงกันทุกประการ (เนื้อหาหรือลำดับ)");
   }
 
   const merged = [...first.parsed.rows, ...second.parsed.rows];
@@ -259,7 +259,7 @@ export function calculateWaitTimes(
   });
 
   if (withValidDuration.length === 0) {
-    throw new Error("Zero rows survive the full filter pipeline.");
+    throw new Error("ไม่มีข้อมูลเหลือหลังผ่านการกรองทั้งหมด");
   }
 
   // Safe because Date and Time are both zero-padded, so string order == chronological order.
@@ -273,7 +273,7 @@ export function calculateWaitTimes(
   const nonStaffRows = sorted.filter((row) => !isStaff(row["แพทย์"], staffNames));
 
   if (staffRows.length === 0 || nonStaffRows.length === 0) {
-    throw new Error("The staff group or the non-staff group is empty after filtering.");
+    throw new Error("กลุ่มแพทย์ประจำหรือกลุ่มแพทย์หมุนเวียนว่างเปล่าหลังจากกรองข้อมูล");
   }
 
   const secondsOf = (rows: Record<string, string>[]) =>
@@ -296,8 +296,8 @@ export function calculateWaitTimes(
 
 export function makeSummary(result: CalculationResult): string {
   const { audit } = result;
-  const base = `Month ${audit.monthKey}: file 1 covers days ${audit.firstRange.startDay}-${audit.firstRange.endDay}, file 2 covers days ${audit.secondRange.startDay}-${audit.secondRange.endDay}. Used ${audit.usedRows} of ${audit.totalRows} total rows.`;
+  const base = `เดือน ${audit.monthKey}: ไฟล์ที่ 1 ครอบคลุมวันที่ ${audit.firstRange.startDay}-${audit.firstRange.endDay}, ไฟล์ที่ 2 ครอบคลุมวันที่ ${audit.secondRange.startDay}-${audit.secondRange.endDay} ใช้ข้อมูล ${audit.usedRows} จากทั้งหมด ${audit.totalRows} แถว`;
   return audit.droppedForDuration > 0
-    ? `${base} Dropped ${audit.droppedForDuration} row(s) for an unparseable wait-duration value.`
+    ? `${base} ตัดข้อมูล ${audit.droppedForDuration} แถวออก เนื่องจากค่าระยะเวลารอไม่สามารถอ่านได้`
     : base;
 }
