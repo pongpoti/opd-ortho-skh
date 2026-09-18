@@ -8,19 +8,23 @@ import { Box, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react"
 import { siteConfig } from "@/config/site"
 import { UserMenu } from "@/components/user-menu"
 
-// A single top header at every screen width — no fixed-to-viewport bottom
-// bar, and no position:sticky/fixed on this element at all.
+// position:fixed, pinned to the viewport — same mechanism pmcskh's nav
+// bars use, and deliberately not the plain normal-flow header tried
+// previously.
 //
-// Every past round of "header hidden on mobile" (fixed positioned against
-// a viewport still settling after cold load; sticky+backdrop-filter
-// WebKit paint bugs; iOS floating its collapsed address bar over the
-// document after a client-side route change scrolls it programmatically)
-// came from the same place: this header lived inside a document that
-// could itself scroll. RootLayout now locks html/body from scrolling and
-// gives this header a fixed-height, non-scrolling flex shell to sit in
-// (see globalCss in theme.ts) — so the header is just a normal-flow flex
-// child that's never behind anything or fighting a moving viewport, and
-// doesn't need sticky/fixed positioning to stay visible.
+// That earlier attempt reasoned that locking html/body with
+// overflow:hidden (see globalCss in theme.ts) meant nothing could scroll,
+// so a header sitting in normal document flow could no longer be dragged
+// away or hidden by anything. It still failed on a real device: iOS
+// Safari doesn't fully honor overflow:hidden on the document the way
+// Chromium does — the page can still rubber-band/bounce a little regardless
+// — and a normal-flow header has zero protection against that residual
+// motion, since it's just document content. A `position: fixed` header
+// tracks the viewport directly, independent of any document scroll
+// offset, so it stays put even if the document moves slightly underneath
+// it. #app-scroll (RootLayout) pads its top to clear this header's
+// height instead of sharing flex space with it, since fixed elements
+// don't participate in flex/flow sizing.
 export function SiteHeader() {
   const pathname = usePathname()
 
@@ -35,7 +39,10 @@ export function SiteHeader() {
   return (
     <Box
       as="header"
-      flexShrink="0"
+      position="fixed"
+      insetX="0"
+      top="0"
+      zIndex="40"
       borderBottomWidth="1px"
       bg="bg"
       pt="env(safe-area-inset-top, 0px)"
