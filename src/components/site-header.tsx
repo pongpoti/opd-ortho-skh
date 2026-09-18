@@ -95,20 +95,34 @@ export function SiteHeader() {
         real, still-onscreen toolbar. It self-corrects after a scroll or a
         reload, once innerHeight catches up to clientHeight.
 
-        `svh` (small viewport height) is defined to always report the
-        smallest guaranteed-visible height regardless of chrome state, so
-        anchoring against it instead of raw `bottom: 0` should place the
-        nav correctly even before Safari's chrome settles. This wrapper is
-        the fixed, full-height, invisible frame; flex pushes the actual
-        nav to its bottom edge, which lands at the safe height. The wrapper
-        ignores pointer events everywhere except where the nav itself is.
+        First attempt anchored this to `100svh` (small viewport height,
+        which stayed correctly at 665px through that cold-load transient).
+        That broke a *different* case: svh is spec'd to hold at its
+        smallest value permanently, so once the user actually scrolls and
+        Safari's toolbar genuinely hides (revealing the real, larger
+        viewport), the nav stayed frozen at the old 665px boundary instead
+        of extending down with it — reported as the nav "not sticking to
+        the bottom", floating above a gap of exposed content while
+        scrolling.
+
+        `dvh` is the unit that's actually meant to track the current real
+        toolbar state live, growing and shrinking with it — which is what
+        "stick to the true bottom at all times" requires. It carries back a
+        smaller version of the original problem (the nav may visibly slide
+        into place over the first second after a cold load, instead of
+        being ready-positioned immediately), but only the nav's own height
+        animates, not the whole page — see theme.ts, which sizes the page
+        itself against the stable svh specifically to avoid a page-wide
+        jump. This wrapper is the fixed, full-height, invisible frame; flex
+        pushes the actual nav to its bottom edge. The wrapper ignores
+        pointer events everywhere except where the nav itself is.
       */}
       <Box
         hideFrom="md"
         position="fixed"
         insetX="0"
         top="0"
-        height="100svh"
+        height="100dvh"
         zIndex="40"
         display="flex"
         flexDir="column"
