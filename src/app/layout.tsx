@@ -36,7 +36,7 @@ export default function RootLayout({
         <Provider>
           <ScrollToTop />
           <AuthProvider>
-            <Box colorPalette="brand" display="flex" minH="100dvh" flexDir="column">
+            <Box colorPalette="brand" display="flex" minH="100svh" flexDir="column">
               <SiteHeader />
               <Box display="flex" flex="1" flexDir="column">
                 {children}
