@@ -35,22 +35,13 @@ const config = defineConfig({
       // next second or two as the browser settles — sizing the page against
       // dvh made that settle read as the whole page jumping/resizing under
       // the user. svh is defined to always report the smallest guaranteed
-      // height regardless of chrome state, so it holds steady at 665px
-      // throughout instead of chasing the transition (confirmed via a
-      // temporary diagnostic overlay — see this file's git history). The
-      // nav bar is anchored to it the same way, in site-header.tsx.
+      // height regardless of chrome state, so it holds steady throughout
+      // instead of chasing the transition.
       //
       // +4px over that: guarantees a sliver of scrollable overflow on every
       // page, even a short one like the dashboard, which iOS WebKit needs
       // to register a scroll and fully settle at all.
       minHeight: "calc(100svh + 4px)",
-      // Mobile only, where navigation lives in a fixed bottom bar (see
-      // site-header.tsx) instead of a top header. paddingBottom clears that
-      // bar; paddingTop clears real hardware safe areas (notch, Dynamic
-      // Island) only — not the browser's own collapsing toolbar, which no
-      // web API reports reliably, so this deliberately doesn't try to guess it.
-      paddingBottom: { base: "calc(4rem + env(safe-area-inset-bottom, 0px))", md: 0 },
-      paddingTop: { base: "env(safe-area-inset-top, 0px)", md: 0 },
     },
     // Thai text sets tone marks above the ascender; the default leading
     // clips them in tight rows like buttons and table headers.

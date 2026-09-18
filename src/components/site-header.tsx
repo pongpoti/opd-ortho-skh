@@ -8,16 +8,27 @@ import { Box, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react"
 import { siteConfig } from "@/config/site"
 import { UserMenu } from "@/components/user-menu"
 
-// Mobile navigation lives in a bottom bar, not the top header.
+// A single sticky top header at every screen width — no fixed-to-viewport
+// bottom bar.
 //
-// iOS WebKit browsers can paint their status bar and address bar over the
-// top of the page on load, without any of the standard APIs
-// (env(safe-area-inset-top), visualViewport, innerHeight/clientHeight)
-// reliably reporting how much they cover — see the history of this file for
-// the failed attempts at measuring it. Rather than keep guessing at a pixel
-// offset, navigation simply doesn't live up there on mobile: a bottom bar
-// is always inside the visible band. Desktop, which never had the problem,
-// keeps the top header.
+// This app used to put navigation in a fixed bottom bar on mobile,
+// specifically to dodge a real iOS WebKit quirk: right after a cold load,
+// window.innerHeight can briefly report a larger, wrong viewport height
+// before Safari's chrome settles, and a `position: fixed` element computed
+// against that wrong frame lands in the wrong place — hidden under the
+// chrome, or (once anchored to a value that itself changes on scroll)
+// stuck floating above a gap. Every attempt at that fixed-position math
+// (see git history: chrome-inset.tsx, then svh-anchoring, then dvh) fixed
+// one symptom and re-exposed another, because the root instability is in
+// `position: fixed`'s relationship to a viewport that's still settling.
+//
+// `position: sticky` doesn't have that problem: it's part of normal
+// document flow (just "sticks" once scrolled to), computed relative to the
+// page's own layout rather than re-anchored against a live, transiently
+// wrong viewport measurement. This is the same positioning the desktop
+// header already used throughout every round of this — never once
+// reported as broken. Using it everywhere, instead of chasing the fixed
+// bottom bar's edge cases further, is the fix.
 export function SiteHeader() {
   const pathname = usePathname()
 
@@ -30,156 +41,88 @@ export function SiteHeader() {
   }
 
   return (
-    <>
-      <Box as="header" hideBelow="md" position="sticky" top="0" zIndex="40" borderBottomWidth="1px" bg="bg">
-        <Flex mx="auto" h="14" w="full" maxW="5xl" align="center" justify="space-between" gap="4" px="6">
-          <ChakraLink asChild fontWeight="semibold" letterSpacing="tight" outline="none" _focusVisible={{ ring: "3px", ringColor: "brand.focusRing/50" }}>
-            <NextLink href="/">
-              <HStack gap="2.5" minW="0">
-                <Flex
-                  boxSize="8"
-                  flexShrink="0"
-                  align="center"
-                  justify="center"
-                  borderRadius="md"
-                  bg="brand.solid"
-                  color="brand.contrast"
-                >
-                  <Bone size={18} aria-hidden="true" />
-                </Flex>
-                <Text truncate>{siteConfig.name}</Text>
-              </HStack>
-            </NextLink>
-          </ChakraLink>
-
-          <HStack gap="2">
-            <HStack as="nav" aria-label="เมนูหลัก" gap="1">
-              {siteConfig.nav.map((item) => (
-                <ChakraLink
-                  key={item.href}
-                  asChild
-                  h="9"
-                  display="inline-flex"
-                  alignItems="center"
-                  whiteSpace="nowrap"
-                  borderRadius="md"
-                  px="3"
-                  fontSize="sm"
-                  fontWeight="medium"
-                  outline="none"
-                  textDecoration="none"
-                  bg={isActive(item.href) ? "brand.muted" : undefined}
-                  color={isActive(item.href) ? "brand.fg" : "fg.muted"}
-                  _hover={{ bg: isActive(item.href) ? "brand.muted" : "bg.muted", color: isActive(item.href) ? "brand.fg" : "fg" }}
-                  _focusVisible={{ ring: "3px", ringColor: "brand.focusRing/50" }}
-                >
-                  <NextLink href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
-                    {item.title}
-                  </NextLink>
-                </ChakraLink>
-              ))}
-            </HStack>
-            <UserMenu />
-          </HStack>
-        </Flex>
-      </Box>
-
-      {/*
-        The nav itself is NOT position:fixed against the raw viewport.
-        Measured on the reporter's phone (Chrome for iOS): on a cold load,
-        window.innerHeight optimistically reports the viewport as if
-        Safari's chrome were already collapsed (852px) while it is still
-        painted expanded, with only 665px (document.documentElement.
-        clientHeight) actually visible — a `fixed; bottom: 0` element gets
-        positioned against that wrong 852px frame and lands underneath the
-        real, still-onscreen toolbar. It self-corrects after a scroll or a
-        reload, once innerHeight catches up to clientHeight.
-
-        First attempt anchored this to `100svh` (small viewport height,
-        which stayed correctly at 665px through that cold-load transient).
-        That broke a *different* case: svh is spec'd to hold at its
-        smallest value permanently, so once the user actually scrolls and
-        Safari's toolbar genuinely hides (revealing the real, larger
-        viewport), the nav stayed frozen at the old 665px boundary instead
-        of extending down with it — reported as the nav "not sticking to
-        the bottom", floating above a gap of exposed content while
-        scrolling.
-
-        `dvh` is the unit that's actually meant to track the current real
-        toolbar state live, growing and shrinking with it — which is what
-        "stick to the true bottom at all times" requires. It carries back a
-        smaller version of the original problem (the nav may visibly slide
-        into place over the first second after a cold load, instead of
-        being ready-positioned immediately), but only the nav's own height
-        animates, not the whole page — see theme.ts, which sizes the page
-        itself against the stable svh specifically to avoid a page-wide
-        jump. This wrapper is the fixed, full-height, invisible frame; flex
-        pushes the actual nav to its bottom edge. The wrapper ignores
-        pointer events everywhere except where the nav itself is.
-      */}
-      <Box
-        hideFrom="md"
-        position="fixed"
-        insetX="0"
-        top="0"
-        height="100dvh"
-        zIndex="40"
-        display="flex"
-        flexDir="column"
-        justifyContent="flex-end"
-        pointerEvents="none"
-      >
-        <Flex
-          as="nav"
-          aria-label="เมนูหลัก"
-          pointerEvents="auto"
-          borderTopWidth="1px"
-          bg="bg"
-          pb="env(safe-area-inset-bottom, 0px)"
+    <Box
+      as="header"
+      position="sticky"
+      top="0"
+      zIndex="40"
+      borderBottomWidth="1px"
+      bg="bg"
+      pt="env(safe-area-inset-top, 0px)"
+    >
+      <Flex mx="auto" h="14" w="full" maxW="5xl" align="center" justify="space-between" gap="2" px={{ base: "3", sm: "6" }}>
+        <ChakraLink
+          asChild
+          flexShrink="0"
+          fontWeight="semibold"
+          letterSpacing="tight"
+          outline="none"
+          _focusVisible={{ ring: "3px", ringColor: "brand.focusRing/50" }}
         >
-          <Flex mx="auto" h="16" w="full" maxW="5xl" align="stretch">
+          <NextLink href="/">
+            <HStack gap="2.5" minW="0">
+              <Flex
+                boxSize="8"
+                flexShrink="0"
+                align="center"
+                justify="center"
+                borderRadius="md"
+                bg="brand.solid"
+                color="brand.contrast"
+              >
+                <Bone size={18} aria-hidden="true" />
+              </Flex>
+              <Text display={{ base: "none", sm: "block" }} truncate>
+                {siteConfig.name}
+              </Text>
+            </HStack>
+          </NextLink>
+        </ChakraLink>
+
+        <HStack gap={{ base: "0.5", sm: "1" }}>
+          <HStack as="nav" aria-label="เมนูหลัก" gap={{ base: "0.5", sm: "1" }}>
             {siteConfig.nav.map((item) => (
               <ChakraLink
                 key={item.href}
                 asChild
-                flex="1"
-                display="flex"
-                flexDir="column"
+                position="relative"
+                h="9"
+                display="inline-flex"
                 alignItems="center"
-                justifyContent="center"
-                gap="1"
-                px="1"
+                gap="1.5"
+                whiteSpace="nowrap"
+                borderRadius="md"
+                px={{ base: "2", sm: "3" }}
+                fontSize="sm"
+                fontWeight="medium"
                 outline="none"
                 textDecoration="none"
+                bg={isActive(item.href) ? "brand.muted" : undefined}
                 color={isActive(item.href) ? "brand.fg" : "fg.muted"}
-                _focusVisible={{ bg: "bg.muted" }}
+                _hover={{ bg: isActive(item.href) ? "brand.muted" : "bg.muted", color: isActive(item.href) ? "brand.fg" : "fg" }}
+                _focusVisible={{ ring: "3px", ringColor: "brand.focusRing/50" }}
               >
                 <NextLink href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
-                  <Box position="relative">
-                    <item.icon size={20} aria-hidden="true" />
-                    {item.comingSoon ? (
-                      <Box
-                        position="absolute"
-                        top="-0.5"
-                        right="-1"
-                        boxSize="1.5"
-                        borderRadius="full"
-                        bg="fg.subtle"
-                      />
-                    ) : null}
-                  </Box>
-                  <Text w="full" truncate textAlign="center" fontSize="10px" fontWeight="medium" lineHeight="1">
-                    {item.title}
-                  </Text>
+                  <item.icon size={18} aria-hidden="true" />
+                  <Text display={{ base: "none", sm: "inline" }}>{item.title}</Text>
+                  {item.comingSoon ? (
+                    <Box
+                      position="absolute"
+                      top="1"
+                      right="1"
+                      boxSize="1.5"
+                      borderRadius="full"
+                      bg="fg.subtle"
+                      hideFrom="sm"
+                    />
+                  ) : null}
                 </NextLink>
               </ChakraLink>
             ))}
-            <Flex flex="1" flexDir="column" align="center" justify="center" gap="1">
-              <UserMenu />
-            </Flex>
-          </Flex>
-        </Flex>
-      </Box>
-    </>
+          </HStack>
+          <UserMenu />
+        </HStack>
+      </Flex>
+    </Box>
   )
 }
