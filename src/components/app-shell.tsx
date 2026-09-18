@@ -1,30 +1,31 @@
-import NextLink from "next/link";
-import { Box, Container, Flex, HStack, Link as ChakraLink } from "@chakra-ui/react";
+import Link from "next/link";
 
 import { modules } from "@/lib/modules";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <Flex minH="100vh" direction="column">
-      <Box borderBottomWidth="1px">
-        <Container maxW="5xl" py="4">
-          <HStack gap="6">
-            <ChakraLink asChild fontWeight="semibold" fontSize="lg" _hover={{ textDecoration: "none" }}>
-              <NextLink href="/">OPD Ortho SKH</NextLink>
-            </ChakraLink>
-            <HStack gap="4">
-              {modules.map((mod) => (
-                <ChakraLink asChild key={mod.slug} color="fg.muted">
-                  <NextLink href={mod.href}>{mod.name}</NextLink>
-                </ChakraLink>
-              ))}
-            </HStack>
-          </HStack>
-        </Container>
-      </Box>
-      <Container maxW="5xl" py="8" flex="1">
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b">
+        <div className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
+          <Link href="/" className="font-semibold">
+            OPD Ortho SKH
+          </Link>
+          <nav className="flex gap-4 text-sm text-muted-foreground">
+            {modules.map((mod) => (
+              <Link
+                key={mod.slug}
+                href={mod.href}
+                className="hover:text-foreground"
+              >
+                {mod.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
         {children}
-      </Container>
-    </Flex>
+      </main>
+    </div>
   );
 }

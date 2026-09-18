@@ -1,36 +1,27 @@
-import NextLink from "next/link";
-import {
-  Card,
-  Heading,
-  Link as ChakraLink,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import Link from "next/link";
 
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { modules } from "@/lib/modules";
 
 export default function Home() {
   return (
-    <Stack gap="6">
-      <Stack gap="1">
-        <Heading size="xl">OPD Ortho SKH</Heading>
-        <Text color="fg.muted">เครื่องมือภายในสำหรับแผนกผู้ป่วยนอกศัลยกรรมกระดูก</Text>
-      </Stack>
-      <SimpleGrid columns={{ base: 1, sm: 2 }} gap="4">
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold">OPD Ortho SKH</h1>
+        <p className="text-muted-foreground">เครื่องมือภายในสำหรับแผนกผู้ป่วยนอกศัลยกรรมกระดูก</p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {modules.map((mod) => (
-          <ChakraLink asChild key={mod.slug} _hover={{ textDecoration: "none" }}>
-            <NextLink href={mod.href}>
-              <Card.Root _hover={{ shadow: "md" }} transition="box-shadow 0.2s">
-                <Card.Body>
-                  <Card.Title>{mod.name}</Card.Title>
-                  <Card.Description>{mod.description}</Card.Description>
-                </Card.Body>
-              </Card.Root>
-            </NextLink>
-          </ChakraLink>
+          <Link key={mod.slug} href={mod.href}>
+            <Card className="h-full transition-colors hover:bg-accent">
+              <CardHeader>
+                <CardTitle>{mod.name}</CardTitle>
+                <CardDescription>{mod.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
         ))}
-      </SimpleGrid>
-    </Stack>
+      </div>
+    </div>
   );
 }
