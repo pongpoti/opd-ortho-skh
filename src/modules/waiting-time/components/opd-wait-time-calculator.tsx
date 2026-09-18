@@ -2,32 +2,6 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
 import {
   buddhistYearToGregorian,
   calculateWaitTimes,
@@ -105,115 +79,135 @@ export function OpdWaitTimeCalculator() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>เครื่องคำนวณระยะเวลารอคอย</CardTitle>
-          <CardDescription>
-            อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
-            ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+      <div className="card bg-base-100 shadow-sm">
+        <div className="card-body gap-4">
+          <div>
+            <h2 className="card-title">เครื่องคำนวณระยะเวลารอคอย</h2>
+            <p className="text-base-content/70">
+              อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
+              ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="month">เดือน</Label>
-              <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger id="month" className="w-full">
-                  <SelectValue placeholder="เลือกเดือน" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map((name, i) => (
-                    <SelectItem key={name} value={String(i + 1)}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="year">ปี (พ.ศ.)</Label>
-              <Input
-                id="year"
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">เดือน</span>
+              </div>
+              <select
+                className="select select-bordered w-full"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              >
+                <option value="" disabled>
+                  เลือกเดือน
+                </option>
+                {MONTHS.map((name, i) => (
+                  <option key={name} value={String(i + 1)}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">ปี (พ.ศ.)</span>
+              </div>
+              <input
+                type="text"
                 inputMode="numeric"
                 placeholder="เช่น 2568"
+                className="input input-bordered w-full"
                 value={buddhistYear}
                 onChange={(e) => setBuddhistYear(e.target.value)}
               />
-            </div>
+            </label>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="file1">ไฟล์ที่ 1 (วันที่ 1–15)</Label>
-              <Input
-                id="file1"
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">ไฟล์ที่ 1 (วันที่ 1–15)</span>
+              </div>
+              <input
                 type="file"
                 accept=".csv"
+                className="file-input file-input-bordered w-full"
                 onChange={(e) => setFile1(e.target.files?.[0] ?? null)}
               />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="file2">ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</Label>
-              <Input
-                id="file2"
+            </label>
+
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</span>
+              </div>
+              <input
                 type="file"
                 accept=".csv"
+                className="file-input file-input-bordered w-full"
                 onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
               />
-            </div>
+            </label>
           </div>
 
-          <Button onClick={handleSubmit} disabled={!canSubmit} className="w-fit">
+          <button
+            className="btn btn-primary w-fit"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+          >
             {loading ? "กำลังคำนวณ…" : "คำนวณ"}
-          </Button>
+          </button>
 
           {error && (
-            <p className="text-destructive text-sm" role="alert">
-              {error}
-            </p>
+            <div role="alert" className="alert alert-error">
+              <span>{error}</span>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {result && (
-        <Card>
-          <CardHeader>
-            <CardTitle>ผลลัพธ์</CardTitle>
-            {summary && <CardDescription>{summary}</CardDescription>}
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>กลุ่ม</TableHead>
-                  <TableHead>ค่าเฉลี่ย (ชม:นาที:วินาที)</TableHead>
-                  <TableHead>ค่าเฉลี่ย (นาที)</TableHead>
-                  <TableHead>จำนวนรายการ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>โดยรวม</TableCell>
-                  <TableCell>{result.all.durationHms}</TableCell>
-                  <TableCell>{result.all.durationMinutes}</TableCell>
-                  <TableCell>{result.all.count}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>แพทย์ประจำ</TableCell>
-                  <TableCell>{result.staff.durationHms}</TableCell>
-                  <TableCell>{result.staff.durationMinutes}</TableCell>
-                  <TableCell>{result.staff.count}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>แพทย์หมุนเวียน</TableCell>
-                  <TableCell>{result.nonStaff.durationHms}</TableCell>
-                  <TableCell>{result.nonStaff.durationMinutes}</TableCell>
-                  <TableCell>{result.nonStaff.count}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <div className="card bg-base-100 shadow-sm">
+          <div className="card-body gap-4">
+            <div>
+              <h2 className="card-title">ผลลัพธ์</h2>
+              {summary && <p className="text-base-content/70">{summary}</p>}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>กลุ่ม</th>
+                    <th>ค่าเฉลี่ย (ชม:นาที:วินาที)</th>
+                    <th>ค่าเฉลี่ย (นาที)</th>
+                    <th>จำนวนรายการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>โดยรวม</td>
+                    <td>{result.all.durationHms}</td>
+                    <td>{result.all.durationMinutes}</td>
+                    <td>{result.all.count}</td>
+                  </tr>
+                  <tr>
+                    <td>แพทย์ประจำ</td>
+                    <td>{result.staff.durationHms}</td>
+                    <td>{result.staff.durationMinutes}</td>
+                    <td>{result.staff.count}</td>
+                  </tr>
+                  <tr>
+                    <td>แพทย์หมุนเวียน</td>
+                    <td>{result.nonStaff.durationHms}</td>
+                    <td>{result.nonStaff.durationMinutes}</td>
+                    <td>{result.nonStaff.count}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
