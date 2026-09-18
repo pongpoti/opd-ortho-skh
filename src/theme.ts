@@ -22,26 +22,25 @@ const brand = {
 const config = defineConfig({
   cssVarsPrefix: "opd",
   globalCss: {
+    // The document itself never scrolls — RootLayout instead sizes a flex
+    // shell to 100dvh and scrolls only its inner #app-scroll region. Every
+    // past fix here (svh-vs-dvh sizing, safe-area calibration, sticky vs.
+    // fixed) was chasing symptoms of the real cause: iOS floats its
+    // collapsed address bar over document content, and a client-side route
+    // change scrolls the document programmatically without re-expanding
+    // it, leaving the header hidden under the floating chrome. A document
+    // that can't scroll at all removes that trigger outright, and dvh
+    // tracks the live chrome state with no settle-jump to guard against,
+    // since only the inner region's viewport window resizes.
     html: {
-      minHeight: "100svh",
+      height: "100%",
+      overflow: "hidden",
     },
     body: {
+      height: "100%",
+      overflow: "hidden",
       bg: "bg",
       color: "fg",
-      // svh, not dvh: measured on the reporter's phone (Chrome for iOS),
-      // window.innerHeight and the dvh unit both optimistically report the
-      // viewport as if Safari's chrome were already collapsed (852px) right
-      // after load, then visibly drop to the real value (665px) over the
-      // next second or two as the browser settles — sizing the page against
-      // dvh made that settle read as the whole page jumping/resizing under
-      // the user. svh is defined to always report the smallest guaranteed
-      // height regardless of chrome state, so it holds steady throughout
-      // instead of chasing the transition.
-      //
-      // +4px over that: guarantees a sliver of scrollable overflow on every
-      // page, even a short one like the dashboard, which iOS WebKit needs
-      // to register a scroll and fully settle at all.
-      minHeight: "calc(100svh + 4px)",
     },
     // Thai text sets tone marks above the ascender; the default leading
     // clips them in tight rows like buttons and table headers.
