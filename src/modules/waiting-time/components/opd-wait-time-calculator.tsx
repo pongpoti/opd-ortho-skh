@@ -1,18 +1,32 @@
 "use client";
 
 import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
-  Alert,
-  Button,
   Card,
-  Field,
-  Input,
-  NativeSelect,
-  SimpleGrid,
-  Stack,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
-  Text,
-} from "@chakra-ui/react";
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import {
   buddhistYearToGregorian,
@@ -90,127 +104,117 @@ export function OpdWaitTimeCalculator() {
   }
 
   return (
-    <Stack gap="6">
-      <Card.Root>
-        <Card.Body>
-          <Stack gap="4">
-            <Stack gap="1">
-              <Card.Title>เครื่องคำนวณระยะเวลารอคอย</Card.Title>
-              <Card.Description>
-                อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง)
-                เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
-                ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
-              </Card.Description>
-            </Stack>
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>เครื่องคำนวณระยะเวลารอคอย</CardTitle>
+          <CardDescription>
+            อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
+            ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="month">เดือน</Label>
+              <Select value={month} onValueChange={setMonth}>
+                <SelectTrigger id="month" className="w-full">
+                  <SelectValue placeholder="เลือกเดือน" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map((name, i) => (
+                    <SelectItem key={name} value={String(i + 1)}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="year">ปี (พ.ศ.)</Label>
+              <Input
+                id="year"
+                inputMode="numeric"
+                placeholder="เช่น 2568"
+                value={buddhistYear}
+                onChange={(e) => setBuddhistYear(e.target.value)}
+              />
+            </div>
+          </div>
 
-            <SimpleGrid columns={{ base: 1, sm: 2 }} gap="4">
-              <Field.Root>
-                <Field.Label>เดือน</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={month}
-                    onChange={(e) => setMonth(e.target.value)}
-                    placeholder="เลือกเดือน"
-                  >
-                    {MONTHS.map((name, i) => (
-                      <option key={name} value={String(i + 1)}>
-                        {name}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field.Root>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="file1">ไฟล์ที่ 1 (วันที่ 1–15)</Label>
+              <Input
+                id="file1"
+                type="file"
+                accept=".csv"
+                onChange={(e) => setFile1(e.target.files?.[0] ?? null)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="file2">ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</Label>
+              <Input
+                id="file2"
+                type="file"
+                accept=".csv"
+                onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
+              />
+            </div>
+          </div>
 
-              <Field.Root>
-                <Field.Label>ปี (พ.ศ.)</Field.Label>
-                <Input
-                  inputMode="numeric"
-                  placeholder="เช่น 2568"
-                  value={buddhistYear}
-                  onChange={(e) => setBuddhistYear(e.target.value)}
-                />
-              </Field.Root>
-            </SimpleGrid>
+          <Button onClick={handleSubmit} disabled={!canSubmit} className="w-fit">
+            {loading ? "กำลังคำนวณ…" : "คำนวณ"}
+          </Button>
 
-            <SimpleGrid columns={{ base: 1, sm: 2 }} gap="4">
-              <Field.Root>
-                <Field.Label>ไฟล์ที่ 1 (วันที่ 1–15)</Field.Label>
-                <Input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => setFile1(e.target.files?.[0] ?? null)}
-                  p="1"
-                />
-              </Field.Root>
-
-              <Field.Root>
-                <Field.Label>ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</Field.Label>
-                <Input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
-                  p="1"
-                />
-              </Field.Root>
-            </SimpleGrid>
-
-            <Button onClick={handleSubmit} disabled={!canSubmit} alignSelf="flex-start">
-              {loading ? "กำลังคำนวณ…" : "คำนวณ"}
-            </Button>
-
-            {error && (
-              <Alert.Root status="error">
-                <Alert.Indicator />
-                <Alert.Title>{error}</Alert.Title>
-              </Alert.Root>
-            )}
-          </Stack>
-        </Card.Body>
-      </Card.Root>
+          {error && (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {result && (
-        <Card.Root>
-          <Card.Body>
-            <Stack gap="4">
-              <Stack gap="1">
-                <Card.Title>ผลลัพธ์</Card.Title>
-                {summary && <Text color="fg.muted">{summary}</Text>}
-              </Stack>
-              <Table.Root>
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>กลุ่ม</Table.ColumnHeader>
-                    <Table.ColumnHeader>ค่าเฉลี่ย (ชม:นาที:วินาที)</Table.ColumnHeader>
-                    <Table.ColumnHeader>ค่าเฉลี่ย (นาที)</Table.ColumnHeader>
-                    <Table.ColumnHeader>จำนวนรายการ</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  <Table.Row>
-                    <Table.Cell>โดยรวม</Table.Cell>
-                    <Table.Cell>{result.all.durationHms}</Table.Cell>
-                    <Table.Cell>{result.all.durationMinutes}</Table.Cell>
-                    <Table.Cell>{result.all.count}</Table.Cell>
-                  </Table.Row>
-                  <Table.Row>
-                    <Table.Cell>แพทย์ประจำ</Table.Cell>
-                    <Table.Cell>{result.staff.durationHms}</Table.Cell>
-                    <Table.Cell>{result.staff.durationMinutes}</Table.Cell>
-                    <Table.Cell>{result.staff.count}</Table.Cell>
-                  </Table.Row>
-                  <Table.Row>
-                    <Table.Cell>แพทย์หมุนเวียน</Table.Cell>
-                    <Table.Cell>{result.nonStaff.durationHms}</Table.Cell>
-                    <Table.Cell>{result.nonStaff.durationMinutes}</Table.Cell>
-                    <Table.Cell>{result.nonStaff.count}</Table.Cell>
-                  </Table.Row>
-                </Table.Body>
-              </Table.Root>
-            </Stack>
-          </Card.Body>
-        </Card.Root>
+        <Card>
+          <CardHeader>
+            <CardTitle>ผลลัพธ์</CardTitle>
+            {summary && <CardDescription>{summary}</CardDescription>}
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>กลุ่ม</TableHead>
+                  <TableHead>ค่าเฉลี่ย (ชม:นาที:วินาที)</TableHead>
+                  <TableHead>ค่าเฉลี่ย (นาที)</TableHead>
+                  <TableHead>จำนวนรายการ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>โดยรวม</TableCell>
+                  <TableCell>{result.all.durationHms}</TableCell>
+                  <TableCell>{result.all.durationMinutes}</TableCell>
+                  <TableCell>{result.all.count}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>แพทย์ประจำ</TableCell>
+                  <TableCell>{result.staff.durationHms}</TableCell>
+                  <TableCell>{result.staff.durationMinutes}</TableCell>
+                  <TableCell>{result.staff.count}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>แพทย์หมุนเวียน</TableCell>
+                  <TableCell>{result.nonStaff.durationHms}</TableCell>
+                  <TableCell>{result.nonStaff.durationMinutes}</TableCell>
+                  <TableCell>{result.nonStaff.count}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
-    </Stack>
+    </div>
   );
 }
