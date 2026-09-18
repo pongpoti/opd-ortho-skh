@@ -7,7 +7,7 @@ independent module under `src/modules/<name>`, rendered through routes in
 ## Stack
 
 - **Framework**: Next.js (App Router) + TypeScript
-- **UI**: Tailwind CSS + shadcn/ui (`src/components/ui`, default neutral theme, hand-set up since `ui.shadcn.com`'s registry is blocked by this environment's egress policy). Font: Noto Sans Thai.
+- **UI**: Tailwind CSS + DaisyUI, stock `light`/`dark` themes (DaisyUI's actual defaults, `src/app/globals.css`). Font: Noto Sans Thai.
 - **Database**: Postgres via Neon, accessed with Drizzle ORM (`src/db`)
 - **Deploy**: Vercel
 
