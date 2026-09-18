@@ -3,7 +3,6 @@ import { Box } from "@chakra-ui/react";
 import type { ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
-import { DiagnosticOverlay } from "@/components/diagnostic-overlay";
 import { Provider } from "@/components/ui/provider";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SiteHeader } from "@/components/site-header";
@@ -34,7 +33,6 @@ export default function RootLayout({
   return (
     <html lang="th" className={notoSansThai.variable} suppressHydrationWarning>
       <body>
-        <DiagnosticOverlay />
         <Provider>
           <ScrollToTop />
           <AuthProvider>
