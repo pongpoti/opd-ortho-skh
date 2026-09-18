@@ -7,7 +7,7 @@ independent module under `src/modules/<name>`, rendered through routes in
 ## Stack
 
 - **Framework**: Next.js (App Router) + TypeScript
-- **UI**: Tailwind CSS + DaisyUI, stock `light`/`dark` themes (DaisyUI's actual defaults, `src/app/globals.css`). Font: Noto Sans Thai.
+- **UI**: Tailwind CSS + DaisyUI, custom `clinical`/`clinical-dark` themes — a teal/blue clinical palette instead of a generic preset (`src/app/globals.css`). Font: Noto Sans Thai. Icons: lucide-react, used for module branding (`src/lib/module-icons.tsx`).
 - **Database**: Postgres via Neon, accessed with Drizzle ORM (`src/db`)
 - **Deploy**: Vercel
 

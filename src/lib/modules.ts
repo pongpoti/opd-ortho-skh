@@ -3,6 +3,7 @@ export type AppModule = {
   name: string;
   description: string;
   href: string;
+  icon: "clock";
 };
 
 export const modules: AppModule[] = [
@@ -11,5 +12,6 @@ export const modules: AppModule[] = [
     name: "ระยะเวลารอคอย",
     description: "คำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอกจากไฟล์ CSV รายเดือน",
     href: "/waiting-time",
+    icon: "clock",
   },
 ];

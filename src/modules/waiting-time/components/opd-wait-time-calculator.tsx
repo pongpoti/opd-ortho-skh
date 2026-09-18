@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Clock, ClipboardList } from "lucide-react";
 
 import {
   buddhistYearToGregorian,
@@ -82,7 +83,12 @@ export function OpdWaitTimeCalculator() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body gap-4">
           <div>
-            <h2 className="card-title">เครื่องคำนวณระยะเวลารอคอย</h2>
+            <h2 className="card-title">
+              <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Clock className="size-4" />
+              </span>
+              เครื่องคำนวณระยะเวลารอคอย
+            </h2>
             <p className="text-base-content/70">
               อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
               ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
@@ -171,12 +177,17 @@ export function OpdWaitTimeCalculator() {
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body gap-4">
             <div>
-              <h2 className="card-title">ผลลัพธ์</h2>
+              <h2 className="card-title">
+                <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <ClipboardList className="size-4" />
+                </span>
+                ผลลัพธ์
+              </h2>
               {summary && <p className="text-base-content/70">{summary}</p>}
             </div>
             <div className="overflow-x-auto">
               <table className="table">
-                <thead>
+                <thead className="bg-primary/5 text-primary">
                   <tr>
                     <th>กลุ่ม</th>
                     <th>ค่าเฉลี่ย (ชม:นาที:วินาที)</th>
