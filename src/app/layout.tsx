@@ -39,8 +39,19 @@ export default function RootLayout({
             <Box colorPalette="brand" display="flex" h="100dvh" flexDir="column" overflow="hidden">
               <SiteHeader />
               {/* The one scrolling region in the whole app — see globalCss in
-                  theme.ts. scroll-to-top.tsx resets this id on navigation. */}
-              <Box id="app-scroll" display="flex" flex="1" minH="0" flexDir="column" overflowY="auto">
+                  theme.ts. scroll-to-top.tsx resets this id on navigation.
+                  SiteHeader is position:fixed and so contributes nothing to
+                  flex sizing here — pt clears its rendered height instead
+                  (safe-area inset + the h="14" flex row + its 1px border). */}
+              <Box
+                id="app-scroll"
+                display="flex"
+                flex="1"
+                minH="0"
+                flexDir="column"
+                overflowY="auto"
+                pt="calc(env(safe-area-inset-top, 0px) + 3.5rem + 1px)"
+              >
                 {children}
               </Box>
             </Box>
