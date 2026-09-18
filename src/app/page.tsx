@@ -8,7 +8,7 @@ export default function Home() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold">OPD Ortho SKH</h1>
-        <p className="text-muted-foreground">Internal tools for the orthopedic OPD clinic.</p>
+        <p className="text-muted-foreground">เครื่องมือภายในสำหรับแผนกผู้ป่วยนอกศัลยกรรมกระดูก</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {modules.map((mod) => (

@@ -8,8 +8,8 @@ export type AppModule = {
 export const modules: AppModule[] = [
   {
     slug: "waiting-time",
-    name: "Waiting Time",
-    description: "Average OPD patient waiting time from monthly CSV exports.",
+    name: "ระยะเวลารอคอย",
+    description: "คำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอกจากไฟล์ CSV รายเดือน",
     href: "/waiting-time",
   },
 ];
