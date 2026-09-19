@@ -74,7 +74,7 @@ export default async function RegisterPage({
     <GlassCard p={8} maxW="md" w="full">
       <VStack gap={4} align="stretch">
         <VStack gap={1} align="start">
-          <Heading size="lg">ลงทะเบียนผู้ใช้งาน</Heading>
+          <Heading size="lg" textShadow="heading">ลงทะเบียนผู้ใช้งาน</Heading>
           <Text color="fg.muted">กรอกข้อมูลของคุณก่อนเริ่มใช้งานครั้งแรก</Text>
         </VStack>
 
