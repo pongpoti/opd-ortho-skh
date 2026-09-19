@@ -1,5 +1,5 @@
 import NextLink from "next/link";
-import { Circle, Heading, HStack, Link as ChakraLink, SimpleGrid, Text, VStack } from "@chakra-ui/react";
+import { Circle, HStack, Link as ChakraLink, SimpleGrid, Text, VStack } from "@chakra-ui/react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { MODULE_ICONS } from "@/lib/module-icons";
@@ -12,10 +12,7 @@ export const metadata = {
 export default function StatisticsPage() {
   return (
     <VStack align="stretch" gap={6}>
-      <VStack align="start" gap={1}>
-        <Heading size="lg" textShadow="heading">สถิติ</Heading>
-        <Text color="fg.muted">เลือกรายงานที่ต้องการดู</Text>
-      </VStack>
+      <Text color="fg.muted">เลือกรายงานที่ต้องการดู</Text>
 
       <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
         {statisticsReports.map((report) => {

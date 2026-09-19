@@ -15,7 +15,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { Clock, ClipboardList } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -121,15 +121,6 @@ export function OpdWaitTimeCalculator() {
 
   return (
     <VStack gap={6} align="stretch">
-      <Heading size="lg" textShadow="heading">
-        <HStack gap={2}>
-          <Circle size={8} bg="brand.subtle" color="brand.fg">
-            <Clock size={16} />
-          </Circle>
-          <span>คำนวณระยะเวลารอคอย</span>
-        </HStack>
-      </Heading>
-
       <GlassCard p={8}>
         <VStack align="stretch" gap={3}>
           <HStack gap={2}>
