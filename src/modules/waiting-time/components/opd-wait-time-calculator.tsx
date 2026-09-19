@@ -28,6 +28,15 @@ const MONTHS = [
   "ธันวาคม",
 ];
 
+const BUDDHIST_YEAR_VALID = /^25\d{2}$/;
+
+function isValidPartialBuddhistYear(value: string): boolean {
+  if (!/^\d{0,4}$/.test(value)) return false;
+  if (value.length >= 1 && value[0] !== "2") return false;
+  if (value.length >= 2 && value[1] !== "5") return false;
+  return true;
+}
+
 export function OpdWaitTimeCalculator() {
   const [month, setMonth] = useState<string>("");
   const [buddhistYear, setBuddhistYear] = useState("");
@@ -38,7 +47,19 @@ export function OpdWaitTimeCalculator() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = month !== "" && buddhistYear !== "" && file1 && file2 && !loading;
+  const isMonthFilled = month !== "";
+  const isYearValid = BUDDHIST_YEAR_VALID.test(buddhistYear);
+  const canUploadFile1 = isMonthFilled && isYearValid;
+  const canUploadFile2 = canUploadFile1 && file1 !== null;
+
+  const canSubmit = isMonthFilled && isYearValid && file1 && file2 && !loading;
+
+  function handleYearChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const next = e.target.value;
+    if (isValidPartialBuddhistYear(next)) {
+      setBuddhistYear(next);
+    }
+  }
 
   async function handleSubmit() {
     setError(null);
@@ -95,66 +116,94 @@ export function OpdWaitTimeCalculator() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">เดือน</span>
-              </div>
-              <select
-                className="select select-bordered w-full"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-              >
-                <option value="" disabled>
-                  เลือกเดือน
-                </option>
-                {MONTHS.map((name, i) => (
-                  <option key={name} value={String(i + 1)}>
-                    {name}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                1
+              </span>
+              <h3 className="font-medium">ระบุเดือนและปี</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">เดือน</span>
+                </div>
+                <select
+                  className="select select-bordered w-full"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                >
+                  <option value="" disabled>
+                    เลือกเดือน
                   </option>
-                ))}
-              </select>
-            </label>
+                  {MONTHS.map((name, i) => (
+                    <option key={name} value={String(i + 1)}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">ปี (พ.ศ.)</span>
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="เช่น 2568"
-                className="input input-bordered w-full"
-                value={buddhistYear}
-                onChange={(e) => setBuddhistYear(e.target.value)}
-              />
-            </label>
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">ปี (พ.ศ.)</span>
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="25[0-9]{2}"
+                  maxLength={4}
+                  placeholder="เช่น 2568"
+                  className="input input-bordered w-full disabled:cursor-not-allowed disabled:opacity-50"
+                  value={buddhistYear}
+                  onChange={handleYearChange}
+                  disabled={!isMonthFilled}
+                />
+                <div className="label">
+                  <span className="label-text-alt text-base-content/60">
+                    รับเฉพาะปี พ.ศ. 4 หลัก รูปแบบ 25xx
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">ไฟล์ที่ 1 (วันที่ 1–15)</span>
-              </div>
-              <input
-                type="file"
-                accept=".csv"
-                className="file-input file-input-bordered w-full"
-                onChange={(e) => setFile1(e.target.files?.[0] ?? null)}
-              />
-            </label>
+          <div className="divider my-0" />
 
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</span>
-              </div>
-              <input
-                type="file"
-                accept=".csv"
-                className="file-input file-input-bordered w-full"
-                onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
-              />
-            </label>
+          <div className={`flex flex-col gap-3 ${canUploadFile1 ? "" : "opacity-60"}`}>
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                2
+              </span>
+              <h3 className="font-medium">อัปโหลดไฟล์ข้อมูล</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">ไฟล์ที่ 1 (วันที่ 1–15)</span>
+                </div>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="file-input file-input-bordered w-full disabled:cursor-not-allowed disabled:opacity-50"
+                  onChange={(e) => setFile1(e.target.files?.[0] ?? null)}
+                  disabled={!canUploadFile1}
+                />
+              </label>
+
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">ไฟล์ที่ 2 (วันที่ 16–สิ้นเดือน)</span>
+                </div>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="file-input file-input-bordered w-full disabled:cursor-not-allowed disabled:opacity-50"
+                  onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
+                  disabled={!canUploadFile2}
+                />
+              </label>
+            </div>
           </div>
 
           <button

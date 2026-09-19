@@ -17,10 +17,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <div
-        className="navbar sticky top-0 z-50 shadow-sm"
-        style={{ backgroundColor: "#F0EAD6", color: "#4A3F30" }}
-      >
+      <div className="navbar bg-primary text-primary-content sticky top-0 z-50 shadow-sm">
         <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
             <Bone className="size-5" />
@@ -33,8 +30,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={mod.slug}
                   href={mod.href}
-                  className="btn btn-ghost btn-sm hover:bg-black/5"
-                  style={{ color: "#4A3F30" }}
+                  className="btn btn-ghost btn-sm hover:bg-primary-content/10"
                 >
                   <Icon className="size-4" />
                   {mod.name}
@@ -61,7 +57,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   await signOut({ redirectTo: "/login" });
                 }}
               >
-                <button className="btn btn-ghost btn-sm" style={{ color: "#4A3F30" }}>
+                <button className="btn btn-ghost btn-sm hover:bg-primary-content/10">
                   ออกจากระบบ
                 </button>
               </form>
