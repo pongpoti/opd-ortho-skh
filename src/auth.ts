@@ -13,6 +13,7 @@ declare module "next-auth" {
     user: {
       lineUserId: string;
       lineDisplayName?: string;
+      lineImage?: string;
       isRegistered: boolean;
       firstName?: string;
       role?: UserRole;
@@ -24,6 +25,7 @@ declare module "@auth/core/jwt" {
   interface JWT {
     lineUserId?: string;
     lineDisplayName?: string;
+    lineImage?: string;
     isRegistered?: boolean;
     firstName?: string;
     role?: UserRole;
@@ -44,6 +46,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (profile && typeof profile.name === "string") {
         token.lineDisplayName = profile.name;
+      }
+      if (profile && typeof profile.picture === "string") {
+        token.lineImage = profile.picture;
       }
 
       if (!token.lineUserId) return token;
@@ -70,6 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.user.lineUserId = token.lineUserId ?? "";
       session.user.lineDisplayName = token.lineDisplayName;
+      session.user.lineImage = token.lineImage;
       session.user.isRegistered = token.isRegistered ?? false;
       session.user.firstName = token.firstName;
       session.user.role = token.role;

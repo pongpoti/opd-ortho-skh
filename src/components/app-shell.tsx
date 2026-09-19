@@ -4,6 +4,7 @@ import { Bone } from "lucide-react";
 import { auth, signOut } from "@/auth";
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { modules } from "@/lib/modules";
+import { MobileDock } from "@/components/mobile-dock";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "ผู้ดูแลระบบ",
@@ -22,7 +23,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             <Bone className="size-5" />
             OPD Ortho SKH
           </Link>
-          <nav className="flex gap-1">
+          <nav className="hidden gap-1 sm:flex">
             {modules.map((mod) => {
               const Icon = MODULE_ICONS[mod.icon];
               return (
@@ -40,7 +41,14 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
           {session?.user?.isRegistered && (
             <div className="ml-auto flex items-center gap-3">
-              <span className="text-sm">
+              {session.user.lineImage && (
+                <div className="avatar">
+                  <div className="w-8 rounded-full">
+                    <img src={session.user.lineImage} alt="" />
+                  </div>
+                </div>
+              )}
+              <span className="hidden text-sm sm:inline">
                 {session.user.firstName ?? session.user.lineDisplayName}
                 {session.user.role && ` (${ROLE_LABEL[session.user.role]})`}
               </span>
@@ -58,9 +66,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </div>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 pb-24 sm:pb-8">
         {children}
       </main>
+      <MobileDock />
     </div>
   );
 }
