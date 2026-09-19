@@ -1,11 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-
+import { useResyncedPathname } from "@/lib/use-resynced-pathname";
 import { AUTH_ROUTES } from "@/lib/auth-routes";
 
 export function HideOnAuthRoutes({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = useResyncedPathname();
   const hidden = AUTH_ROUTES.includes(pathname);
 
   return (
