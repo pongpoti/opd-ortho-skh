@@ -1,11 +1,11 @@
-export function AnimatedLogo({ className }: { className?: string }) {
+export function AnimatedLogo({ style }: { style?: React.CSSProperties }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 650 160"
       role="img"
       aria-label="OPD Orthopedic amutsakhon Hospital"
-      className={className ?? "w-full max-w-3xl"}
+      style={style ?? { width: "100%", maxWidth: "48rem" }}
     >
       <defs>
         <style>{`

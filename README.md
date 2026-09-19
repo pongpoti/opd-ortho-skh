@@ -7,8 +7,8 @@ independent module under `src/modules/<name>`, rendered through routes in
 ## Stack
 
 - **Framework**: Next.js (App Router) + TypeScript
-- **UI**: Tailwind CSS + DaisyUI, custom `clinical`/`clinical-dark` themes — a teal/blue clinical palette instead of a generic preset (`src/app/globals.css`). Font: Noto Sans Thai. Icons: lucide-react, used for module branding (`src/lib/module-icons.tsx`).
-- **Auth**: LINE Login via Auth.js v5 (`src/auth.ts`), gated by `src/proxy.ts` (Next.js 16's renamed `middleware.ts`). First-time sign-ins are routed to `/register` to collect name, surname, and position before they can use the app.
+- **UI**: Chakra UI v3, a custom glassmorphism theme (`src/theme.ts`) — translucent, blurred "glass" surfaces (`src/components/ui/glass-card.tsx`) over a soft teal/blue gradient background (`src/components/ui/background-gradient.tsx`), teal/blue `brand` color scale. Fonts: Sarabun (Thai) + IBM Plex Sans (Latin). Icons: lucide-react, used for module branding (`src/lib/module-icons.tsx`). SSR styling goes through a custom Emotion registry (`src/components/ui/emotion-registry.tsx`) — required for Chakra's Emotion-based styles to hydrate correctly under Next.js App Router streaming SSR.
+- **Auth**: LINE LIFF (`@line/liff`) for sign-in, backed by Auth.js v5's `Credentials` provider (`src/auth.ts`) which verifies the LIFF ID token server-side via LINE's `/oauth2/v2.1/verify` endpoint — gated by `src/proxy.ts` (Next.js 16's renamed `middleware.ts`). First-time sign-ins are routed to `/register` to collect name, surname, and position before they can use the app.
 - **Database**: Postgres via Neon, accessed with Drizzle ORM (`src/db`)
 - **Deploy**: Vercel
 
@@ -24,23 +24,29 @@ independent module under `src/modules/<name>`, rendered through routes in
   meaningful. Until then, calculations correctly fail with "the staff group
   is empty" rather than silently misclassifying everyone as non-staff.
 
-## Auth setup (LINE Login)
+## Auth setup (LINE LIFF)
 
-The whole app is gated behind LINE Login. To make it actually work:
+The whole app is gated behind LINE Login via LIFF. To make it actually work:
 
-1. Create a LINE Login channel at the [LINE Developers Console](https://developers.line.biz/console/).
-2. Under the channel's LINE Login settings, add these callback URLs:
-   - `http://localhost:3000/api/auth/callback/line` (local dev)
-   - `https://<your-vercel-domain>/api/auth/callback/line` (production)
-3. Copy the channel's Client ID/Secret into `LINE_CLIENT_ID` / `LINE_CLIENT_SECRET`.
-4. Generate `AUTH_SECRET` with `npx auth secret` (or `openssl rand -base64 32`).
-5. Set all three as environment variables (Vercel project settings for
+1. Create (or reuse) a LINE Login channel at the [LINE Developers Console](https://developers.line.biz/console/).
+2. Under that channel's **LIFF** tab, add a LIFF app with the Endpoint URL
+   set to your deployment (e.g. `https://<your-vercel-domain>`), size `Full`.
+   Copy its LIFF ID (format `{channelId}-{suffix}`).
+3. Copy the channel's numeric ID into `LINE_CLIENT_ID` — it **must** match
+   the numeric prefix of the LIFF ID (the part before the `-`), since the
+   server verifies LIFF ID tokens against this channel.
+4. Set `NEXT_PUBLIC_LIFF_ID` to the full LIFF ID from step 2.
+5. Generate `AUTH_SECRET` with `npx auth secret` (or `openssl rand -base64 32`).
+6. Set these as environment variables (Vercel project settings for
    production, `.env.local` for local dev — see `.env.example`).
-6. The database also needs to be connected (see below) — user records
+7. The database also needs to be connected (see below) — user records
    (`users` table) are what "registered" means.
 
-Until these are set, the app will still build and deploy, but sign-in will
-fail with an Auth.js configuration error.
+Sign-in only works from a real LINE client or a browser LIFF can complete its
+own login redirect in — `liff.init()` calls out to LINE's servers, so it
+can't be exercised in a fully offline/sandboxed environment. Until the env
+vars above are set, the app will still build and deploy, but the login page
+will show a sign-in error.
 
 ## Development
 
@@ -52,7 +58,8 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 Copy `.env.example` to `.env.local` and fill in `DATABASE_URL`, `AUTH_SECRET`,
-and the `LINE_CLIENT_*` values to run the full app locally, including login.
+`LINE_CLIENT_ID`, and `NEXT_PUBLIC_LIFF_ID` to run the full app locally,
+including login.
 
 ### Database migrations
 

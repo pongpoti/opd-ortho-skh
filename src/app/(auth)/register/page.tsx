@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import { Alert, Heading, Text, VStack } from "@chakra-ui/react";
 
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { PHYSICIANS } from "@/lib/physicians";
 import { NURSES } from "@/lib/nurses";
+import { GlassCard } from "@/components/ui/glass-card";
 
 import { RegisterForm } from "./register-form";
 
@@ -69,25 +71,24 @@ export default async function RegisterPage({
   const { error } = await searchParams;
 
   return (
-    <div className="mx-auto max-w-md">
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body gap-4">
-          <div>
-            <h1 className="card-title">ลงทะเบียนผู้ใช้งาน</h1>
-            <p className="text-base-content/70">
-              กรอกข้อมูลของคุณก่อนเริ่มใช้งานครั้งแรก
-            </p>
-          </div>
+    <GlassCard p={8} maxW="md" w="full">
+      <VStack gap={4} align="stretch">
+        <VStack gap={1} align="start">
+          <Heading size="lg">ลงทะเบียนผู้ใช้งาน</Heading>
+          <Text color="fg.muted">กรอกข้อมูลของคุณก่อนเริ่มใช้งานครั้งแรก</Text>
+        </VStack>
 
-          {error && (
-            <div role="alert" className="alert alert-error">
-              <span>กรุณากรอกข้อมูลให้ครบถ้วนและเลือกตำแหน่ง</span>
-            </div>
-          )}
+        {error && (
+          <Alert.Root status="error">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>กรุณากรอกข้อมูลให้ครบถ้วนและเลือกตำแหน่ง</Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
+        )}
 
-          <RegisterForm action={registerAction} />
-        </div>
-      </div>
-    </div>
+        <RegisterForm action={registerAction} />
+      </VStack>
+    </GlassCard>
   );
 }

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import NextLink from "next/link";
+import { Avatar, Box, Button, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { Bone } from "lucide-react";
 
 import { auth, signOut } from "@/auth";
@@ -16,59 +17,71 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: "var(--app-vh)" }}>
-      <div className="navbar bg-primary text-primary-content shrink-0 shadow-sm">
-        <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-6">
-          <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-            <Bone className="size-5" />
-            OPD Ortho SKH
-          </Link>
-          <nav className="hidden gap-1 sm:flex">
+    <Box display="flex" flexDirection="column" overflow="hidden" height="var(--app-vh)">
+      <Box
+        flexShrink={0}
+        bg="glass.bg"
+        borderBottomWidth="1px"
+        borderColor="glass.border"
+        backdropFilter="blur(16px)"
+        boxShadow="sm"
+      >
+        <Flex mx="auto" w="full" maxW="5xl" align="center" gap={2} px={6} py={3}>
+          <ChakraLink asChild fontWeight="semibold" fontSize="lg" color="fg" _hover={{ textDecoration: "none" }}>
+            <NextLink href="/">
+              <HStack gap={2}>
+                <Bone size={20} />
+                <span>OPD Ortho SKH</span>
+              </HStack>
+            </NextLink>
+          </ChakraLink>
+
+          <HStack gap={1} display={{ base: "none", sm: "flex" }}>
             {modules.map((mod) => {
               const Icon = MODULE_ICONS[mod.icon];
               return (
-                <Link
-                  key={mod.slug}
-                  href={mod.href}
-                  className="btn btn-ghost btn-sm hover:bg-primary-content/10"
-                >
-                  <Icon className="size-4" />
-                  {mod.name}
-                </Link>
+                <Button key={mod.slug} asChild variant="ghost" size="sm" colorPalette="brand">
+                  <NextLink href={mod.href}>
+                    <Icon size={16} />
+                    {mod.name}
+                  </NextLink>
+                </Button>
               );
             })}
-          </nav>
+          </HStack>
+
           {session?.user?.isRegistered && (
-            <div className="ml-auto flex items-center gap-3">
+            <HStack ml="auto" gap={3}>
               {session.user.lineImage && (
-                <div className="avatar">
-                  <div className="w-8 rounded-full">
-                    <img src={session.user.lineImage} alt="" />
-                  </div>
-                </div>
+                <Avatar.Root size="sm">
+                  <Avatar.Image src={session.user.lineImage} alt="" />
+                  <Avatar.Fallback />
+                </Avatar.Root>
               )}
-              <span className="hidden text-sm sm:inline">
+              <Text fontSize="sm" display={{ base: "none", sm: "inline" }}>
                 {session.user.firstName ?? session.user.lineDisplayName}
                 {session.user.role && ` (${ROLE_LABEL[session.user.role]})`}
-              </span>
+              </Text>
               <form
                 action={async () => {
                   "use server";
                   await signOut({ redirectTo: "/login" });
                 }}
               >
-                <button className="btn btn-ghost btn-sm hover:bg-primary-content/10">
+                <Button type="submit" variant="ghost" size="sm">
                   ออกจากระบบ
-                </button>
+                </Button>
               </form>
-            </div>
+            </HStack>
           )}
-        </div>
-      </div>
-      <main className="mx-auto w-full min-h-0 max-w-5xl flex-1 overflow-y-auto px-6 py-8">
+        </Flex>
+      </Box>
+
+      <Box as="main" mx="auto" w="full" minH={0} maxW="5xl" flex="1" overflowY="auto" px={6} py={8}>
         {children}
-      </main>
+      </Box>
+
       <MobileDock />
-    </div>
+    </Box>
   );
 }

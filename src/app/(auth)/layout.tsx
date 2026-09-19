@@ -1,10 +1,9 @@
+import { Flex } from "@chakra-ui/react";
+
 export default function AuthGroupLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="flex items-center justify-center overflow-y-auto p-6"
-      style={{ minHeight: "var(--app-vh)" }}
-    >
+    <Flex align="center" justify="center" overflowY="auto" p={6} minH="var(--app-vh)">
       {children}
-    </div>
+    </Flex>
   );
 }
