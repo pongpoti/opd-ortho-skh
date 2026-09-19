@@ -42,6 +42,14 @@ const config = defineConfig({
           },
         },
       },
+      shadows: {
+        heading: {
+          value: {
+            _light: "0 1px 3px rgba(15, 23, 32, 0.18)",
+            _dark: "0 1px 4px rgba(0, 0, 0, 0.45)",
+          },
+        },
+      },
     },
   },
 });

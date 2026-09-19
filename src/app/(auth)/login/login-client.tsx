@@ -63,7 +63,7 @@ export function LoginClient() {
   return (
     <GlassCard p={8} maxW="sm" w="full">
       <VStack gap={4} textAlign="center">
-        <Heading size="lg">เข้าสู่ระบบ</Heading>
+        <Heading size="lg" textShadow="heading">เข้าสู่ระบบ</Heading>
 
         {status === "initializing" || status === "signing-in" ? (
           <>

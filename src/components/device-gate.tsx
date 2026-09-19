@@ -50,7 +50,7 @@ export function DeviceGate({ children }: { children: ReactNode }) {
         <GlassCard p={8} maxW="sm" w="full">
           <VStack gap={4} textAlign="center">
             <Smartphone size={40} />
-            <Heading size="lg">กรุณาเปิดผ่านแอป LINE</Heading>
+            <Heading size="lg" textShadow="heading">กรุณาเปิดผ่านแอป LINE</Heading>
             <Text color="fg.muted">
               ระบบนี้รองรับการใช้งานบนมือถือและแท็บเล็ตผ่านแอป LINE เท่านั้น
               กรุณาแตะปุ่มด้านล่างเพื่อเปิดผ่านแอป LINE

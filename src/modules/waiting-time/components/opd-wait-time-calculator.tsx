@@ -121,20 +121,14 @@ export function OpdWaitTimeCalculator() {
 
   return (
     <VStack gap={6} align="stretch">
-      <VStack align="start" gap={1}>
-        <Heading size="lg">
-          <HStack gap={2}>
-            <Circle size={8} bg="brand.subtle" color="brand.fg">
-              <Clock size={16} />
-            </Circle>
-            <span>คำนวณระยะเวลารอคอย</span>
-          </HStack>
-        </Heading>
-        <Text color="fg.muted">
-          อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
-          ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
-        </Text>
-      </VStack>
+      <Heading size="lg" textShadow="heading">
+        <HStack gap={2}>
+          <Circle size={8} bg="brand.subtle" color="brand.fg">
+            <Clock size={16} />
+          </Circle>
+          <span>คำนวณระยะเวลารอคอย</span>
+        </HStack>
+      </Heading>
 
       <GlassCard p={8}>
         <VStack align="stretch" gap={3}>
@@ -231,7 +225,7 @@ export function OpdWaitTimeCalculator() {
         <GlassCard p={8}>
           <VStack gap={4} align="stretch">
             <VStack align="start" gap={1}>
-              <Heading size="lg">
+              <Heading size="lg" textShadow="heading">
                 <HStack gap={2}>
                   <Circle size={8} bg="brand.subtle" color="brand.fg">
                     <ClipboardList size={16} />

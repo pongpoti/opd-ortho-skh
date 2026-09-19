@@ -13,7 +13,7 @@ export default function StatisticsPage() {
   return (
     <VStack align="stretch" gap={6}>
       <VStack align="start" gap={1}>
-        <Heading size="lg">สถิติ</Heading>
+        <Heading size="lg" textShadow="heading">สถิติ</Heading>
         <Text color="fg.muted">เลือกรายงานที่ต้องการดู</Text>
       </VStack>
 
