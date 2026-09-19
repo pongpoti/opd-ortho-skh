@@ -20,7 +20,6 @@ const plexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: "OPD Ortho SKH",
-  description: "เครื่องมือภายในสำหรับแผนกผู้ป่วยนอกศัลยกรรมกระดูก",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

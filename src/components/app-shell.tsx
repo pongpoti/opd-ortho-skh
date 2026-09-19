@@ -2,7 +2,7 @@ import NextLink from "next/link";
 import { Avatar, Box, Button, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { Bone } from "lucide-react";
 
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { modules } from "@/lib/modules";
 import { MobileDock } from "@/components/mobile-dock";
@@ -58,20 +58,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   <Avatar.Fallback />
                 </Avatar.Root>
               )}
-              <Text fontSize="sm" display={{ base: "none", sm: "inline" }}>
+              <Text fontSize="sm">
                 {session.user.firstName ?? session.user.lineDisplayName}
                 {session.user.role && ` (${ROLE_LABEL[session.user.role]})`}
               </Text>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/login" });
-                }}
-              >
-                <Button type="submit" variant="ghost" size="sm">
-                  ออกจากระบบ
-                </Button>
-              </form>
             </HStack>
           )}
         </Flex>
