@@ -5,6 +5,7 @@ import "./globals.css";
 import { ViewportHeightSync } from "@/components/viewport-height-sync";
 import { Provider } from "@/components/ui/provider";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
+import { DeviceGate } from "@/components/device-gate";
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Provider>
           <BackgroundGradient />
           <ViewportHeightSync />
-          {children}
+          <DeviceGate>{children}</DeviceGate>
         </Provider>
       </body>
     </html>

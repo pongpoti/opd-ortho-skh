@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import liff from "@line/liff";
 import { Alert, Button, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { ensureLiffInit, liff } from "@/lib/liff-client";
 
 type Status = "initializing" | "needs-login" | "signing-in" | "error";
 
@@ -37,7 +37,7 @@ export function LoginClient() {
 
     async function init() {
       try {
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! });
+        await ensureLiffInit();
         if (cancelled) return;
 
         if (liff.isLoggedIn()) {
