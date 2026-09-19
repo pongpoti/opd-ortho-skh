@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { PHYSICIANS } from "@/lib/physicians";
+
+import { RegisterForm } from "./register-form";
 
 export const metadata = {
   title: "ลงทะเบียนผู้ใช้งาน — OPD Ortho SKH",
@@ -14,11 +17,27 @@ async function registerAction(formData: FormData) {
   const session = await auth();
   if (!session?.user?.lineUserId) redirect("/login");
 
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
   const position = String(formData.get("position") ?? "");
 
-  if (!firstName || !lastName || (position !== "doctor" && position !== "nurse")) {
+  let firstName = "";
+  let lastName = "";
+
+  if (position === "doctor") {
+    const doctorName = String(formData.get("doctorName") ?? "").trim();
+    if (!PHYSICIANS.includes(doctorName as (typeof PHYSICIANS)[number])) {
+      redirect("/register?error=1");
+    }
+    const spaceIndex = doctorName.indexOf(" ");
+    firstName = doctorName.slice(0, spaceIndex);
+    lastName = doctorName.slice(spaceIndex + 1);
+  } else if (position === "nurse") {
+    firstName = String(formData.get("firstName") ?? "").trim();
+    lastName = String(formData.get("lastName") ?? "").trim();
+  } else {
+    redirect("/register?error=1");
+  }
+
+  if (!firstName || !lastName) {
     redirect("/register?error=1");
   }
 
@@ -60,43 +79,7 @@ export default async function RegisterPage({
             </div>
           )}
 
-          <form action={registerAction} className="flex flex-col gap-4">
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">ชื่อ</span>
-              </div>
-              <input name="firstName" required className="input input-bordered w-full" />
-            </label>
-
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">นามสกุล</span>
-              </div>
-              <input name="lastName" required className="input input-bordered w-full" />
-            </label>
-
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">ตำแหน่ง</span>
-              </div>
-              <select
-                name="position"
-                required
-                defaultValue=""
-                className="select select-bordered w-full"
-              >
-                <option value="" disabled>
-                  เลือกตำแหน่ง
-                </option>
-                <option value="doctor">แพทย์</option>
-                <option value="nurse">พยาบาล</option>
-              </select>
-            </label>
-
-            <button type="submit" className="btn btn-primary">
-              บันทึก
-            </button>
-          </form>
+          <RegisterForm action={registerAction} />
         </div>
       </div>
     </div>
