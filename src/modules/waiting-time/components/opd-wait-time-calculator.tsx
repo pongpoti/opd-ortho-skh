@@ -11,7 +11,6 @@ import {
   HStack,
   Input,
   NativeSelect,
-  Separator,
   Table,
   Text,
   VStack,
@@ -122,65 +121,65 @@ export function OpdWaitTimeCalculator() {
 
   return (
     <VStack gap={6} align="stretch">
+      <VStack align="start" gap={1}>
+        <Heading size="lg">
+          <HStack gap={2}>
+            <Circle size={8} bg="brand.subtle" color="brand.fg">
+              <Clock size={16} />
+            </Circle>
+            <span>คำนวณระยะเวลารอคอย</span>
+          </HStack>
+        </Heading>
+        <Text color="fg.muted">
+          อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
+          ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
+        </Text>
+      </VStack>
+
       <GlassCard p={8}>
-        <VStack gap={4} align="stretch">
-          <VStack align="start" gap={1}>
-            <Heading size="lg">
-              <HStack gap={2}>
-                <Circle size={8} bg="brand.subtle" color="brand.fg">
-                  <Clock size={16} />
-                </Circle>
-                <span>เครื่องคำนวณระยะเวลารอคอย</span>
-              </HStack>
-            </Heading>
-            <Text color="fg.muted">
-              อัปโหลดไฟล์ CSV ทั้งสองไฟล์ (ครึ่งเดือนแรกและครึ่งเดือนหลัง) เพื่อคำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอก
-              ทุกอย่างประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการอัปโหลดหรือจัดเก็บข้อมูลใด ๆ
-            </Text>
-          </VStack>
-
-          <VStack align="stretch" gap={3}>
-            <HStack gap={2}>
-              <StepBadge n={1} />
-              <Text fontWeight="medium">ระบุเดือนและปี</Text>
-            </HStack>
-            <HStack gap={4} align="start" flexWrap="wrap">
-              <Field.Root flex="1" minW="200px">
-                <Field.Label>เดือน</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
-                    <option value="" disabled>
-                      เลือกเดือน
+        <VStack align="stretch" gap={3}>
+          <HStack gap={2}>
+            <StepBadge n={1} />
+            <Text fontWeight="medium">ระบุเดือนและปี</Text>
+          </HStack>
+          <HStack gap={4} align="start" flexWrap="wrap">
+            <Field.Root flex="1" minW="200px">
+              <Field.Label>เดือน</Field.Label>
+              <NativeSelect.Root>
+                <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
+                  <option value="" disabled>
+                    เลือกเดือน
+                  </option>
+                  {MONTHS.map((name, i) => (
+                    <option key={name} value={String(i + 1)}>
+                      {name}
                     </option>
-                    {MONTHS.map((name, i) => (
-                      <option key={name} value={String(i + 1)}>
-                        {name}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field.Root>
+                  ))}
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
+            </Field.Root>
 
-              <Field.Root flex="1" minW="200px">
-                <Field.Label>ปี (พ.ศ.)</Field.Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="25[0-9]{2}"
-                  maxLength={4}
-                  placeholder="เช่น 2568"
-                  value={buddhistYear}
-                  onChange={handleYearChange}
-                  disabled={!isMonthFilled}
-                />
-                <Field.HelperText>รับเฉพาะปี พ.ศ. 4 หลัก รูปแบบ 25xx</Field.HelperText>
-              </Field.Root>
-            </HStack>
-          </VStack>
+            <Field.Root flex="1" minW="200px">
+              <Field.Label>ปี (พ.ศ.)</Field.Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                pattern="25[0-9]{2}"
+                maxLength={4}
+                placeholder="เช่น 2568"
+                value={buddhistYear}
+                onChange={handleYearChange}
+                disabled={!isMonthFilled}
+              />
+              <Field.HelperText>รับเฉพาะปี พ.ศ. 4 หลัก รูปแบบ 25xx</Field.HelperText>
+            </Field.Root>
+          </HStack>
+        </VStack>
+      </GlassCard>
 
-          <Separator />
-
+      <GlassCard p={8}>
+        <VStack align="stretch" gap={4}>
           <VStack align="stretch" gap={3} opacity={canUploadFile1 ? 1 : 0.6}>
             <HStack gap={2}>
               <StepBadge n={2} />

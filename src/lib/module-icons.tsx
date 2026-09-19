@@ -1,7 +1,6 @@
-import { Clock, type LucideIcon } from "lucide-react";
+import { ChartColumn, Clock, type LucideIcon } from "lucide-react";
 
-import type { AppModule } from "./modules";
-
-export const MODULE_ICONS: Record<AppModule["icon"], LucideIcon> = {
+export const MODULE_ICONS: Record<"clock" | "chart", LucideIcon> = {
   clock: Clock,
+  chart: ChartColumn,
 };
