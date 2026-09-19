@@ -16,8 +16,11 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="navbar shadow-sm" style={{ backgroundColor: "#F0EAD6", color: "#4A3F30" }}>
+    <div className="flex min-h-[100dvh] flex-col">
+      <div
+        className="navbar sticky top-0 z-50 shadow-sm"
+        style={{ backgroundColor: "#F0EAD6", color: "#4A3F30" }}
+      >
         <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
             <Bone className="size-5" />
