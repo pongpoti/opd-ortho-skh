@@ -1,25 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { modules } from "@/lib/modules";
-import { AUTH_ROUTES } from "@/lib/auth-routes";
-import { useResyncedPathname } from "@/lib/use-resynced-pathname";
 
 export function MobileDock() {
-  const pathname = useResyncedPathname();
-  const hidden = AUTH_ROUTES.includes(pathname);
+  const pathname = usePathname();
 
   return (
-    <div
-      className={
-        hidden
-          ? "dock invisible !h-0 !p-0 overflow-hidden !static sm:hidden"
-          : "dock shrink-0 !static sm:hidden"
-      }
-    >
+    <div className="dock shrink-0 !static sm:hidden">
       <Link href="/" className={pathname === "/" ? "dock-active" : undefined}>
         <Home className="size-5" />
         <span className="dock-label">หน้าแรก</span>
