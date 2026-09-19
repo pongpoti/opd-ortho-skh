@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { PHYSICIANS } from "@/lib/physicians";
+import { NURSES } from "@/lib/nurses";
 
 import { RegisterForm } from "./register-form";
 
@@ -31,8 +32,13 @@ async function registerAction(formData: FormData) {
     firstName = doctorName.slice(0, spaceIndex);
     lastName = doctorName.slice(spaceIndex + 1);
   } else if (position === "nurse") {
-    firstName = String(formData.get("firstName") ?? "").trim();
-    lastName = String(formData.get("lastName") ?? "").trim();
+    const nurseName = String(formData.get("nurseName") ?? "").trim();
+    if (!NURSES.includes(nurseName as (typeof NURSES)[number])) {
+      redirect("/register?error=1");
+    }
+    const spaceIndex = nurseName.indexOf(" ");
+    firstName = nurseName.slice(0, spaceIndex);
+    lastName = nurseName.slice(spaceIndex + 1);
   } else {
     redirect("/register?error=1");
   }

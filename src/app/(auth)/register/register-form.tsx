@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { PHYSICIANS } from "@/lib/physicians";
+import { NURSES } from "@/lib/nurses";
 
 export function RegisterForm({
   action,
@@ -56,21 +57,26 @@ export function RegisterForm({
       )}
 
       {position === "nurse" && (
-        <>
-          <label className="form-control w-full">
-            <div className="label">
-              <span className="label-text">ชื่อ</span>
-            </div>
-            <input name="firstName" required className="input input-bordered w-full" />
-          </label>
-
-          <label className="form-control w-full">
-            <div className="label">
-              <span className="label-text">นามสกุล</span>
-            </div>
-            <input name="lastName" required className="input input-bordered w-full" />
-          </label>
-        </>
+        <label className="form-control w-full">
+          <div className="label">
+            <span className="label-text">ชื่อ-นามสกุล</span>
+          </div>
+          <select
+            name="nurseName"
+            required
+            defaultValue=""
+            className="select select-bordered w-full"
+          >
+            <option value="" disabled>
+              เลือกชื่อพยาบาล
+            </option>
+            {NURSES.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
       <button type="submit" className="btn btn-primary" disabled={!position}>
