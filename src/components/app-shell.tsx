@@ -5,7 +5,8 @@ import { auth, signOut } from "@/auth";
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { modules } from "@/lib/modules";
 
-const POSITION_LABEL: Record<string, string> = {
+const ROLE_LABEL: Record<string, string> = {
+  admin: "ผู้ดูแลระบบ",
   doctor: "แพทย์",
   nurse: "พยาบาล",
 };
@@ -40,7 +41,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           {session?.user?.isRegistered && (
             <div className="ml-auto flex items-center gap-3">
               <span className="text-sm">
-                {session.user.firstName} ({POSITION_LABEL[session.user.position ?? ""]})
+                {session.user.firstName ?? session.user.lineDisplayName}
+                {session.user.role && ` (${ROLE_LABEL[session.user.role]})`}
               </span>
               <form
                 action={async () => {

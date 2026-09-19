@@ -43,7 +43,7 @@ async function registerAction(formData: FormData) {
 
   await db.insert(users).values({
     lineUserId: session.user.lineUserId,
-    displayName: session.user.firstName,
+    displayName: session.user.lineDisplayName,
     firstName,
     lastName,
     position,
