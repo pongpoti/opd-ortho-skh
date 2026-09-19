@@ -9,6 +9,7 @@ independent module under `src/modules/<name>`, rendered through routes in
 - **Framework**: Next.js (App Router) + TypeScript
 - **UI**: Chakra UI v3, a custom glassmorphism theme (`src/theme.ts`) — translucent, blurred "glass" surfaces (`src/components/ui/glass-card.tsx`) over a soft teal/blue gradient background (`src/components/ui/background-gradient.tsx`), teal/blue `brand` color scale. Fonts: Sarabun (Thai) + IBM Plex Sans (Latin). Icons: lucide-react, used for module branding (`src/lib/module-icons.tsx`). SSR styling goes through a custom Emotion registry (`src/components/ui/emotion-registry.tsx`) — required for Chakra's Emotion-based styles to hydrate correctly under Next.js App Router streaming SSR.
 - **Auth**: LINE LIFF (`@line/liff`) for sign-in, backed by Auth.js v5's `Credentials` provider (`src/auth.ts`) which verifies the LIFF ID token server-side via LINE's `/oauth2/v2.1/verify` endpoint — gated by `src/proxy.ts` (Next.js 16's renamed `middleware.ts`). First-time sign-ins are routed to `/register` to collect name, surname, and position before they can use the app.
+- **Device gate** (`src/components/device-gate.tsx`): on mobile/tablet devices, the whole app is blocked behind a "open in LINE" screen unless it's running inside the LIFF in-app browser (`liff.isInClient()`); desktop is unrestricted. This is a UX nudge, not a security boundary — it's a client-side check that a determined user could bypass, so it doesn't replace server-side auth.
 - **Database**: Postgres via Neon, accessed with Drizzle ORM (`src/db`)
 - **Deploy**: Vercel
 

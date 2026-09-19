@@ -1,10 +1,9 @@
 import NextLink from "next/link";
-import { Avatar, Box, Button, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react";
+import { Avatar, Box, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { Bone } from "lucide-react";
 
 import { auth } from "@/auth";
-import { MODULE_ICONS } from "@/lib/module-icons";
-import { modules } from "@/lib/modules";
+import { DesktopNav } from "@/components/desktop-nav";
 import { MobileDock } from "@/components/mobile-dock";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -36,19 +35,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </NextLink>
           </ChakraLink>
 
-          <HStack gap={1} display={{ base: "none", sm: "flex" }}>
-            {modules.map((mod) => {
-              const Icon = MODULE_ICONS[mod.icon];
-              return (
-                <Button key={mod.slug} asChild variant="ghost" size="sm" colorPalette="brand">
-                  <NextLink href={mod.href}>
-                    <Icon size={16} />
-                    {mod.name}
-                  </NextLink>
-                </Button>
-              );
-            })}
-          </HStack>
+          <DesktopNav />
 
           {session?.user?.isRegistered && (
             <HStack ml="auto" gap={3}>

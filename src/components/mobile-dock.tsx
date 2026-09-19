@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { Flex, Text, VStack } from "@chakra-ui/react";
+import { Circle, Flex, Text, VStack } from "@chakra-ui/react";
 import { Home } from "lucide-react";
 
 import { MODULE_ICONS } from "@/lib/module-icons";
@@ -38,14 +38,18 @@ export function MobileDock() {
           <VStack
             key={href}
             asChild
-            gap={0.5}
+            gap={1}
             flex="1"
             py={1}
-            color={active ? "brand.solid" : "fg.muted"}
+            color={active ? "brand.fg" : "fg.muted"}
           >
             <NextLink href={href}>
-              <Icon size={20} />
-              <Text fontSize="10px">{label}</Text>
+              <Circle size={10} bg={active ? "brand.subtle" : "transparent"}>
+                <Icon size={20} />
+              </Circle>
+              <Text fontSize="xs" fontWeight={active ? "semibold" : "medium"}>
+                {label}
+              </Text>
             </NextLink>
           </VStack>
         );
