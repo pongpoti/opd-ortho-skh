@@ -3,6 +3,7 @@ import { Noto_Sans, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 
 import { ViewportHeightSync } from "@/components/viewport-height-sync";
+import { AppShell } from "@/components/app-shell";
 
 const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <ViewportHeightSync />
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

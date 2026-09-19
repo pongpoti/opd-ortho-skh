@@ -6,12 +6,20 @@ import { Home } from "lucide-react";
 
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { modules } from "@/lib/modules";
+import { AUTH_ROUTES } from "@/lib/auth-routes";
 
 export function MobileDock() {
   const pathname = usePathname();
+  const hidden = AUTH_ROUTES.includes(pathname);
 
   return (
-    <div className="dock shrink-0 sm:hidden">
+    <div
+      className={
+        hidden
+          ? "dock invisible !h-0 !p-0 overflow-hidden !static sm:hidden"
+          : "dock shrink-0 !static sm:hidden"
+      }
+    >
       <Link href="/" className={pathname === "/" ? "dock-active" : undefined}>
         <Home className="size-5" />
         <span className="dock-label">หน้าแรก</span>
