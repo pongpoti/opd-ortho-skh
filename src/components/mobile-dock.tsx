@@ -33,7 +33,7 @@ export function MobileDock() {
       py={2}
     >
       {items.map(({ href, label, Icon }) => {
-        const active = pathname === href;
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <VStack
             key={href}

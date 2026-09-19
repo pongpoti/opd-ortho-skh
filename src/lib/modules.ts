@@ -3,15 +3,15 @@ export type AppModule = {
   name: string;
   description: string;
   href: string;
-  icon: "clock";
+  icon: "chart";
 };
 
 export const modules: AppModule[] = [
   {
-    slug: "waiting-time",
-    name: "ระยะเวลารอคอย",
-    description: "คำนวณระยะเวลารอคอยเฉลี่ยของผู้ป่วยนอกจากไฟล์ CSV รายเดือน",
-    href: "/waiting-time",
-    icon: "clock",
+    slug: "statistics",
+    name: "สถิติ",
+    description: "รายงานและสถิติของแผนก",
+    href: "/statistics",
+    icon: "chart",
   },
 ];
