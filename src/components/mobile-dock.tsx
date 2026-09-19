@@ -11,7 +11,7 @@ export function MobileDock() {
   const pathname = usePathname();
 
   return (
-    <div className="dock fixed inset-x-0 bottom-0 z-50 sm:hidden">
+    <div className="dock shrink-0 sm:hidden">
       <Link href="/" className={pathname === "/" ? "dock-active" : undefined}>
         <Home className="size-5" />
         <span className="dock-label">หน้าแรก</span>

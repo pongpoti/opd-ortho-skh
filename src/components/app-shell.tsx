@@ -16,8 +16,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
-      <div className="navbar bg-primary text-primary-content sticky top-0 z-50 shadow-sm">
+    <div className="flex flex-col overflow-hidden" style={{ height: "var(--app-vh)" }}>
+      <div className="navbar bg-primary text-primary-content shrink-0 shadow-sm">
         <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
             <Bone className="size-5" />
@@ -65,7 +65,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </div>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 pb-24 sm:pb-8">
+      <main className="mx-auto w-full min-h-0 max-w-5xl flex-1 overflow-y-auto px-6 py-8">
         {children}
       </main>
       <MobileDock />
