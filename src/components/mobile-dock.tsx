@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { modules } from "@/lib/modules";
 import { AUTH_ROUTES } from "@/lib/auth-routes";
+import { useResyncedPathname } from "@/lib/use-resynced-pathname";
 
 export function MobileDock() {
-  const pathname = usePathname();
+  const pathname = useResyncedPathname();
   const hidden = AUTH_ROUTES.includes(pathname);
 
   return (
