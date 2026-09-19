@@ -19,13 +19,13 @@ export function DesktopNav() {
           <Button
             key={mod.slug}
             asChild
-            size="md"
+            size="lg"
             variant={active ? "subtle" : "ghost"}
             colorPalette="brand"
             fontWeight={active ? "semibold" : "medium"}
           >
             <NextLink href={mod.href}>
-              <Icon size={18} />
+              <Icon size={20} />
               {mod.name}
             </NextLink>
           </Button>

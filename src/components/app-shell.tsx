@@ -5,12 +5,7 @@ import { Bone } from "lucide-react";
 import { auth } from "@/auth";
 import { DesktopNav } from "@/components/desktop-nav";
 import { MobileDock } from "@/components/mobile-dock";
-
-const ROLE_LABEL: Record<string, string> = {
-  admin: "ผู้ดูแลระบบ",
-  doctor: "แพทย์",
-  nurse: "พยาบาล",
-};
+import { SecondaryNav } from "@/components/secondary-nav";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -45,14 +40,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   <Avatar.Fallback />
                 </Avatar.Root>
               )}
-              <Text fontSize="sm">
+              <Text fontSize="sm" truncate minW={0} maxW={{ base: "28", sm: "48" }}>
                 {session.user.firstName ?? session.user.lineDisplayName}
-                {session.user.role && ` (${ROLE_LABEL[session.user.role]})`}
               </Text>
             </HStack>
           )}
         </Flex>
       </Box>
+
+      <SecondaryNav />
 
       <Box as="main" mx="auto" w="full" minH={0} maxW="5xl" flex="1" overflowY="auto" px={6} py={8}>
         {children}
