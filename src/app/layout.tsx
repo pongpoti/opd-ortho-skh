@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
-import { Noto_Sans, Noto_Sans_Thai } from "next/font/google";
+import { IBM_Plex_Sans, Sarabun } from "next/font/google";
 import "./globals.css";
 
 import { ViewportHeightSync } from "@/components/viewport-height-sync";
+import { Provider } from "@/components/ui/provider";
+import { BackgroundGradient } from "@/components/ui/background-gradient";
 
-const notoSansThai = Noto_Sans_Thai({
-  variable: "--font-noto-sans-thai",
+const sarabun = Sarabun({
+  variable: "--font-sarabun",
   subsets: ["thai", "latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const notoSans = Noto_Sans({
-  variable: "--font-noto-sans",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -25,11 +27,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="th"
-      className={`${notoSansThai.variable} ${notoSans.variable} h-full antialiased`}
+      className={`${sarabun.variable} ${plexSans.variable}`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-base-200 text-base-content">
-        <ViewportHeightSync />
-        {children}
+      <body>
+        <Provider>
+          <BackgroundGradient />
+          <ViewportHeightSync />
+          {children}
+        </Provider>
       </body>
     </html>
   );
