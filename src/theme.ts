@@ -41,6 +41,14 @@ const config = defineConfig({
             value: { _light: "rgba(255, 255, 255, 0.4)", _dark: "rgba(255, 255, 255, 0.08)" },
           },
         },
+        weekend: {
+          fg: { value: { _light: "#4d76b0", _dark: "#8fb3e0" } },
+          subtle: { value: { _light: "#dee8f5", _dark: "#16283b" } },
+        },
+        holiday: {
+          fg: { value: { _light: "#cc5a26", _dark: "#e8935e" } },
+          subtle: { value: { _light: "#f8ddc9", _dark: "#3a2617" } },
+        },
       },
       shadows: {
         heading: {
