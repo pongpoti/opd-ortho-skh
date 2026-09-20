@@ -88,7 +88,10 @@ export function HnInput({ value, onChange, ariaLabel = "HN", describedBy }: HnIn
           onChange={(e) => handleChange(i, e)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
-          onFocus={(e) => e.target.select()}
+          onFocus={(e) => {
+            e.target.select();
+            e.target.scrollIntoView({ block: "center", behavior: "smooth" });
+          }}
         />
       ))}
     </HStack>
