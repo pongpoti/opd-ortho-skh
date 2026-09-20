@@ -24,9 +24,9 @@ export function MobileDock() {
     <Flex
       flexShrink={0}
       display={{ base: "flex", sm: "none" }}
-      bg="glass.bg"
+      bg="dock.bg"
       borderTopWidth="1px"
-      borderColor="glass.border"
+      borderColor="dock.border"
       backdropFilter="blur(16px)"
       justify="space-around"
       align="center"
