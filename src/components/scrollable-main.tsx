@@ -13,7 +13,19 @@ export function ScrollableMain({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <Box as="main" ref={ref} mx="auto" w="full" minH={0} maxW="5xl" flex="1" overflowY="auto" px={6} py={8}>
+    <Box
+      as="main"
+      ref={ref}
+      mx="auto"
+      w="full"
+      minH={0}
+      maxW="5xl"
+      flex="1"
+      overflowY="auto"
+      px={6}
+      pt={8}
+      pb={{ base: "calc(2rem + var(--dock-h, 5.5rem))", sm: 8 }}
+    >
       {children}
     </Box>
   );
