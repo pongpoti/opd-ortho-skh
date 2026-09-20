@@ -17,7 +17,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { DUTY_LABELS, DUTY_ORDER, dutyApplies, getDutyDay } from "../lib/duty-data";
-import { DUTY_ICONS } from "../lib/duty-icons";
+import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -224,7 +224,7 @@ export function DutyScheduleCalendar() {
                     const name = selectedDuty?.entries[key];
                     return (
                       <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
-                        <Box color="fg.muted" flexShrink={0}>
+                        <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
                           <Icon size={18} />
                         </Box>
                         <VStack align="start" gap={0} flex="1" minW={0}>

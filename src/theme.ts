@@ -55,6 +55,13 @@ const config = defineConfig({
           fg: { value: { _light: "#cc5a26", _dark: "#e8935e" } },
           subtle: { value: { _light: "#f8ddc9", _dark: "#3a2617" } },
         },
+        duty: {
+          d1: { value: { _light: "#2f6fb0", _dark: "#7cabe0" } },
+          d2: { value: { _light: "#7c5cbf", _dark: "#b79ce8" } },
+          d3: { value: { _light: "#b8842a", _dark: "#e0b45f" } },
+          d4: { value: { _light: "#2f9e6b", _dark: "#6fcf9e" } },
+          d5: { value: { _light: "#d1483f", _dark: "#f08a83" } },
+        },
       },
     },
   },

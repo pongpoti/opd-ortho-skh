@@ -1,8 +1,9 @@
 import NextLink from "next/link";
-import { Avatar, Box, Flex, HStack, Link as ChakraLink, Text } from "@chakra-ui/react";
+import { Avatar, Box, Flex, HStack, Link as ChakraLink } from "@chakra-ui/react";
 import { Bone } from "lucide-react";
 
 import { auth } from "@/auth";
+import { ColorModeToggle } from "@/components/color-mode-toggle";
 import { DesktopNav } from "@/components/desktop-nav";
 import { MobileDock } from "@/components/mobile-dock";
 import { ScrollableMain } from "@/components/scrollable-main";
@@ -33,19 +34,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
           <DesktopNav />
 
-          {session?.user?.isRegistered && (
-            <HStack ml="auto" gap={3}>
-              {session.user.lineImage && (
-                <Avatar.Root size="sm">
-                  <Avatar.Image src={session.user.lineImage} alt="" />
-                  <Avatar.Fallback />
-                </Avatar.Root>
-              )}
-              <Text fontSize="sm" truncate minW={0} maxW={{ base: "28", sm: "48" }}>
-                {session.user.firstName ?? session.user.lineDisplayName}
-              </Text>
-            </HStack>
-          )}
+          <HStack ml="auto" gap={2}>
+            {session?.user?.isRegistered && session.user.lineImage && (
+              <Avatar.Root size="sm">
+                <Avatar.Image src={session.user.lineImage} alt="" />
+                <Avatar.Fallback />
+              </Avatar.Root>
+            )}
+            <ColorModeToggle />
+          </HStack>
         </Flex>
       </Box>
 
