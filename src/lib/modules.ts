@@ -5,7 +5,7 @@ export type AppModule = {
   name: string;
   description: string;
   href: string;
-  icon: "chart" | "calendar";
+  icon: "chart" | "calendar" | "nurse";
   subitems?: StatisticsReport[];
 };
 
@@ -24,5 +24,12 @@ export const modules: AppModule[] = [
     description: "ตารางเวรแพทย์และพยาบาลประจำวัน",
     href: "/duty-schedule",
     icon: "calendar",
+  },
+  {
+    slug: "cast-room",
+    name: "เวรห้องเฝือก",
+    description: "บันทึกผู้ป่วยใส่เฝือกประจำเวร",
+    href: "/cast-room",
+    icon: "nurse",
   },
 ];
