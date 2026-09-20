@@ -3,8 +3,8 @@ export type DutyKey = "d1" | "d2" | "d3" | "d4" | "d5";
 export const DUTY_ORDER: DutyKey[] = ["d1", "d2", "d3", "d4", "d5"];
 
 export const DUTY_LABELS: Record<DutyKey, string> = {
-  d1: "แพทย์ประจำบ้าน (Staff)",
-  d2: "แพทย์ฝึกหัด (Intern)",
+  d1: "เวร staff",
+  d2: "เวร intern",
   d3: "OPD ท่าฉลอม",
   d4: "OPD เกตุม",
   d5: "เวรห้องเฝือก",

@@ -5,6 +5,7 @@ import { Bone } from "lucide-react";
 import { auth } from "@/auth";
 import { DesktopNav } from "@/components/desktop-nav";
 import { MobileDock } from "@/components/mobile-dock";
+import { ScrollableMain } from "@/components/scrollable-main";
 import { SecondaryNav } from "@/components/secondary-nav";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -50,9 +51,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
       <SecondaryNav />
 
-      <Box as="main" mx="auto" w="full" minH={0} maxW="5xl" flex="1" overflowY="auto" px={6} py={8}>
-        {children}
-      </Box>
+      <ScrollableMain>{children}</ScrollableMain>
 
       <MobileDock />
     </Box>
