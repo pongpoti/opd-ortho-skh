@@ -19,6 +19,7 @@ export function RegisterForm({
   const [position, setPosition] = useState("");
   const [name, setName] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleReviewClick() {
@@ -28,7 +29,7 @@ export function RegisterForm({
   }
 
   function handleConfirm() {
-    setConfirmOpen(false);
+    setIsSubmitting(true);
     formRef.current?.requestSubmit();
   }
 
@@ -114,7 +115,12 @@ export function RegisterForm({
         </VStack>
       </form>
 
-      <Dialog.Root open={confirmOpen} onOpenChange={(e) => setConfirmOpen(e.open)}>
+      <Dialog.Root
+        open={confirmOpen}
+        onOpenChange={(e) => {
+          if (!isSubmitting) setConfirmOpen(e.open);
+        }}
+      >
         <Portal>
           <Dialog.Backdrop backdropFilter="blur(4px)" />
           <Dialog.Positioner>
@@ -147,10 +153,15 @@ export function RegisterForm({
                 </VStack>
               </Dialog.Body>
               <Dialog.Footer>
-                <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+                <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={isSubmitting}>
                   แก้ไขข้อมูล
                 </Button>
-                <Button colorPalette="brand" onClick={handleConfirm}>
+                <Button
+                  colorPalette="brand"
+                  onClick={handleConfirm}
+                  loading={isSubmitting}
+                  loadingText="กำลังบันทึก..."
+                >
                   ยืนยัน
                 </Button>
               </Dialog.Footer>

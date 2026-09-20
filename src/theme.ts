@@ -46,6 +46,9 @@ const config = defineConfig({
         },
         dock: {
           border: { value: { _light: "rgba(31, 143, 134, 0.30)", _dark: "rgba(75, 196, 182, 0.22)" } },
+          home: { value: { _light: "#1f8f86", _dark: "#5ecdc0" } },
+          chart: { value: { _light: "#3574b5", _dark: "#7fb1e6" } },
+          calendar: { value: { _light: "#c17a2e", _dark: "#e8ab5f" } },
         },
         weekend: {
           fg: { value: { _light: "#4d76b0", _dark: "#8fb3e0" } },
