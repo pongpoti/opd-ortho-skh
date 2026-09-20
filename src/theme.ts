@@ -41,11 +41,9 @@ const config = defineConfig({
             value: { _light: "rgba(255, 255, 255, 0.4)", _dark: "rgba(255, 255, 255, 0.08)" },
           },
         },
-        card: {
-          bg: { value: { _light: "rgba(250, 244, 231, 0.75)", _dark: "rgba(46, 39, 29, 0.68)" } },
-          border: { value: { _light: "rgba(200, 172, 122, 0.35)", _dark: "rgba(214, 188, 140, 0.16)" } },
-          solid: { value: { _light: "#fffaf0", _dark: "#3a3020" } },
-          cell: { value: { _light: "#fdf9f0", _dark: "#2a2318" } },
+        dock: {
+          bg: { value: { _light: "rgba(31, 143, 134, 0.14)", _dark: "rgba(75, 196, 182, 0.16)" } },
+          border: { value: { _light: "rgba(31, 143, 134, 0.30)", _dark: "rgba(75, 196, 182, 0.22)" } },
         },
         weekend: {
           fg: { value: { _light: "#4d76b0", _dark: "#8fb3e0" } },

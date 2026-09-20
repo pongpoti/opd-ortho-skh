@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { IBM_Plex_Sans, Sarabun } from "next/font/google";
 import "./globals.css";
 
+import { ColorModeSync } from "@/components/color-mode-sync";
 import { ViewportHeightSync } from "@/components/viewport-height-sync";
 import { Provider } from "@/components/ui/provider";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { DeviceGate } from "@/components/device-gate";
+
+const SET_INITIAL_COLOR_MODE = `
+(function () {
+  try {
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.documentElement.classList.add("dark");
+    }
+  } catch (e) {}
+})();
+`;
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -31,7 +43,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body>
+        <Script id="set-initial-color-mode" strategy="beforeInteractive">
+          {SET_INITIAL_COLOR_MODE}
+        </Script>
         <Provider>
+          <ColorModeSync />
           <BackgroundGradient />
           <ViewportHeightSync />
           <DeviceGate>{children}</DeviceGate>

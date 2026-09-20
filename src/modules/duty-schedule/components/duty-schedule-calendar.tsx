@@ -107,9 +107,9 @@ export function DutyScheduleCalendar() {
   return (
     <VStack align="stretch" gap={4}>
       <Flex align="center" justify="space-between">
-        <Heading size="2xl" textShadow="heading">
+        <Heading size="lg" textShadow="heading">
           {THAI_MONTHS[view.month]}{" "}
-          <Text as="span" fontSize="lg" fontWeight="medium" color="fg.muted">
+          <Text as="span" fontSize="sm" fontWeight="medium" color="fg.muted">
             {view.year + BE_OFFSET}
           </Text>
         </Heading>
@@ -123,15 +123,15 @@ export function DutyScheduleCalendar() {
         </HStack>
       </Flex>
 
-      <GlassCard p={6} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onWheel={handleWheel}>
-        <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={3}>
+      <GlassCard p={4} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onWheel={handleWheel}>
+        <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={2}>
           {THAI_WD_SHORT.map((wd) => (
-            <Text key={wd} textAlign="center" fontSize="sm" fontWeight="bold" color="fg.muted">
+            <Text key={wd} textAlign="center" fontSize="11px" fontWeight="bold" color="fg.muted">
               {wd}
             </Text>
           ))}
         </Grid>
-        <Grid templateColumns="repeat(7, 1fr)" gap={2}>
+        <Grid templateColumns="repeat(7, 1fr)" gap={1.5}>
           {cells.map((cell) => {
             const weekday = new Date(cell.year, cell.month, cell.day).getDay();
             const isWeekend = weekday === 0 || weekday === 6;
@@ -148,20 +148,20 @@ export function DutyScheduleCalendar() {
                 key={`${cell.year}-${cell.month}-${cell.day}-${cell.outside}`}
                 as="button"
                 onClick={() => !cell.outside && setSelected({ year: cell.year, month: cell.month, day: cell.day })}
+                aspectRatio={1}
                 w="full"
-                minH="58px"
                 borderRadius="lg"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
                 fontFamily="var(--font-plex-sans)"
                 fontWeight="semibold"
-                fontSize="md"
-                bg={cell.outside ? "transparent" : isHoliday ? "holiday.subtle" : isWeekend ? "weekend.subtle" : "card.cell"}
+                fontSize="sm"
+                bg={cell.outside ? "transparent" : isHoliday ? "holiday.subtle" : isWeekend ? "weekend.subtle" : "bg.panel"}
                 color={cell.outside ? "fg.muted" : isHoliday ? "holiday.fg" : isWeekend ? "weekend.fg" : "fg"}
                 opacity={cell.outside ? 0.5 : 1}
                 borderWidth={isToday ? "2px" : "1px"}
-                borderColor={isToday ? "brand.solid" : "card.border"}
+                borderColor={isToday ? "brand.solid" : "glass.border"}
                 cursor={cell.outside ? "default" : "pointer"}
                 _active={cell.outside ? undefined : { transform: "scale(0.94)" }}
               >
@@ -184,14 +184,7 @@ export function DutyScheduleCalendar() {
         <Portal>
           <Drawer.Backdrop backdropFilter="blur(4px)" />
           <Drawer.Positioner>
-            <Drawer.Content
-              bg="card.solid"
-              borderTopWidth="1px"
-              borderColor="card.border"
-              borderRadius="20px 20px 0 0"
-              boxShadow="0 -8px 32px rgba(15, 23, 32, 0.16)"
-              maxH="80vh"
-            >
+            <Drawer.Content bg="glass.bg" backdropFilter="blur(16px)" borderTopWidth="1px" borderColor="glass.border" borderRadius="20px 20px 0 0" maxH="80vh">
               <Drawer.Header display="flex" alignItems="flex-start" justifyContent="space-between" gap={3}>
                 <VStack align="start" gap={0}>
                   <Drawer.Title fontSize="xl">
@@ -230,7 +223,7 @@ export function DutyScheduleCalendar() {
                     const Icon = DUTY_ICONS[key];
                     const name = selectedDuty?.entries[key];
                     return (
-                      <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="card.border" _first={{ borderTopWidth: 0 }}>
+                      <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
                         <Box color="fg.muted" flexShrink={0}>
                           <Icon size={18} />
                         </Box>

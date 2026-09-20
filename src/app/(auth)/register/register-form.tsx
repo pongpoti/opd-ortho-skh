@@ -119,9 +119,10 @@ export function RegisterForm({
           <Dialog.Backdrop backdropFilter="blur(4px)" />
           <Dialog.Positioner>
             <Dialog.Content
-              bg="card.solid"
+              bg="glass.bg"
+              backdropFilter="blur(16px)"
               borderWidth="1px"
-              borderColor="card.border"
+              borderColor="glass.border"
             >
               <Dialog.Header>
                 <Dialog.Title>ยืนยันข้อมูลลงทะเบียน</Dialog.Title>
