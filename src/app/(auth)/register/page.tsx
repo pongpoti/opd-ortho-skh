@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Alert, Heading, Text, VStack } from "@chakra-ui/react";
 
@@ -49,6 +50,13 @@ async function registerAction(formData: FormData) {
     redirect("/register?error=1");
   }
 
+  const claimedByOther = await db.query.users.findFirst({
+    where: and(eq(users.firstName, firstName), eq(users.lastName, lastName)),
+  });
+  if (claimedByOther) {
+    redirect("/register?error=duplicate");
+  }
+
   await db.insert(users).values({
     lineUserId: session.user.lineUserId,
     displayName: session.user.lineDisplayName,
@@ -59,6 +67,11 @@ async function registerAction(formData: FormData) {
 
   redirect("/");
 }
+
+const ERROR_MESSAGES: Record<string, string> = {
+  duplicate: "ชื่อนี้มีผู้ลงทะเบียนไปแล้ว หากนี่คือข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ",
+};
+const DEFAULT_ERROR_MESSAGE = "กรุณากรอกข้อมูลให้ครบถ้วนและเลือกตำแหน่ง";
 
 export default async function RegisterPage({
   searchParams,
@@ -82,7 +95,7 @@ export default async function RegisterPage({
           <Alert.Root status="error">
             <Alert.Indicator />
             <Alert.Content>
-              <Alert.Description>กรุณากรอกข้อมูลให้ครบถ้วนและเลือกตำแหน่ง</Alert.Description>
+              <Alert.Description>{ERROR_MESSAGES[error] ?? DEFAULT_ERROR_MESSAGE}</Alert.Description>
             </Alert.Content>
           </Alert.Root>
         )}
