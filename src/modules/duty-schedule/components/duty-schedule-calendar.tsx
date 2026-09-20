@@ -157,11 +157,11 @@ export function DutyScheduleCalendar() {
                 fontFamily="var(--font-plex-sans)"
                 fontWeight="semibold"
                 fontSize="md"
-                bg={cell.outside ? "transparent" : isHoliday ? "holiday.subtle" : isWeekend ? "weekend.subtle" : "bg.panel"}
+                bg={cell.outside ? "transparent" : isHoliday ? "holiday.subtle" : isWeekend ? "weekend.subtle" : "card.cell"}
                 color={cell.outside ? "fg.muted" : isHoliday ? "holiday.fg" : isWeekend ? "weekend.fg" : "fg"}
                 opacity={cell.outside ? 0.5 : 1}
                 borderWidth={isToday ? "2px" : "1px"}
-                borderColor={isToday ? "brand.solid" : "glass.border"}
+                borderColor={isToday ? "brand.solid" : "card.border"}
                 cursor={cell.outside ? "default" : "pointer"}
                 _active={cell.outside ? undefined : { transform: "scale(0.94)" }}
               >
@@ -184,7 +184,14 @@ export function DutyScheduleCalendar() {
         <Portal>
           <Drawer.Backdrop backdropFilter="blur(4px)" />
           <Drawer.Positioner>
-            <Drawer.Content bg="glass.bg" backdropFilter="blur(16px)" borderTopWidth="1px" borderColor="glass.border" borderRadius="20px 20px 0 0" maxH="80vh">
+            <Drawer.Content
+              bg="card.solid"
+              borderTopWidth="1px"
+              borderColor="card.border"
+              borderRadius="20px 20px 0 0"
+              boxShadow="0 -8px 32px rgba(15, 23, 32, 0.16)"
+              maxH="80vh"
+            >
               <Drawer.Header display="flex" alignItems="flex-start" justifyContent="space-between" gap={3}>
                 <VStack align="start" gap={0}>
                   <Drawer.Title fontSize="xl">
@@ -223,7 +230,7 @@ export function DutyScheduleCalendar() {
                     const Icon = DUTY_ICONS[key];
                     const name = selectedDuty?.entries[key];
                     return (
-                      <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
+                      <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="card.border" _first={{ borderTopWidth: 0 }}>
                         <Box color="fg.muted" flexShrink={0}>
                           <Icon size={18} />
                         </Box>
