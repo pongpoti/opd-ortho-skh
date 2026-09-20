@@ -118,14 +118,14 @@ export function OpdWaitTimeCalculator() {
   }
 
   return (
-    <VStack gap={6} align="stretch">
+    <VStack gap={8} align="stretch">
       <GlassCard p={8}>
-        <VStack align="stretch" gap={3}>
+        <VStack align="stretch" gap={5}>
           <HStack gap={2}>
             <StepBadge n={1} />
             <Text fontWeight="medium">ระบุเดือนและปี</Text>
           </HStack>
-          <HStack gap={4} align="start" flexWrap="wrap">
+          <HStack gap={6} align="start" flexWrap="wrap">
             <Field.Root flex="1" minW="200px">
               <Field.Label>เดือน</Field.Label>
               <NativeSelect.Root>
@@ -175,13 +175,13 @@ export function OpdWaitTimeCalculator() {
       </GlassCard>
 
       <GlassCard p={8}>
-        <VStack align="stretch" gap={4}>
-          <VStack align="stretch" gap={3} opacity={canUploadFile1 ? 1 : 0.6}>
+        <VStack align="stretch" gap={6}>
+          <VStack align="stretch" gap={5} opacity={canUploadFile1 ? 1 : 0.6}>
             <HStack gap={2}>
               <StepBadge n={2} />
               <Text fontWeight="medium">อัปโหลดไฟล์ข้อมูล</Text>
             </HStack>
-            <HStack gap={4} align="start" flexWrap="wrap">
+            <HStack gap={6} align="start" flexWrap="wrap">
               <Field.Root flex="1" minW="200px">
                 <Field.Label>ไฟล์ที่ 1 (วันที่ 1–15)</Field.Label>
                 <Input
@@ -204,6 +204,21 @@ export function OpdWaitTimeCalculator() {
                 />
               </Field.Root>
             </HStack>
+
+            {(file1 || file2) && (
+              <Alert.Root status="info">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>ไฟล์ที่อัปโหลดแล้ว</Alert.Title>
+                  <Alert.Description>
+                    <VStack align="start" gap={0.5}>
+                      {file1 && <Text>ไฟล์ที่ 1: {file1.name}</Text>}
+                      {file2 && <Text>ไฟล์ที่ 2: {file2.name}</Text>}
+                    </VStack>
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
           </VStack>
 
           <Box>
@@ -225,7 +240,7 @@ export function OpdWaitTimeCalculator() {
 
       {result && (
         <GlassCard p={8}>
-          <VStack gap={4} align="stretch">
+          <VStack gap={6} align="stretch">
             <VStack align="start" gap={1}>
               <Heading size="lg">
                 <HStack gap={2}>
