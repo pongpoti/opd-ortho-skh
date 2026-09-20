@@ -1,3 +1,5 @@
+import { getThaiHolidayName } from "./thai-holidays";
+
 export type DutyKey = "d1" | "d2" | "d3" | "d4" | "d5";
 
 export const DUTY_ORDER: DutyKey[] = ["d1", "d2", "d3", "d4", "d5"];
@@ -19,10 +21,17 @@ export function dutyApplies(key: DutyKey, weekday: number): boolean {
 
 export type DutyDay = {
   holiday: boolean;
+  holidayLabel: string | null;
   entries: Partial<Record<DutyKey, string>>;
 };
 
-type RawEntry = { holiday?: true } & Partial<Record<DutyKey, string>>;
+/**
+ * `holidayLabel` overrides the name shown for a holiday-flagged day — use it
+ * for internal special days (e.g. "RCOST") that aren't in the official Thai
+ * holiday calendar. Official holidays resolve their name automatically from
+ * `thai-holidays.ts` and don't need it set.
+ */
+type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyKey, string>>;
 
 /**
  * Verified duty rosters, keyed by "YYYY-M" (month is 0-indexed) then day of
@@ -54,9 +63,9 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
     19: { d1: "เทพรักษา", d3: "วรงค์พร" },
     20: { d1: "ธีรฉัตต์", d3: "สิทธิพงศ์" },
     21: { d1: "ชัยวัฒน์" },
-    22: { d1: "เทพรักษา", holiday: true }, // d4 pending confirmation
-    23: { d1: "เทพรักษา", holiday: true },
-    24: { d1: "เทพรักษา", holiday: true },
+    22: { d1: "เทพรักษา", holiday: true, holidayLabel: "RCOST" }, // d4 pending confirmation
+    23: { d1: "เทพรักษา", holiday: true, holidayLabel: "RCOST" },
+    24: { d1: "เทพรักษา", holiday: true, holidayLabel: "RCOST" },
     25: { d1: "เฉลิมพล" },
     26: { d1: "ปองสิทธิ์", d3: "ธนกร" },
     27: { d1: "ปิติพงศ์", d3: "โอภาส" },
@@ -69,8 +78,12 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
 
 export function getDutyDay(year: number, month: number, day: number): DutyDay {
   const raw = VERIFIED[`${year}-${month}`]?.[day];
-  if (!raw) return { holiday: false, entries: {} };
+  if (!raw) return { holiday: false, holidayLabel: null, entries: {} };
 
-  const { holiday, ...entries } = raw;
-  return { holiday: !!holiday, entries };
+  const { holiday, holidayLabel, ...entries } = raw;
+  return {
+    holiday: !!holiday,
+    holidayLabel: holiday ? (holidayLabel ?? getThaiHolidayName(month, day)) : null,
+    entries,
+  };
 }
