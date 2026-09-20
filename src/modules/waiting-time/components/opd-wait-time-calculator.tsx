@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -45,11 +45,21 @@ const MONTHS = [
 
 const BUDDHIST_YEAR_VALID = /^25\d{2}$/;
 
-function isValidPartialBuddhistYear(value: string): boolean {
-  if (!/^\d{0,4}$/.test(value)) return false;
-  if (value.length >= 1 && value[0] !== "2") return false;
-  if (value.length >= 2 && value[1] !== "5") return false;
-  return true;
+function YearDigitBox({
+  ref,
+  ...props
+}: React.ComponentProps<typeof Input> & { ref?: React.Ref<HTMLInputElement> }) {
+  return (
+    <Input
+      ref={ref}
+      w="44px"
+      px={0}
+      textAlign="center"
+      fontSize="lg"
+      fontWeight="bold"
+      {...props}
+    />
+  );
 }
 
 function StepBadge({ n }: { n: number }) {
@@ -62,13 +72,15 @@ function StepBadge({ n }: { n: number }) {
 
 export function OpdWaitTimeCalculator() {
   const [month, setMonth] = useState<string>("");
-  const [buddhistYear, setBuddhistYear] = useState("");
+  const [buddhistYear, setBuddhistYear] = useState("25");
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const digit3Ref = useRef<HTMLInputElement>(null);
+  const digit4Ref = useRef<HTMLInputElement>(null);
 
   const isMonthFilled = month !== "";
   const isYearValid = BUDDHIST_YEAR_VALID.test(buddhistYear);
@@ -77,10 +89,23 @@ export function OpdWaitTimeCalculator() {
 
   const canSubmit = isMonthFilled && isYearValid && file1 && file2 && !loading;
 
-  function handleYearChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const next = e.target.value;
-    if (isValidPartialBuddhistYear(next)) {
-      setBuddhistYear(next);
+  const yearDigit3 = buddhistYear[2] ?? "";
+  const yearDigit4 = buddhistYear[3] ?? "";
+
+  function handleYearDigit3Change(e: React.ChangeEvent<HTMLInputElement>) {
+    const digit = e.target.value.replace(/\D/g, "").slice(-1);
+    setBuddhistYear(`25${digit}${yearDigit4}`);
+    if (digit) digit4Ref.current?.focus();
+  }
+
+  function handleYearDigit4Change(e: React.ChangeEvent<HTMLInputElement>) {
+    const digit = e.target.value.replace(/\D/g, "").slice(-1);
+    setBuddhistYear(`25${yearDigit3}${digit}`);
+  }
+
+  function handleYearDigit4KeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !yearDigit4) {
+      digit3Ref.current?.focus();
     }
   }
 
@@ -147,16 +172,31 @@ export function OpdWaitTimeCalculator() {
 
             <Field.Root flex="1" minW="200px">
               <Field.Label>ปี (พ.ศ.)</Field.Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="25[0-9]{2}"
-                maxLength={4}
-                placeholder="เช่น 2568"
-                value={buddhistYear}
-                onChange={handleYearChange}
-                disabled={!isMonthFilled}
-              />
+              <HStack gap={2}>
+                <YearDigitBox value="2" disabled readOnly aria-label="ปี พ.ศ. หลักที่ 1" />
+                <YearDigitBox value="5" disabled readOnly aria-label="ปี พ.ศ. หลักที่ 2" />
+                <YearDigitBox
+                  ref={digit3Ref}
+                  value={yearDigit3}
+                  onChange={handleYearDigit3Change}
+                  onFocus={(e) => e.target.select()}
+                  disabled={!isMonthFilled}
+                  inputMode="numeric"
+                  maxLength={1}
+                  aria-label="ปี พ.ศ. หลักที่ 3"
+                />
+                <YearDigitBox
+                  ref={digit4Ref}
+                  value={yearDigit4}
+                  onChange={handleYearDigit4Change}
+                  onKeyDown={handleYearDigit4KeyDown}
+                  onFocus={(e) => e.target.select()}
+                  disabled={!isMonthFilled}
+                  inputMode="numeric"
+                  maxLength={1}
+                  aria-label="ปี พ.ศ. หลักที่ 4"
+                />
+              </HStack>
               <Field.HelperText>รับเฉพาะปี พ.ศ. 4 หลัก รูปแบบ 25xx</Field.HelperText>
             </Field.Root>
           </HStack>
