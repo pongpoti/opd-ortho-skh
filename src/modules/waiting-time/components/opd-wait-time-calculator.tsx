@@ -109,6 +109,11 @@ export function OpdWaitTimeCalculator() {
     }
   }
 
+  function handleYearDigitFocus(e: React.FocusEvent<HTMLInputElement>) {
+    e.target.select();
+    e.target.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+
   async function handleSubmit() {
     setError(null);
     setResult(null);
@@ -179,9 +184,11 @@ export function OpdWaitTimeCalculator() {
                   ref={digit3Ref}
                   value={yearDigit3}
                   onChange={handleYearDigit3Change}
-                  onFocus={(e) => e.target.select()}
+                  onFocus={handleYearDigitFocus}
                   disabled={!isMonthFilled}
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
                   maxLength={1}
                   aria-label="ปี พ.ศ. หลักที่ 3"
                 />
@@ -190,9 +197,11 @@ export function OpdWaitTimeCalculator() {
                   value={yearDigit4}
                   onChange={handleYearDigit4Change}
                   onKeyDown={handleYearDigit4KeyDown}
-                  onFocus={(e) => e.target.select()}
+                  onFocus={handleYearDigitFocus}
                   disabled={!isMonthFilled}
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
                   maxLength={1}
                   aria-label="ปี พ.ศ. หลักที่ 4"
                 />
