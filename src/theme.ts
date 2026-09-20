@@ -49,6 +49,7 @@ const config = defineConfig({
           home: { value: { _light: "#1f8f86", _dark: "#5ecdc0" } },
           chart: { value: { _light: "#3574b5", _dark: "#7fb1e6" } },
           calendar: { value: { _light: "#c17a2e", _dark: "#e8ab5f" } },
+          nurse: { value: { _light: "#c2477e", _dark: "#e896b8" } },
         },
         weekend: {
           fg: { value: { _light: "#4d76b0", _dark: "#8fb3e0" } },
