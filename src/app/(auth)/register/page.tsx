@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Alert, Heading, Text, VStack } from "@chakra-ui/react";
 
@@ -18,8 +19,10 @@ async function registerAction(formData: FormData) {
   "use server";
 
   if (formData.get("previewMode") === "1") {
-    // Preview/test mode: exercise the client flow only, no real auth or DB write.
-    redirect("/register?preview=1&submitted=1");
+    // Preview/test mode: exercise the client flow only, no real auth or DB
+    // write. The preview_ok cookie (set by proxy.ts) carries the bypass
+    // through this redirect, so the real secret doesn't need to be repeated.
+    redirect("/register?submitted=1");
   }
 
   const session = await auth();
@@ -71,7 +74,11 @@ export default async function RegisterPage({
   searchParams: Promise<{ error?: string; preview?: string; submitted?: string }>;
 }) {
   const { error, preview, submitted } = await searchParams;
-  const isPreview = preview === "1";
+  const previewToken = process.env.REGISTER_PREVIEW_TOKEN;
+  const cookieStore = await cookies();
+  const isPreview =
+    (!!previewToken && preview === previewToken) ||
+    cookieStore.get("preview_ok")?.value === "1";
 
   if (!isPreview) {
     const session = await auth();

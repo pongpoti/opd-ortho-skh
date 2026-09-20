@@ -17,7 +17,9 @@ export function DeviceGate({ children }: { children: ReactNode }) {
 
     async function check() {
       // Temporary test-mode bypass: skip the LIFF-in-client check entirely.
-      if (new URLSearchParams(window.location.search).get("preview") === "1") {
+      // Reads a plain "ok" cookie set by proxy.ts after it validated the real
+      // secret server-side -- the secret itself never reaches client code.
+      if (document.cookie.split("; ").includes("preview_ok=1")) {
         if (!cancelled) setStatus("allowed");
         return;
       }
