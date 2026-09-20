@@ -78,12 +78,17 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
 
 export function getDutyDay(year: number, month: number, day: number): DutyDay {
   const raw = VERIFIED[`${year}-${month}`]?.[day];
-  if (!raw) return { holiday: false, holidayLabel: null, entries: {} };
+  const officialName = getThaiHolidayName(month, day);
+
+  if (!raw) {
+    return { holiday: !!officialName, holidayLabel: officialName, entries: {} };
+  }
 
   const { holiday, holidayLabel, ...entries } = raw;
+  const isHoliday = !!holiday || !!officialName;
   return {
-    holiday: !!holiday,
-    holidayLabel: holiday ? (holidayLabel ?? getThaiHolidayName(month, day)) : null,
+    holiday: isHoliday,
+    holidayLabel: isHoliday ? (holidayLabel ?? officialName) : null,
     entries,
   };
 }
