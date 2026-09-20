@@ -173,7 +173,13 @@ export function CastRoomForm() {
 
           <Field.Root>
             <Field.Label>ชื่อ-สกุล</Field.Label>
-            <Input fontSize="16px" value={name} onChange={(e) => setName(e.target.value)} aria-label="ชื่อ-สกุล" />
+            <Input
+              fontSize="16px"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onFocus={(e) => e.target.scrollIntoView({ block: "center", behavior: "smooth" })}
+              aria-label="ชื่อ-สกุล"
+            />
             <Field.HelperText color="fg.muted">อย่าลืมใส่คำนำหน้านะ</Field.HelperText>
           </Field.Root>
         </VStack>
