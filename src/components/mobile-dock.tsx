@@ -12,11 +12,12 @@ export function MobileDock() {
   const pathname = usePathname();
 
   const items = [
-    { href: "/", label: "หน้าแรก", Icon: Home },
+    { href: "/", label: "หน้าแรก", Icon: Home, color: "dock.home" },
     ...modules.map((mod) => ({
       href: mod.href,
       label: mod.name,
       Icon: MODULE_ICONS[mod.icon],
+      color: `dock.${mod.icon}`,
     })),
   ];
 
@@ -35,7 +36,7 @@ export function MobileDock() {
       align="center"
       py={2}
     >
-      {items.map(({ href, label, Icon }) => {
+      {items.map(({ href, label, Icon, color }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <VStack
@@ -44,10 +45,10 @@ export function MobileDock() {
             gap={1}
             flex="1"
             py={1}
-            color={active ? "brand.fg" : "fg.muted"}
+            color={active ? color : "fg.muted"}
           >
             <NextLink href={href}>
-              <Circle size={10} bg={active ? "brand.subtle" : "transparent"}>
+              <Circle size={10} bg={active ? `${color}/15` : "transparent"} color={color}>
                 <Icon size={20} />
               </Circle>
               <Text fontSize="xs" fontWeight={active ? "semibold" : "medium"}>
