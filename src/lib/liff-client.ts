@@ -22,13 +22,4 @@ export function ensureLiffInitWithTimeout(ms = LIFF_INIT_TIMEOUT_MS): Promise<vo
   ]);
 }
 
-export function isMobileOrTabletDevice(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod|android|mobile|tablet/.test(ua)) return true;
-  // iPadOS 13+ reports a desktop Safari user agent by default; catch it via
-  // its touch support, since a real Mac has no touch points.
-  return /macintosh/.test(ua) && navigator.maxTouchPoints > 1;
-}
-
 export { liff };

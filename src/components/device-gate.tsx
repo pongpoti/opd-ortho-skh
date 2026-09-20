@@ -5,7 +5,7 @@ import { Button, Flex, Heading, Text, VStack, Spinner } from "@chakra-ui/react";
 import { Smartphone } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { ensureLiffInitWithTimeout, isMobileOrTabletDevice, liff } from "@/lib/liff-client";
+import { ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
 
 type GateStatus = "checking" | "blocked" | "allowed";
 
@@ -16,11 +16,6 @@ export function DeviceGate({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function check() {
-      if (!isMobileOrTabletDevice()) {
-        if (!cancelled) setStatus("allowed");
-        return;
-      }
-
       try {
         await ensureLiffInitWithTimeout();
         if (!cancelled) setStatus(liff.isInClient() ? "allowed" : "blocked");
