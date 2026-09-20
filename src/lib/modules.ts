@@ -5,7 +5,7 @@ export type AppModule = {
   name: string;
   description: string;
   href: string;
-  icon: "chart";
+  icon: "chart" | "calendar";
   subitems?: StatisticsReport[];
 };
 
@@ -17,5 +17,12 @@ export const modules: AppModule[] = [
     href: "/statistics",
     icon: "chart",
     subitems: statisticsReports,
+  },
+  {
+    slug: "duty-schedule",
+    name: "ตารางเวร",
+    description: "ตารางเวรแพทย์และพยาบาลประจำวัน",
+    href: "/duty-schedule",
+    icon: "calendar",
   },
 ];
