@@ -85,10 +85,10 @@ export function DutyScheduleCalendar() {
     const start = touchStart.current;
     touchStart.current = null;
     if (!start) return;
-    const dy = e.changedTouches[0].clientY - start.y;
     const dx = e.changedTouches[0].clientX - start.x;
-    if (Math.abs(dy) > SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx)) {
-      changeMonth(dy < 0 ? 1 : -1);
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      changeMonth(dx < 0 ? 1 : -1);
     }
   }
 
@@ -123,7 +123,13 @@ export function DutyScheduleCalendar() {
         </HStack>
       </Flex>
 
-      <GlassCard p={4} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onWheel={handleWheel}>
+      <GlassCard
+        p={4}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
+        style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
+      >
         <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={2}>
           {THAI_WD_SHORT.map((wd) => (
             <Text key={wd} textAlign="center" fontSize="11px" fontWeight="bold" color="fg.muted">
@@ -172,9 +178,14 @@ export function DutyScheduleCalendar() {
         </Grid>
       </GlassCard>
 
-      <Text fontSize="xs" color="fg.muted" textAlign="center">
-        แตะวันที่เพื่อดูรายละเอียด
-      </Text>
+      <VStack gap={0.5}>
+        <Text fontSize="xs" color="fg.muted" textAlign="center">
+          แตะวันที่เพื่อดูรายละเอียด
+        </Text>
+        <Text fontSize="xs" color="fg.muted" textAlign="center">
+          ปัดซ้าย-ขวาเพื่อเปลี่ยนเดือน
+        </Text>
+      </VStack>
 
       <Drawer.Root
         placement="bottom"
@@ -206,6 +217,9 @@ export function DutyScheduleCalendar() {
                 {selectedDuty?.holiday && (
                   <Text
                     display="inline-block"
+                    maxW="100%"
+                    truncate
+                    title={selectedDuty.holidayLabel ?? undefined}
                     fontSize="xs"
                     fontWeight="bold"
                     color="holiday.fg"
