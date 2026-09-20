@@ -215,7 +215,7 @@ export function DutyScheduleCalendar() {
                     borderRadius="full"
                     mb={3}
                   >
-                    วันหยุดพิเศษ — แพทย์คนเดิมครอบคลุมหลายวัน
+                    {selectedDuty.holidayLabel ?? "วันหยุดพิเศษ — แพทย์คนเดิมครอบคลุมหลายวัน"}
                   </Text>
                 )}
                 <VStack align="stretch" gap={0}>
