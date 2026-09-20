@@ -121,7 +121,7 @@ export function CastRoomForm() {
             <Text fontWeight="medium">วันที่</Text>
           </HStack>
           <Field.Root maxW="240px">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input type="date" fontSize="16px" value={date} onChange={(e) => setDate(e.target.value)} />
           </Field.Root>
         </VStack>
       </GlassCard>
@@ -173,7 +173,7 @@ export function CastRoomForm() {
 
           <Field.Root>
             <Field.Label>ชื่อ-สกุล</Field.Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} aria-label="ชื่อ-สกุล" />
+            <Input fontSize="16px" value={name} onChange={(e) => setName(e.target.value)} aria-label="ชื่อ-สกุล" />
             <Field.HelperText color="fg.muted">อย่าลืมใส่คำนำหน้านะ</Field.HelperText>
           </Field.Root>
         </VStack>
