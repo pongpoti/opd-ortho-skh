@@ -13,10 +13,8 @@ const POSITION_LABEL: Record<string, string> = {
 
 export function RegisterForm({
   action,
-  previewMode = false,
 }: {
   action: (formData: FormData) => Promise<void>;
-  previewMode?: boolean;
 }) {
   const [position, setPosition] = useState("");
   const [name, setName] = useState("");
@@ -37,7 +35,6 @@ export function RegisterForm({
   return (
     <>
       <form ref={formRef} action={action}>
-        <input type="hidden" name="previewMode" value={previewMode ? "1" : "0"} />
         <VStack gap={4} align="stretch">
           <Field.Root>
             <Field.Label>ตำแหน่ง</Field.Label>

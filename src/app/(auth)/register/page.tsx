@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Alert, Heading, Text, VStack } from "@chakra-ui/react";
 
@@ -17,13 +16,6 @@ export const metadata = {
 
 async function registerAction(formData: FormData) {
   "use server";
-
-  if (formData.get("previewMode") === "1") {
-    // Preview/test mode: exercise the client flow only, no real auth or DB
-    // write. The preview_ok cookie (set by proxy.ts) carries the bypass
-    // through this redirect, so the real secret doesn't need to be repeated.
-    redirect("/register?submitted=1");
-  }
 
   const session = await auth();
   if (!session?.user?.lineUserId) redirect("/login");
@@ -71,45 +63,16 @@ async function registerAction(formData: FormData) {
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; preview?: string; submitted?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { error, preview, submitted } = await searchParams;
-  const previewToken = process.env.REGISTER_PREVIEW_TOKEN;
-  const cookieStore = await cookies();
-  const isPreview =
-    (!!previewToken && preview === previewToken) ||
-    cookieStore.get("preview_ok")?.value === "1";
+  const session = await auth();
+  if (session?.user?.isRegistered) redirect("/");
 
-  if (!isPreview) {
-    const session = await auth();
-    if (session?.user?.isRegistered) redirect("/");
-  }
+  const { error } = await searchParams;
 
   return (
     <GlassCard p={8} maxW="md" w="full">
       <VStack gap={4} align="stretch">
-        {isPreview && (
-          <Alert.Root status="warning">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Description>
-                โหมดทดสอบ — หน้านี้ไม่ผูกกับบัญชี LINE จริงและจะไม่บันทึกข้อมูลลงฐานข้อมูล
-              </Alert.Description>
-            </Alert.Content>
-          </Alert.Root>
-        )}
-
-        {isPreview && submitted === "1" && (
-          <Alert.Root status="success">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Description>
-                ทดสอบสำเร็จ — ในการใช้งานจริง ระบบจะพาไปหน้าแรกหลังลงทะเบียน
-              </Alert.Description>
-            </Alert.Content>
-          </Alert.Root>
-        )}
-
         <VStack gap={1} align="start">
           <Heading size="lg">ลงทะเบียนผู้ใช้งาน</Heading>
           <Text color="fg.muted">กรอกข้อมูลของคุณก่อนเริ่มใช้งานครั้งแรก</Text>
@@ -124,7 +87,7 @@ export default async function RegisterPage({
           </Alert.Root>
         )}
 
-        <RegisterForm action={registerAction} previewMode={isPreview} />
+        <RegisterForm action={registerAction} />
       </VStack>
     </GlassCard>
   );
