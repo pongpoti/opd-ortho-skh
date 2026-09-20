@@ -15,6 +15,9 @@ export function AnimatedLogo({ style }: { style?: React.CSSProperties }) {
             font-size: 52px;
             fill: #1c4b79;
           }
+          .dark .opd-logo-word {
+            fill: #8ec6f0;
+          }
           .opd-logo-heart {
             fill: none;
             stroke-linecap: round;
