@@ -3,6 +3,8 @@
 import { useRef, useEffect, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from "react";
 import { HStack, Input } from "@chakra-ui/react";
 
+import { scrollFocusedIntoView } from "../lib/scroll-into-view-on-focus";
+
 /**
  * HnInput — HN as seven single-digit boxes, OTP-style, ported from
  * castroom's src/components/HnInput.tsx (HN at this hospital is always
@@ -90,7 +92,7 @@ export function HnInput({ value, onChange, ariaLabel = "HN", describedBy }: HnIn
           onPaste={handlePaste}
           onFocus={(e) => {
             e.target.select();
-            e.target.scrollIntoView({ block: "center", behavior: "smooth" });
+            scrollFocusedIntoView(e.target);
           }}
         />
       ))}

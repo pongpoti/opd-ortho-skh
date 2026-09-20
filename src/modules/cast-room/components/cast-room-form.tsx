@@ -24,6 +24,7 @@ import { PHYSICIANS } from "@/lib/physicians";
 import { submitCastLog } from "../lib/cast-actions";
 import { CAST_TYPES, castLabel } from "../lib/cast-types";
 import { CastIcon } from "../lib/cast-icons";
+import { scrollFocusedIntoView } from "../lib/scroll-into-view-on-focus";
 import { HN_LEN, HnInput } from "./hn-input";
 
 function StepBadge({ n }: { n: number }) {
@@ -177,7 +178,7 @@ export function CastRoomForm() {
               fontSize="16px"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onFocus={(e) => e.target.scrollIntoView({ block: "center", behavior: "smooth" })}
+              onFocus={(e) => scrollFocusedIntoView(e.target)}
               aria-label="ชื่อ-สกุล"
             />
             <Field.HelperText color="fg.muted">อย่าลืมใส่คำนำหน้านะ</Field.HelperText>
