@@ -17,6 +17,11 @@ export const metadata = {
 async function registerAction(formData: FormData) {
   "use server";
 
+  if (formData.get("previewMode") === "1") {
+    // Preview/test mode: exercise the client flow only, no real auth or DB write.
+    redirect("/register?preview=1&submitted=1");
+  }
+
   const session = await auth();
   if (!session?.user?.lineUserId) redirect("/login");
 
@@ -63,16 +68,41 @@ async function registerAction(formData: FormData) {
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; preview?: string; submitted?: string }>;
 }) {
-  const session = await auth();
-  if (session?.user?.isRegistered) redirect("/");
+  const { error, preview, submitted } = await searchParams;
+  const isPreview = preview === "1";
 
-  const { error } = await searchParams;
+  if (!isPreview) {
+    const session = await auth();
+    if (session?.user?.isRegistered) redirect("/");
+  }
 
   return (
     <GlassCard p={8} maxW="md" w="full">
       <VStack gap={4} align="stretch">
+        {isPreview && (
+          <Alert.Root status="warning">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                โหมดทดสอบ — หน้านี้ไม่ผูกกับบัญชี LINE จริงและจะไม่บันทึกข้อมูลลงฐานข้อมูล
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
+        )}
+
+        {isPreview && submitted === "1" && (
+          <Alert.Root status="success">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                ทดสอบสำเร็จ — ในการใช้งานจริง ระบบจะพาไปหน้าแรกหลังลงทะเบียน
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
+        )}
+
         <VStack gap={1} align="start">
           <Heading size="lg">ลงทะเบียนผู้ใช้งาน</Heading>
           <Text color="fg.muted">กรอกข้อมูลของคุณก่อนเริ่มใช้งานครั้งแรก</Text>
@@ -87,7 +117,7 @@ export default async function RegisterPage({
           </Alert.Root>
         )}
 
-        <RegisterForm action={registerAction} />
+        <RegisterForm action={registerAction} previewMode={isPreview} />
       </VStack>
     </GlassCard>
   );

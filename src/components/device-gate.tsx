@@ -16,6 +16,12 @@ export function DeviceGate({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function check() {
+      // Temporary test-mode bypass: skip the LIFF-in-client check entirely.
+      if (new URLSearchParams(window.location.search).get("preview") === "1") {
+        if (!cancelled) setStatus("allowed");
+        return;
+      }
+
       try {
         await ensureLiffInitWithTimeout();
         if (!cancelled) setStatus(liff.isInClient() ? "allowed" : "blocked");

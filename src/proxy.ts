@@ -3,7 +3,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
+
+  // Temporary test-mode bypass: view/click through the register page without
+  // real LINE auth. Narrowly scoped to this one path+param combo.
+  if (pathname === "/register" && searchParams.get("preview") === "1") {
+    return NextResponse.next();
+  }
+
   const isAuthed = !!req.auth;
   const isRegistered = req.auth?.user?.isRegistered ?? false;
 
