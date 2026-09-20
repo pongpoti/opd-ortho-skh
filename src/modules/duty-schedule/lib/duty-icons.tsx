@@ -1,11 +1,11 @@
-import { Bandage, Building2, GraduationCap, MapPin, Stethoscope, type LucideIcon } from "lucide-react";
+import { GraduationCap, Hospital, Scissors, Syringe, type LucideIcon } from "lucide-react";
 
 import type { DutyKey } from "./duty-data";
 
 export const DUTY_ICONS: Record<DutyKey, LucideIcon> = {
-  d1: Stethoscope,
+  d1: Scissors,
   d2: GraduationCap,
-  d3: MapPin,
-  d4: Building2,
-  d5: Bandage,
+  d3: Hospital,
+  d4: Hospital,
+  d5: Syringe,
 };
