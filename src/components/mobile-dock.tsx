@@ -24,7 +24,10 @@ export function MobileDock() {
     <Flex
       flexShrink={0}
       display={{ base: "flex", sm: "none" }}
-      bg="dock.bg"
+      backgroundImage={{
+        base: "linear-gradient(to bottom, rgba(31, 143, 134, 0.16), #ffffff)",
+        _dark: "linear-gradient(to bottom, rgba(75, 196, 182, 0.18), #000000)",
+      }}
       borderTopWidth="1px"
       borderColor="dock.border"
       backdropFilter="blur(16px)"

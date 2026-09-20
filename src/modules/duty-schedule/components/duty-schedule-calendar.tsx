@@ -107,7 +107,7 @@ export function DutyScheduleCalendar() {
   return (
     <VStack align="stretch" gap={4}>
       <Flex align="center" justify="space-between">
-        <Heading size="lg" textShadow="heading">
+        <Heading size="lg">
           {THAI_MONTHS[view.month]}{" "}
           <Text as="span" fontSize="sm" fontWeight="medium" color="fg.muted">
             {view.year + BE_OFFSET}
@@ -184,7 +184,7 @@ export function DutyScheduleCalendar() {
         <Portal>
           <Drawer.Backdrop backdropFilter="blur(4px)" />
           <Drawer.Positioner>
-            <Drawer.Content bg="glass.bg" backdropFilter="blur(16px)" borderTopWidth="1px" borderColor="glass.border" borderRadius="20px 20px 0 0" maxH="80vh">
+            <Drawer.Content bg="glass.solid" backdropFilter="blur(16px)" borderTopWidth="1px" borderColor="glass.border" borderRadius="20px 20px 0 0" maxH="80vh">
               <Drawer.Header display="flex" alignItems="flex-start" justifyContent="space-between" gap={3}>
                 <VStack align="start" gap={0}>
                   <Drawer.Title fontSize="xl">

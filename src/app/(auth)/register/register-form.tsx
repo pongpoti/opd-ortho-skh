@@ -119,7 +119,7 @@ export function RegisterForm({
           <Dialog.Backdrop backdropFilter="blur(4px)" />
           <Dialog.Positioner>
             <Dialog.Content
-              bg="glass.bg"
+              bg="glass.solid"
               backdropFilter="blur(16px)"
               borderWidth="1px"
               borderColor="glass.border"

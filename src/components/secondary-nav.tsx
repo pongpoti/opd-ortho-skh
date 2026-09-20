@@ -51,7 +51,7 @@ export function SecondaryNav() {
                   <Circle size={8} bg="brand.subtle" color="brand.fg">
                     <CurrentIcon size={16} />
                   </Circle>
-                  <Heading as="span" size="lg" textShadow="heading">
+                  <Heading as="span" size="lg">
                     {activeSubitem ? activeSubitem.name : activeModule.name}
                   </Heading>
                 </HStack>
