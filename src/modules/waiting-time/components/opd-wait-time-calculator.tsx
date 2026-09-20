@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Box,
@@ -9,13 +9,14 @@ import {
   Field,
   Heading,
   HStack,
+  IconButton,
   Input,
   NativeSelect,
   Table,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Minus, Plus } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -44,23 +45,9 @@ const MONTHS = [
 ];
 
 const BUDDHIST_YEAR_VALID = /^25\d{2}$/;
-
-function YearDigitBox({
-  ref,
-  ...props
-}: React.ComponentProps<typeof Input> & { ref?: React.Ref<HTMLInputElement> }) {
-  return (
-    <Input
-      ref={ref}
-      w="44px"
-      px={0}
-      textAlign="center"
-      fontSize="lg"
-      fontWeight="bold"
-      {...props}
-    />
-  );
-}
+const MIN_BUDDHIST_YEAR = 2500;
+const MAX_BUDDHIST_YEAR = 2599;
+const CURRENT_BUDDHIST_YEAR = new Date().getFullYear() + 543;
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -72,46 +59,27 @@ function StepBadge({ n }: { n: number }) {
 
 export function OpdWaitTimeCalculator() {
   const [month, setMonth] = useState<string>("");
-  const [buddhistYear, setBuddhistYear] = useState("25");
+  const [buddhistYear, setBuddhistYear] = useState(CURRENT_BUDDHIST_YEAR);
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const digit3Ref = useRef<HTMLInputElement>(null);
-  const digit4Ref = useRef<HTMLInputElement>(null);
 
   const isMonthFilled = month !== "";
-  const isYearValid = BUDDHIST_YEAR_VALID.test(buddhistYear);
+  const isYearValid = BUDDHIST_YEAR_VALID.test(String(buddhistYear));
   const canUploadFile1 = isMonthFilled && isYearValid;
   const canUploadFile2 = canUploadFile1 && file1 !== null;
 
   const canSubmit = isMonthFilled && isYearValid && file1 && file2 && !loading;
 
-  const yearDigit3 = buddhistYear[2] ?? "";
-  const yearDigit4 = buddhistYear[3] ?? "";
-
-  function handleYearDigit3Change(e: React.ChangeEvent<HTMLInputElement>) {
-    const digit = e.target.value.replace(/\D/g, "").slice(-1);
-    setBuddhistYear(`25${digit}${yearDigit4}`);
-    if (digit) digit4Ref.current?.focus();
+  function decrementYear() {
+    setBuddhistYear((y) => Math.max(MIN_BUDDHIST_YEAR, y - 1));
   }
 
-  function handleYearDigit4Change(e: React.ChangeEvent<HTMLInputElement>) {
-    const digit = e.target.value.replace(/\D/g, "").slice(-1);
-    setBuddhistYear(`25${yearDigit3}${digit}`);
-  }
-
-  function handleYearDigit4KeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Backspace" && !yearDigit4) {
-      digit3Ref.current?.focus();
-    }
-  }
-
-  function handleYearDigitFocus(e: React.FocusEvent<HTMLInputElement>) {
-    e.target.select();
-    e.target.scrollIntoView({ block: "center", behavior: "smooth" });
+  function incrementYear() {
+    setBuddhistYear((y) => Math.min(MAX_BUDDHIST_YEAR, y + 1));
   }
 
   async function handleSubmit() {
@@ -122,7 +90,7 @@ export function OpdWaitTimeCalculator() {
 
     try {
       const monthNum = Number(month);
-      const gregorianYear = buddhistYearToGregorian(Number(buddhistYear));
+      const gregorianYear = buddhistYearToGregorian(buddhistYear);
       const monthKey = toMonthKey(gregorianYear, monthNum);
       const lastDay = getLastDayOfMonth(gregorianYear, monthNum);
 
@@ -150,14 +118,14 @@ export function OpdWaitTimeCalculator() {
   }
 
   return (
-    <VStack gap={6} align="stretch">
+    <VStack gap={8} align="stretch">
       <GlassCard p={8}>
-        <VStack align="stretch" gap={3}>
+        <VStack align="stretch" gap={5}>
           <HStack gap={2}>
             <StepBadge n={1} />
             <Text fontWeight="medium">ระบุเดือนและปี</Text>
           </HStack>
-          <HStack gap={4} align="start" flexWrap="wrap">
+          <HStack gap={6} align="start" flexWrap="wrap">
             <Field.Root flex="1" minW="200px">
               <Field.Label>เดือน</Field.Label>
               <NativeSelect.Root>
@@ -177,49 +145,43 @@ export function OpdWaitTimeCalculator() {
 
             <Field.Root flex="1" minW="200px">
               <Field.Label>ปี (พ.ศ.)</Field.Label>
-              <HStack gap={2}>
-                <YearDigitBox value="2" disabled readOnly aria-label="ปี พ.ศ. หลักที่ 1" />
-                <YearDigitBox value="5" disabled readOnly aria-label="ปี พ.ศ. หลักที่ 2" />
-                <YearDigitBox
-                  ref={digit3Ref}
-                  value={yearDigit3}
-                  onChange={handleYearDigit3Change}
-                  onFocus={handleYearDigitFocus}
-                  disabled={!isMonthFilled}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  autoComplete="off"
-                  maxLength={1}
-                  aria-label="ปี พ.ศ. หลักที่ 3"
-                />
-                <YearDigitBox
-                  ref={digit4Ref}
-                  value={yearDigit4}
-                  onChange={handleYearDigit4Change}
-                  onKeyDown={handleYearDigit4KeyDown}
-                  onFocus={handleYearDigitFocus}
-                  disabled={!isMonthFilled}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  autoComplete="off"
-                  maxLength={1}
-                  aria-label="ปี พ.ศ. หลักที่ 4"
-                />
+              <HStack gap={3}>
+                <IconButton
+                  aria-label="ปีก่อนหน้า"
+                  size="sm"
+                  variant="outline"
+                  onClick={decrementYear}
+                  disabled={!isMonthFilled || buddhistYear <= MIN_BUDDHIST_YEAR}
+                >
+                  <Minus size={16} />
+                </IconButton>
+                <Text minW="56px" textAlign="center" fontSize="lg" fontWeight="bold">
+                  {buddhistYear}
+                </Text>
+                <IconButton
+                  aria-label="ปีถัดไป"
+                  size="sm"
+                  variant="outline"
+                  onClick={incrementYear}
+                  disabled={!isMonthFilled || buddhistYear >= MAX_BUDDHIST_YEAR}
+                >
+                  <Plus size={16} />
+                </IconButton>
               </HStack>
-              <Field.HelperText>รับเฉพาะปี พ.ศ. 4 หลัก รูปแบบ 25xx</Field.HelperText>
+              <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน กดปุ่มเพื่อเปลี่ยนปี</Field.HelperText>
             </Field.Root>
           </HStack>
         </VStack>
       </GlassCard>
 
       <GlassCard p={8}>
-        <VStack align="stretch" gap={4}>
-          <VStack align="stretch" gap={3} opacity={canUploadFile1 ? 1 : 0.6}>
+        <VStack align="stretch" gap={6}>
+          <VStack align="stretch" gap={5} opacity={canUploadFile1 ? 1 : 0.6}>
             <HStack gap={2}>
               <StepBadge n={2} />
               <Text fontWeight="medium">อัปโหลดไฟล์ข้อมูล</Text>
             </HStack>
-            <HStack gap={4} align="start" flexWrap="wrap">
+            <HStack gap={6} align="start" flexWrap="wrap">
               <Field.Root flex="1" minW="200px">
                 <Field.Label>ไฟล์ที่ 1 (วันที่ 1–15)</Field.Label>
                 <Input
@@ -242,6 +204,21 @@ export function OpdWaitTimeCalculator() {
                 />
               </Field.Root>
             </HStack>
+
+            {(file1 || file2) && (
+              <Alert.Root status="info">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>ไฟล์ที่อัปโหลดแล้ว</Alert.Title>
+                  <Alert.Description>
+                    <VStack align="start" gap={0.5}>
+                      {file1 && <Text>ไฟล์ที่ 1: {file1.name}</Text>}
+                      {file2 && <Text>ไฟล์ที่ 2: {file2.name}</Text>}
+                    </VStack>
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
           </VStack>
 
           <Box>
@@ -263,7 +240,7 @@ export function OpdWaitTimeCalculator() {
 
       {result && (
         <GlassCard p={8}>
-          <VStack gap={4} align="stretch">
+          <VStack gap={6} align="stretch">
             <VStack align="start" gap={1}>
               <Heading size="lg">
                 <HStack gap={2}>
