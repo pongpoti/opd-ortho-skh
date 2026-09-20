@@ -216,7 +216,7 @@ export function OpdWaitTimeCalculator() {
         <GlassCard p={8}>
           <VStack gap={4} align="stretch">
             <VStack align="start" gap={1}>
-              <Heading size="lg" textShadow="heading">
+              <Heading size="lg">
                 <HStack gap={2}>
                   <Circle size={8} bg="brand.subtle" color="brand.fg">
                     <ClipboardList size={16} />

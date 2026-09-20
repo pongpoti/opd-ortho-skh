@@ -17,7 +17,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { DUTY_LABELS, DUTY_ORDER, dutyApplies, getDutyDay } from "../lib/duty-data";
-import { DUTY_ICONS } from "../lib/duty-icons";
+import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -107,7 +107,7 @@ export function DutyScheduleCalendar() {
   return (
     <VStack align="stretch" gap={4}>
       <Flex align="center" justify="space-between">
-        <Heading size="lg" textShadow="heading">
+        <Heading size="lg">
           {THAI_MONTHS[view.month]}{" "}
           <Text as="span" fontSize="sm" fontWeight="medium" color="fg.muted">
             {view.year + BE_OFFSET}
@@ -184,7 +184,7 @@ export function DutyScheduleCalendar() {
         <Portal>
           <Drawer.Backdrop backdropFilter="blur(4px)" />
           <Drawer.Positioner>
-            <Drawer.Content bg="glass.bg" backdropFilter="blur(16px)" borderTopWidth="1px" borderColor="glass.border" borderRadius="20px 20px 0 0" maxH="80vh">
+            <Drawer.Content bg="glass.solid" backdropFilter="blur(16px)" borderTopWidth="1px" borderColor="glass.border" borderRadius="20px 20px 0 0" maxH="80vh">
               <Drawer.Header display="flex" alignItems="flex-start" justifyContent="space-between" gap={3}>
                 <VStack align="start" gap={0}>
                   <Drawer.Title fontSize="xl">
@@ -224,7 +224,7 @@ export function DutyScheduleCalendar() {
                     const name = selectedDuty?.entries[key];
                     return (
                       <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
-                        <Box color="fg.muted" flexShrink={0}>
+                        <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
                           <Icon size={18} />
                         </Box>
                         <VStack align="start" gap={0} flex="1" minW={0}>

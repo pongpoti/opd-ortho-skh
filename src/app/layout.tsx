@@ -12,9 +12,9 @@ import { DeviceGate } from "@/components/device-gate";
 const SET_INITIAL_COLOR_MODE = `
 (function () {
   try {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      document.documentElement.classList.add("dark");
-    }
+    var stored = window.localStorage.getItem("opd-color-mode");
+    var dark = stored === "dark" || (stored !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if (dark) document.documentElement.classList.add("dark");
   } catch (e) {}
 })();
 `;

@@ -40,9 +40,11 @@ const config = defineConfig({
           border: {
             value: { _light: "rgba(255, 255, 255, 0.4)", _dark: "rgba(255, 255, 255, 0.08)" },
           },
+          solid: {
+            value: { _light: "rgba(255, 255, 255, 0.94)", _dark: "rgba(22, 32, 38, 0.94)" },
+          },
         },
         dock: {
-          bg: { value: { _light: "rgba(31, 143, 134, 0.14)", _dark: "rgba(75, 196, 182, 0.16)" } },
           border: { value: { _light: "rgba(31, 143, 134, 0.30)", _dark: "rgba(75, 196, 182, 0.22)" } },
         },
         weekend: {
@@ -53,13 +55,12 @@ const config = defineConfig({
           fg: { value: { _light: "#cc5a26", _dark: "#e8935e" } },
           subtle: { value: { _light: "#f8ddc9", _dark: "#3a2617" } },
         },
-      },
-      shadows: {
-        heading: {
-          value: {
-            _light: "0 1px 3px rgba(15, 23, 32, 0.18)",
-            _dark: "0 1px 4px rgba(0, 0, 0, 0.45)",
-          },
+        duty: {
+          d1: { value: { _light: "#2f6fb0", _dark: "#7cabe0" } },
+          d2: { value: { _light: "#7c5cbf", _dark: "#b79ce8" } },
+          d3: { value: { _light: "#b8842a", _dark: "#e0b45f" } },
+          d4: { value: { _light: "#2f9e6b", _dark: "#6fcf9e" } },
+          d5: { value: { _light: "#d1483f", _dark: "#f08a83" } },
         },
       },
     },
