@@ -26,6 +26,7 @@ import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 import { submitCastLog } from "../lib/cast-actions";
 import { CAST_TYPES, castLabel } from "../lib/cast-types";
 import { CastIcon } from "../lib/cast-icons";
+import { ThaiDateInput } from "./thai-date-input";
 
 const HN_LEN = 7;
 
@@ -138,8 +139,8 @@ export function CastRoomForm() {
               <StepBadge n={1} />
               <Text fontWeight="medium">วันที่</Text>
             </HStack>
-            <Field.Root maxW="240px">
-              <Input type="date" fontSize="16px" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Field.Root>
+              <ThaiDateInput value={date} onChange={setDate} />
             </Field.Root>
           </VStack>
 
