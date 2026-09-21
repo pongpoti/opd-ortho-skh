@@ -59,7 +59,10 @@ export function MobileDock() {
       justify="space-around"
       align="center"
       pt={2}
-      pb="calc(0.5rem + env(safe-area-inset-bottom))"
+      // max(), not calc(): guarantees at least 1.25rem below the labels no
+      // matter what env(safe-area-inset-bottom) resolves to, so this can't
+      // collapse to a thin sliver on a device/webview that under-reports it.
+      pb="max(1.25rem, calc(0.5rem + env(safe-area-inset-bottom)))"
     >
       {items.map(({ href, label, Icon, color }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
