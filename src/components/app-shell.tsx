@@ -13,7 +13,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
   return (
-    <Box minH="100dvh">
+    <Box minH="var(--app-vh)">
       {/*
        * Header + secondary nav are a single sticky group rather than flex
        * children of a fixed-height, overflow:hidden shell. The previous
