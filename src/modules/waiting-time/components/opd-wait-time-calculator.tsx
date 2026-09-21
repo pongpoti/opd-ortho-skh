@@ -140,7 +140,7 @@ export function OpdWaitTimeCalculator() {
 
   return (
     <VStack gap={8} align="stretch">
-      <GlassCard p={8}>
+      <GlassCard variant="solid" p={8}>
         <VStack align="stretch" gap={6}>
           <VStack align="stretch" gap={5}>
             <HStack gap={2}>
@@ -246,7 +246,7 @@ export function OpdWaitTimeCalculator() {
       </GlassCard>
 
       {result && (
-        <GlassCard p={8}>
+        <GlassCard variant="solid" p={8}>
           <VStack gap={6} align="stretch">
             <VStack align="start" gap={1}>
               <Heading size="lg">

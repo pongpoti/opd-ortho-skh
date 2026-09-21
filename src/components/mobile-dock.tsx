@@ -76,10 +76,20 @@ export function MobileDock() {
             color={active ? color : "fg.muted"}
           >
             <NextLink href={href}>
-              <Circle size={10} bg={active ? `${color}/15` : "transparent"} color={color}>
+              <Circle
+                size={10}
+                bg={active ? `${color}/15` : "transparent"}
+                color={color}
+                transform={active ? "scale(1.08)" : "scale(1)"}
+                transition="transform 0.18s ease, background-color 0.18s ease"
+              >
                 <Icon size={20} />
               </Circle>
-              <Text fontSize="xs" fontWeight={active ? "semibold" : "medium"}>
+              <Text
+                fontSize="xs"
+                fontWeight={active ? "semibold" : "medium"}
+                transition="color 0.15s ease"
+              >
                 {label}
               </Text>
             </NextLink>

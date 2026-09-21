@@ -10,13 +10,13 @@ export function AnimatedLogo({ style }: { style?: React.CSSProperties }) {
       <defs>
         <style>{`
           .opd-logo-word {
-            font-family: 'Times New Roman', Times, serif;
-            font-weight: bold;
-            font-size: 52px;
-            fill: #1c4b79;
+            font-family: var(--font-sarabun), var(--font-plex-sans), sans-serif;
+            font-weight: 700;
+            font-size: 48px;
+            fill: #167269;
           }
           .dark .opd-logo-word {
-            fill: #8ec6f0;
+            fill: #78d3ca;
           }
           .opd-logo-heart {
             fill: none;
@@ -26,10 +26,16 @@ export function AnimatedLogo({ style }: { style?: React.CSSProperties }) {
             stroke-dashoffset: 0;
           }
           .opd-logo-heart--dark {
-            stroke: #2a9d4f;
+            stroke: #1f8f86;
           }
           .opd-logo-heart--light {
-            stroke: #7ec463;
+            stroke: #4bb8ae;
+          }
+          .dark .opd-logo-heart--dark {
+            stroke: #4bb8ae;
+          }
+          .dark .opd-logo-heart--light {
+            stroke: #78d3ca;
           }
 
           @media (prefers-reduced-motion: no-preference) {
@@ -48,7 +54,7 @@ export function AnimatedLogo({ style }: { style?: React.CSSProperties }) {
 
           @keyframes opd-logo-pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+            50% { opacity: 0.85; }
           }
         `}</style>
       </defs>

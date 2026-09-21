@@ -162,7 +162,7 @@ export function CastRoomForm() {
 
   return (
     <VStack gap={6} align="stretch">
-      <GlassCard p={6}>
+      <GlassCard variant="solid" p={6}>
         <VStack align="stretch" gap={6}>
           {editingVisitId && (
             <Alert.Root status="info">
