@@ -17,6 +17,7 @@ export interface CastLogInput {
   shiftDate: string;
   hn: string;
   patientName: string;
+  diagnosis: string;
   doctorName: string;
   casts: CastLogCastInput[];
 }
@@ -51,12 +52,15 @@ export async function submitCastLog(input: CastLogInput): Promise<{ ok: true } |
     return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
   }
 
+  const diagnosis = input.diagnosis.trim() || null;
+
   await db.insert(castLogs).values(
     casts.map((c) => ({
       visitId: input.visitId,
       shiftDate: input.shiftDate,
       hn: input.hn,
       patientName,
+      diagnosis,
       doctorName: input.doctorName,
       castType: c.id,
       castLabel: castLabel(c.id),

@@ -19,6 +19,7 @@ export const castLogs = pgTable("cast_logs", {
   shiftDate: date("shift_date").notNull(),
   hn: text("hn").notNull(),
   patientName: text("patient_name").notNull(),
+  diagnosis: text("diagnosis"),
   doctorName: text("doctor_name").notNull(),
   castType: text("cast_type").notNull(),
   castLabel: text("cast_label").notNull(),
