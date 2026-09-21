@@ -24,7 +24,7 @@ export function ScrollableMain({ children }: { children: React.ReactNode }) {
       overflowY="auto"
       px={6}
       pt={8}
-      pb={{ base: "calc(2rem + var(--dock-h, 5.5rem))", sm: 8 }}
+      pb={{ base: "calc(2rem + var(--dock-reserve, 5.5rem))", sm: 8 }}
     >
       {children}
     </Box>
