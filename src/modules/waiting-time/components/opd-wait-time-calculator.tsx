@@ -120,10 +120,10 @@ export function OpdWaitTimeCalculator() {
               <StepBadge n={1} />
               <Text fontWeight="medium">ระบุเดือนและปี</Text>
             </HStack>
-            <HStack gap={6} align="start" flexWrap="wrap">
-              <Field.Root flex="1" minW="200px">
-                <Field.Label>เดือน</Field.Label>
-                <NativeSelect.Root>
+            <Field.Root>
+              <Field.Label>เดือน/ปี (พ.ศ.)</Field.Label>
+              <HStack gap={3} align="center" flexWrap="wrap">
+                <NativeSelect.Root flex="1" minW="160px">
                   <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
                     <option value="" disabled>
                       เลือกเดือน
@@ -136,10 +136,7 @@ export function OpdWaitTimeCalculator() {
                   </NativeSelect.Field>
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>
-              </Field.Root>
 
-              <Field.Root flex="1" minW="200px">
-                <Field.Label>ปี (พ.ศ.)</Field.Label>
                 <DigitBoxInput
                   length={2}
                   prefix={BUDDHIST_YEAR_PREFIX}
@@ -147,9 +144,9 @@ export function OpdWaitTimeCalculator() {
                   onChange={setYearSuffix}
                   ariaLabel="ปี พ.ศ."
                 />
-                <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน</Field.HelperText>
-              </Field.Root>
-            </HStack>
+              </HStack>
+              <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน</Field.HelperText>
+            </Field.Root>
           </VStack>
 
           <VStack align="stretch" gap={5} opacity={canUploadFile1 ? 1 : 0.6}>
