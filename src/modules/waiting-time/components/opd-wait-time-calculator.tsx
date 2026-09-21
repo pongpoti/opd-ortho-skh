@@ -9,15 +9,15 @@ import {
   Field,
   Heading,
   HStack,
-  IconButton,
   Input,
   NativeSelect,
   Table,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ClipboardList, Minus, Plus } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
+import { DigitBoxInput } from "@/components/ui/digit-box-input";
 import { GlassCard } from "@/components/ui/glass-card";
 import {
   buddhistYearToGregorian,
@@ -44,10 +44,11 @@ const MONTHS = [
   "ธันวาคม",
 ];
 
-const BUDDHIST_YEAR_VALID = /^25\d{2}$/;
-const MIN_BUDDHIST_YEAR = 2500;
-const MAX_BUDDHIST_YEAR = 2599;
+// Every Buddhist year relevant here starts with "25" (2500-2599), so that
+// prefix is fixed and only the last two digits are ever entered.
+const BUDDHIST_YEAR_PREFIX = "25";
 const CURRENT_BUDDHIST_YEAR = new Date().getFullYear() + 543;
+const DEFAULT_YEAR_SUFFIX = String(CURRENT_BUDDHIST_YEAR).slice(2);
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -59,7 +60,7 @@ function StepBadge({ n }: { n: number }) {
 
 export function OpdWaitTimeCalculator() {
   const [month, setMonth] = useState<string>("");
-  const [buddhistYear, setBuddhistYear] = useState(CURRENT_BUDDHIST_YEAR);
+  const [yearSuffix, setYearSuffix] = useState(DEFAULT_YEAR_SUFFIX);
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -68,19 +69,12 @@ export function OpdWaitTimeCalculator() {
   const [loading, setLoading] = useState(false);
 
   const isMonthFilled = month !== "";
-  const isYearValid = BUDDHIST_YEAR_VALID.test(String(buddhistYear));
+  const isYearValid = yearSuffix.length === 2;
+  const buddhistYear = Number(BUDDHIST_YEAR_PREFIX + yearSuffix);
   const canUploadFile1 = isMonthFilled && isYearValid;
   const canUploadFile2 = canUploadFile1 && file1 !== null;
 
   const canSubmit = isMonthFilled && isYearValid && file1 && file2 && !loading;
-
-  function decrementYear() {
-    setBuddhistYear((y) => Math.max(MIN_BUDDHIST_YEAR, y - 1));
-  }
-
-  function incrementYear() {
-    setBuddhistYear((y) => Math.min(MAX_BUDDHIST_YEAR, y + 1));
-  }
 
   async function handleSubmit() {
     setError(null);
@@ -145,30 +139,14 @@ export function OpdWaitTimeCalculator() {
 
             <Field.Root flex="1" minW="200px">
               <Field.Label>ปี (พ.ศ.)</Field.Label>
-              <HStack gap={3}>
-                <IconButton
-                  aria-label="ปีก่อนหน้า"
-                  size="sm"
-                  variant="outline"
-                  onClick={decrementYear}
-                  disabled={!isMonthFilled || buddhistYear <= MIN_BUDDHIST_YEAR}
-                >
-                  <Minus size={16} />
-                </IconButton>
-                <Text minW="56px" textAlign="center" fontSize="lg" fontWeight="bold">
-                  {buddhistYear}
-                </Text>
-                <IconButton
-                  aria-label="ปีถัดไป"
-                  size="sm"
-                  variant="outline"
-                  onClick={incrementYear}
-                  disabled={!isMonthFilled || buddhistYear >= MAX_BUDDHIST_YEAR}
-                >
-                  <Plus size={16} />
-                </IconButton>
-              </HStack>
-              <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน กดปุ่มเพื่อเปลี่ยนปี</Field.HelperText>
+              <DigitBoxInput
+                length={2}
+                prefix={BUDDHIST_YEAR_PREFIX}
+                value={yearSuffix}
+                onChange={setYearSuffix}
+                ariaLabel="ปี พ.ศ."
+              />
+              <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน</Field.HelperText>
             </Field.Root>
           </HStack>
         </VStack>

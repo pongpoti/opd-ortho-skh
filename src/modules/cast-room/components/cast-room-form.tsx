@@ -18,14 +18,16 @@ import {
 } from "@chakra-ui/react";
 import { Minus, Plus } from "lucide-react";
 
+import { DigitBoxInput } from "@/components/ui/digit-box-input";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PHYSICIANS } from "@/lib/physicians";
+import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 
 import { submitCastLog } from "../lib/cast-actions";
 import { CAST_TYPES, castLabel } from "../lib/cast-types";
 import { CastIcon } from "../lib/cast-icons";
-import { scrollFocusedIntoView } from "../lib/scroll-into-view-on-focus";
-import { HN_LEN, HnInput } from "./hn-input";
+
+const HN_LEN = 7;
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -164,7 +166,13 @@ export function CastRoomForm() {
 
           <Field.Root>
             <Field.Label>HN</Field.Label>
-            <HnInput value={hn} onChange={setHn} describedBy={hnHint(hn) ? "cast-room-hn-msg" : undefined} />
+            <DigitBoxInput
+              length={HN_LEN}
+              value={hn}
+              onChange={setHn}
+              ariaLabel="HN"
+              describedBy={hnHint(hn) ? "cast-room-hn-msg" : undefined}
+            />
             {hnHint(hn) && (
               <Field.HelperText id="cast-room-hn-msg" color="fg.muted">
                 {hnHint(hn)}
