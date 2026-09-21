@@ -72,7 +72,7 @@ export function DigitBoxInput({ length, value, onChange, prefix = "", ariaLabel 
   const boxStyle = {
     textAlign: "center" as const,
     fontFamily: "mono",
-    fontWeight: "bold" as const,
+    fontWeight: "normal" as const,
     fontSize: "18px",
     px: 0,
     h: 12,
