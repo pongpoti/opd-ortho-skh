@@ -19,7 +19,7 @@ function Ghost({ children }: { children: ReactNode }) {
 
 function Svg({ children }: { children: ReactNode }) {
   return (
-    <svg width="28" height="32" viewBox="0 0 34 38" fill="none" aria-hidden="true">
+    <svg width="38" height="43" viewBox="0 0 34 38" fill="none" aria-hidden="true">
       {children}
     </svg>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE "cast_logs" ADD COLUMN "diagnosis" text;

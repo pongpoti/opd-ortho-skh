@@ -54,6 +54,7 @@ interface LogEntry {
   date: string;
   hn: string;
   name: string;
+  diagnosis: string;
   doctorName: string;
   casts: Array<{ id: string; count: number }>;
   sync: SyncStatus;
@@ -64,6 +65,7 @@ export function CastRoomForm() {
   const [doctorName, setDoctorName] = useState("");
   const [hn, setHn] = useState("");
   const [name, setName] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
   const [castItems, setCastItems] = useState<Map<string, number>>(new Map());
   const [log, setLog] = useState<LogEntry[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -90,16 +92,27 @@ export function CastRoomForm() {
 
     const id = crypto.randomUUID();
     const casts = [...castItems].map(([castId, count]) => ({ id: castId, count }));
-    const entry: LogEntry = { id, date, hn: hn.trim(), name: name.trim(), doctorName, casts, sync: "saving" };
+    const entry: LogEntry = {
+      id,
+      date,
+      hn: hn.trim(),
+      name: name.trim(),
+      diagnosis: diagnosis.trim(),
+      doctorName,
+      casts,
+      sync: "saving",
+    };
 
     setLog((l) => [entry, ...l]);
     const submittedDate = date;
     const submittedHn = hn.trim();
     const submittedName = name.trim();
+    const submittedDiagnosis = diagnosis.trim();
     const submittedDoctor = doctorName;
 
     setHn("");
     setName("");
+    setDiagnosis("");
     setCastItems(new Map());
 
     startTransition(async () => {
@@ -108,6 +121,7 @@ export function CastRoomForm() {
         shiftDate: submittedDate,
         hn: submittedHn,
         patientName: submittedName,
+        diagnosis: submittedDiagnosis,
         doctorName: submittedDoctor,
         casts,
       });
@@ -132,7 +146,7 @@ export function CastRoomForm() {
           <VStack align="stretch" gap={5}>
             <HStack gap={2}>
               <StepBadge n={2} />
-              <Text fontWeight="medium">เลือกแพทย์</Text>
+              <Text fontWeight="medium">แพทย์</Text>
             </HStack>
             <Field.Root maxW="360px">
               <NativeSelect.Root>
@@ -162,6 +176,17 @@ export function CastRoomForm() {
             </HStack>
 
             <Field.Root>
+              <Field.Label>ชื่อ-สกุล</Field.Label>
+              <Input
+                fontSize="16px"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onFocus={(e) => scrollFocusedIntoView(e.target)}
+                aria-label="ชื่อ-สกุล"
+              />
+            </Field.Root>
+
+            <Field.Root>
               <Field.Label>HN</Field.Label>
               <DigitBoxInput
                 length={HN_LEN}
@@ -178,33 +203,33 @@ export function CastRoomForm() {
             </Field.Root>
 
             <Field.Root>
-              <Field.Label>ชื่อ-สกุล</Field.Label>
+              <Field.Label>วินิจฉัย</Field.Label>
               <Input
                 fontSize="16px"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
                 onFocus={(e) => scrollFocusedIntoView(e.target)}
-                aria-label="ชื่อ-สกุล"
+                aria-label="วินิจฉัย"
               />
-              <Field.HelperText color="fg.muted">อย่าลืมใส่คำนำหน้านะ</Field.HelperText>
             </Field.Root>
           </VStack>
 
           <VStack align="stretch" gap={5}>
             <HStack gap={2}>
               <StepBadge n={4} />
-              <Text fontWeight="medium">ใส่เฝือกแบบไหน ?</Text>
+              <Text fontWeight="medium">ประเภทเฝือก</Text>
             </HStack>
 
-            <Wrap gap={4}>
+            <VStack align="stretch" gap={3}>
               {CAST_TYPES.map((t) => {
                 const count = castItems.get(t.id) ?? 0;
                 const active = count > 0;
                 return (
-                  <HStack key={t.id} gap={2}>
+                  <HStack key={t.id} justify="space-between" gap={3}>
                     <Button
                       type="button"
-                      size="sm"
+                      size="lg"
+                      fontSize="md"
                       borderRadius="full"
                       variant={active ? "solid" : "outline"}
                       colorPalette="brand"
@@ -216,6 +241,7 @@ export function CastRoomForm() {
                     </Button>
                     <HStack
                       gap={0}
+                      flexShrink={0}
                       borderWidth="1px"
                       borderColor="border"
                       borderRadius="full"
@@ -224,29 +250,29 @@ export function CastRoomForm() {
                     >
                       <IconButton
                         aria-label={`ลดจำนวน ${t.label}`}
-                        size="2xs"
+                        size="sm"
                         variant="ghost"
                         disabled={count === 0}
                         onClick={() => setCastCount(t.id, count - 1)}
                       >
-                        <Minus size={14} />
+                        <Minus size={16} />
                       </IconButton>
-                      <Text minW="5" textAlign="center" fontSize="sm" fontWeight="semibold">
+                      <Text minW="6" textAlign="center" fontSize="md" fontWeight="semibold">
                         {count}
                       </Text>
                       <IconButton
                         aria-label={`เพิ่มจำนวน ${t.label}`}
-                        size="2xs"
+                        size="sm"
                         variant="ghost"
                         onClick={() => setCastCount(t.id, count + 1)}
                       >
-                        <Plus size={14} />
+                        <Plus size={16} />
                       </IconButton>
                     </HStack>
                   </HStack>
                 );
               })}
-            </Wrap>
+            </VStack>
 
             {castItems.size === 0 ? (
               <Text fontSize="sm" color="fg.muted">
@@ -304,6 +330,11 @@ export function CastRoomForm() {
                 <Text fontSize="sm" color="fg.muted">
                   {r.doctorName}
                 </Text>
+                {r.diagnosis && (
+                  <Text fontSize="sm" color="fg.muted">
+                    {r.diagnosis}
+                  </Text>
+                )}
                 <Wrap gap={1.5} pt={1}>
                   {r.casts.map(({ id, count }) => (
                     <Badge key={id} colorPalette="brand" variant="subtle" borderRadius="full">
