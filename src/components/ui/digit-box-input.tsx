@@ -11,6 +11,10 @@ import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
  * steps back and clears the one before it; pasting a full value fills every
  * box in one go.
  *
+ * Digits are always left-contiguous (no holes): clearing a box truncates from
+ * that index onward so `join("")` cannot collapse a sparse array into the
+ * wrong HN/year string.
+ *
  * `prefix` renders extra fixed, disabled boxes before the editable ones
  * (e.g. the "25" every Buddhist year here starts with) — `value`/`onChange`
  * only ever carry the editable digits, not the prefix.
@@ -34,9 +38,18 @@ export function DigitBoxInput({ length, value, onChange, prefix = "", ariaLabel 
   }, [value, length, onChange]);
 
   const setDigit = (i: number, d: string) => {
-    const next = digits.slice();
-    next[i] = d;
-    onChange(next.join(""));
+    if (d) {
+      // Disallow typing ahead of the first empty box — keeps the string packed.
+      if (value.length < i) {
+        refs.current[value.length]?.focus();
+        return;
+      }
+      onChange((value.slice(0, i) + d + value.slice(i + 1)).slice(0, length));
+      return;
+    }
+    // Clearing truncates from this index so later digits don't shift left
+    // into the wrong positions (which would corrupt an HN).
+    onChange(value.slice(0, i));
   };
 
   const handleChange = (i: number, e: ChangeEvent<HTMLInputElement>) => {

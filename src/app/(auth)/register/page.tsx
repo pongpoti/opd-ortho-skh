@@ -15,11 +15,34 @@ export const metadata = {
   title: "ลงทะเบียนผู้ใช้งาน — OPD Ortho SKH",
 };
 
+function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let i = 0; i < 4 && current; i++) {
+    if (typeof current === "object" && current !== null && "code" in current) {
+      if ((current as { code?: string }).code === "23505") return true;
+    }
+    if (current instanceof Error && /unique|duplicate key/i.test(current.message)) {
+      return true;
+    }
+    current =
+      typeof current === "object" && current !== null && "cause" in current
+        ? (current as { cause: unknown }).cause
+        : null;
+  }
+  return false;
+}
+
 async function registerAction(formData: FormData) {
   "use server";
 
   const session = await auth();
   if (!session?.user?.lineUserId) redirect("/login");
+
+  // Already registered (e.g. JWT lag after a prior success) — don't insert again.
+  const existingSelf = await db.query.users.findFirst({
+    where: eq(users.lineUserId, session.user.lineUserId),
+  });
+  if (existingSelf) redirect("/");
 
   const position = String(formData.get("position") ?? "");
 
@@ -57,13 +80,25 @@ async function registerAction(formData: FormData) {
     redirect("/register?error=duplicate");
   }
 
-  await db.insert(users).values({
-    lineUserId: session.user.lineUserId,
-    displayName: session.user.lineDisplayName,
-    firstName,
-    lastName,
-    position,
-  });
+  try {
+    await db.insert(users).values({
+      lineUserId: session.user.lineUserId,
+      displayName: session.user.lineDisplayName,
+      firstName,
+      lastName,
+      position,
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      // Name taken by a concurrent registrant, or line_user_id already exists.
+      const selfAgain = await db.query.users.findFirst({
+        where: eq(users.lineUserId, session.user.lineUserId),
+      });
+      if (selfAgain) redirect("/");
+      redirect("/register?error=duplicate");
+    }
+    throw error;
+  }
 
   redirect("/");
 }

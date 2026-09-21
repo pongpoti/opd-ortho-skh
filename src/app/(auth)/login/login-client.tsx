@@ -6,13 +6,14 @@ import { signIn } from "next-auth/react";
 import { Alert, Button, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { ensureLiffInit, liff } from "@/lib/liff-client";
+import { ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
 
 type Status = "initializing" | "needs-login" | "signing-in" | "error";
 
 export function LoginClient() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("initializing");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +38,7 @@ export function LoginClient() {
 
     async function init() {
       try {
-        await ensureLiffInit();
+        await ensureLiffInitWithTimeout();
         if (cancelled) return;
 
         if (liff.isLoggedIn()) {
@@ -54,10 +55,19 @@ export function LoginClient() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, attempt]);
 
   function handleLoginClick() {
-    liff.login();
+    try {
+      liff.login();
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  function handleRetry() {
+    setStatus("initializing");
+    setAttempt((n) => n + 1);
   }
 
   return (
@@ -83,9 +93,15 @@ export function LoginClient() {
                 </Alert.Content>
               </Alert.Root>
             )}
-            <Button onClick={handleLoginClick} bg="#06C755" color="white" _hover={{ opacity: 0.9 }}>
-              เข้าสู่ระบบด้วย LINE
-            </Button>
+            {status === "error" ? (
+              <Button onClick={handleRetry} colorPalette="brand">
+                ลองอีกครั้ง
+              </Button>
+            ) : (
+              <Button onClick={handleLoginClick} bg="#06C755" color="white" _hover={{ opacity: 0.9 }}>
+                เข้าสู่ระบบด้วย LINE
+              </Button>
+            )}
           </>
         )}
       </VStack>

@@ -72,6 +72,37 @@ export function OpdWaitTimeCalculator() {
 
   const canSubmit = isMonthFilled && file1 && file2 && !loading;
 
+  function clearOutput() {
+    setResult(null);
+    setSummary(null);
+    setError(null);
+  }
+
+  function handleMonthChange(value: string) {
+    setMonth(value);
+    setFile1(null);
+    setFile2(null);
+    clearOutput();
+  }
+
+  function handleYearChange(value: number) {
+    setBuddhistYear(value);
+    setFile1(null);
+    setFile2(null);
+    clearOutput();
+  }
+
+  function handleFile1Change(file: File | null) {
+    setFile1(file);
+    setFile2(null);
+    clearOutput();
+  }
+
+  function handleFile2Change(file: File | null) {
+    setFile2(file);
+    clearOutput();
+  }
+
   async function handleSubmit() {
     setError(null);
     setResult(null);
@@ -119,7 +150,7 @@ export function OpdWaitTimeCalculator() {
             <Field.Root>
               <HStack gap={3} align="center" flexWrap="wrap">
                 <NativeSelect.Root flex="1" minW="160px">
-                  <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
+                  <NativeSelect.Field value={month} onChange={(e) => handleMonthChange(e.target.value)}>
                     <option value="" disabled>
                       เลือกเดือน
                     </option>
@@ -136,7 +167,7 @@ export function OpdWaitTimeCalculator() {
                   <NativeSelect.Field
                     aria-label="ปี พ.ศ."
                     value={buddhistYear}
-                    onChange={(e) => setBuddhistYear(Number(e.target.value))}
+                    onChange={(e) => handleYearChange(Number(e.target.value))}
                   >
                     {YEAR_OPTIONS.map((y) => (
                       <option key={y} value={y}>
@@ -161,7 +192,8 @@ export function OpdWaitTimeCalculator() {
                 <Input
                   type="file"
                   accept=".csv"
-                  onChange={(e) => setFile1(e.target.files?.[0] ?? null)}
+                  key={file1 ? `f1-${file1.name}-${file1.lastModified}` : "f1-empty"}
+                  onChange={(e) => handleFile1Change(e.target.files?.[0] ?? null)}
                   disabled={!canUploadFile1}
                   p={1}
                 />
@@ -172,7 +204,8 @@ export function OpdWaitTimeCalculator() {
                 <Input
                   type="file"
                   accept=".csv"
-                  onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
+                  key={file2 ? `f2-${file2.name}-${file2.lastModified}` : `f2-${file1 ? "ready" : "empty"}`}
+                  onChange={(e) => handleFile2Change(e.target.files?.[0] ?? null)}
                   disabled={!canUploadFile2}
                   p={1}
                 />
