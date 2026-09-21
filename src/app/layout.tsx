@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { IBM_Plex_Sans, Sarabun } from "next/font/google";
 import "./globals.css";
@@ -33,6 +33,16 @@ const plexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: "OPD Ortho SKH",
+};
+
+// viewportFit "cover" is what makes env(safe-area-inset-*) resolve to real
+// device values (the iPhone home-indicator area, rounded-corner insets,
+// etc.) instead of always 0 -- without it, nothing that reads those
+// env() vars anywhere in the app can ever produce a non-zero result.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
