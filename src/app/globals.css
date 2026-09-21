@@ -1,18 +1,9 @@
 :root {
   --app-vh: 100dvh;
-  /* Space to reserve below scrollable content for the fixed bottom dock.
-     Zeroed out while the keyboard is open, since the keyboard covers the
-     dock at that point and reserving room for it just leaves a dead gap
-     above the keyboard. */
-  --dock-reserve: var(--dock-h, 5.5rem);
-}
-
-:root[data-keyboard-open="true"] {
-  --dock-reserve: 0px;
 }
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
 }
