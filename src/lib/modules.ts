@@ -11,14 +11,6 @@ export type AppModule = {
 
 export const modules: AppModule[] = [
   {
-    slug: "statistics",
-    name: "สถิติ",
-    description: "รายงานและสถิติของแผนก",
-    href: "/statistics",
-    icon: "chart",
-    subitems: statisticsReports,
-  },
-  {
     slug: "duty-schedule",
     name: "ตารางเวร",
     description: "ตารางเวรแพทย์และพยาบาลประจำวัน",
@@ -31,5 +23,13 @@ export const modules: AppModule[] = [
     description: "บันทึกผู้ป่วยใส่เฝือกประจำเวร",
     href: "/cast-room",
     icon: "nurse",
+  },
+  {
+    slug: "statistics",
+    name: "สถิติ",
+    description: "รายงานและสถิติของแผนก",
+    href: "/statistics",
+    icon: "chart",
+    subitems: statisticsReports,
   },
 ];
