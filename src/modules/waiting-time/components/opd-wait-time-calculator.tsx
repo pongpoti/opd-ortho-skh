@@ -114,46 +114,44 @@ export function OpdWaitTimeCalculator() {
   return (
     <VStack gap={8} align="stretch">
       <GlassCard p={8}>
-        <VStack align="stretch" gap={5}>
-          <HStack gap={2}>
-            <StepBadge n={1} />
-            <Text fontWeight="medium">ระบุเดือนและปี</Text>
-          </HStack>
-          <HStack gap={6} align="start" flexWrap="wrap">
-            <Field.Root flex="1" minW="200px">
-              <Field.Label>เดือน</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
-                  <option value="" disabled>
-                    เลือกเดือน
-                  </option>
-                  {MONTHS.map((name, i) => (
-                    <option key={name} value={String(i + 1)}>
-                      {name}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
-            </Field.Root>
-
-            <Field.Root flex="1" minW="200px">
-              <Field.Label>ปี (พ.ศ.)</Field.Label>
-              <DigitBoxInput
-                length={2}
-                prefix={BUDDHIST_YEAR_PREFIX}
-                value={yearSuffix}
-                onChange={setYearSuffix}
-                ariaLabel="ปี พ.ศ."
-              />
-              <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน</Field.HelperText>
-            </Field.Root>
-          </HStack>
-        </VStack>
-      </GlassCard>
-
-      <GlassCard p={8}>
         <VStack align="stretch" gap={6}>
+          <VStack align="stretch" gap={5}>
+            <HStack gap={2}>
+              <StepBadge n={1} />
+              <Text fontWeight="medium">ระบุเดือนและปี</Text>
+            </HStack>
+            <HStack gap={6} align="start" flexWrap="wrap">
+              <Field.Root flex="1" minW="200px">
+                <Field.Label>เดือน</Field.Label>
+                <NativeSelect.Root>
+                  <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
+                    <option value="" disabled>
+                      เลือกเดือน
+                    </option>
+                    {MONTHS.map((name, i) => (
+                      <option key={name} value={String(i + 1)}>
+                        {name}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </Field.Root>
+
+              <Field.Root flex="1" minW="200px">
+                <Field.Label>ปี (พ.ศ.)</Field.Label>
+                <DigitBoxInput
+                  length={2}
+                  prefix={BUDDHIST_YEAR_PREFIX}
+                  value={yearSuffix}
+                  onChange={setYearSuffix}
+                  ariaLabel="ปี พ.ศ."
+                />
+                <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน</Field.HelperText>
+              </Field.Root>
+            </HStack>
+          </VStack>
+
           <VStack align="stretch" gap={5} opacity={canUploadFile1 ? 1 : 0.6}>
             <HStack gap={2}>
               <StepBadge n={2} />

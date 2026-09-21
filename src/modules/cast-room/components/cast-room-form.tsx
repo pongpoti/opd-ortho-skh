@@ -118,163 +118,159 @@ export function CastRoomForm() {
   return (
     <VStack gap={6} align="stretch">
       <GlassCard p={6}>
-        <VStack align="stretch" gap={5}>
-          <HStack gap={2}>
-            <StepBadge n={1} />
-            <Text fontWeight="medium">วันที่</Text>
-          </HStack>
-          <Field.Root maxW="240px">
-            <Input type="date" fontSize="16px" value={date} onChange={(e) => setDate(e.target.value)} />
-          </Field.Root>
-        </VStack>
-      </GlassCard>
+        <VStack align="stretch" gap={6}>
+          <VStack align="stretch" gap={5}>
+            <HStack gap={2}>
+              <StepBadge n={1} />
+              <Text fontWeight="medium">วันที่</Text>
+            </HStack>
+            <Field.Root maxW="240px">
+              <Input type="date" fontSize="16px" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field.Root>
+          </VStack>
 
-      <GlassCard p={6}>
-        <VStack align="stretch" gap={5}>
-          <HStack gap={2}>
-            <StepBadge n={2} />
-            <Text fontWeight="medium">เลือกแพทย์</Text>
-          </HStack>
-          <Field.Root maxW="360px">
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                aria-label="เลือกแพทย์"
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
-              >
-                <option value="" disabled>
-                  -- เลือกแพทย์ --
-                </option>
-                {PHYSICIANS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
+          <VStack align="stretch" gap={5}>
+            <HStack gap={2}>
+              <StepBadge n={2} />
+              <Text fontWeight="medium">เลือกแพทย์</Text>
+            </HStack>
+            <Field.Root maxW="360px">
+              <NativeSelect.Root>
+                <NativeSelect.Field
+                  aria-label="เลือกแพทย์"
+                  value={doctorName}
+                  onChange={(e) => setDoctorName(e.target.value)}
+                >
+                  <option value="" disabled>
+                    -- เลือกแพทย์ --
                   </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-          </Field.Root>
-        </VStack>
-      </GlassCard>
+                  {PHYSICIANS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
+            </Field.Root>
+          </VStack>
 
-      <GlassCard p={6}>
-        <VStack align="stretch" gap={5}>
-          <HStack gap={2}>
-            <StepBadge n={3} />
-            <Text fontWeight="medium">ข้อมูลผู้ป่วย</Text>
-          </HStack>
+          <VStack align="stretch" gap={5}>
+            <HStack gap={2}>
+              <StepBadge n={3} />
+              <Text fontWeight="medium">ข้อมูลผู้ป่วย</Text>
+            </HStack>
 
-          <Field.Root>
-            <Field.Label>HN</Field.Label>
-            <DigitBoxInput
-              length={HN_LEN}
-              value={hn}
-              onChange={setHn}
-              ariaLabel="HN"
-              describedBy={hnHint(hn) ? "cast-room-hn-msg" : undefined}
-            />
-            {hnHint(hn) && (
-              <Field.HelperText id="cast-room-hn-msg" color="fg.muted">
-                {hnHint(hn)}
-              </Field.HelperText>
-            )}
-          </Field.Root>
+            <Field.Root>
+              <Field.Label>HN</Field.Label>
+              <DigitBoxInput
+                length={HN_LEN}
+                value={hn}
+                onChange={setHn}
+                ariaLabel="HN"
+                describedBy={hnHint(hn) ? "cast-room-hn-msg" : undefined}
+              />
+              {hnHint(hn) && (
+                <Field.HelperText id="cast-room-hn-msg" color="fg.muted">
+                  {hnHint(hn)}
+                </Field.HelperText>
+              )}
+            </Field.Root>
 
-          <Field.Root>
-            <Field.Label>ชื่อ-สกุล</Field.Label>
-            <Input
-              fontSize="16px"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onFocus={(e) => scrollFocusedIntoView(e.target)}
-              aria-label="ชื่อ-สกุล"
-            />
-            <Field.HelperText color="fg.muted">อย่าลืมใส่คำนำหน้านะ</Field.HelperText>
-          </Field.Root>
-        </VStack>
-      </GlassCard>
+            <Field.Root>
+              <Field.Label>ชื่อ-สกุล</Field.Label>
+              <Input
+                fontSize="16px"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onFocus={(e) => scrollFocusedIntoView(e.target)}
+                aria-label="ชื่อ-สกุล"
+              />
+              <Field.HelperText color="fg.muted">อย่าลืมใส่คำนำหน้านะ</Field.HelperText>
+            </Field.Root>
+          </VStack>
 
-      <GlassCard p={6}>
-        <VStack align="stretch" gap={5}>
-          <HStack gap={2}>
-            <StepBadge n={4} />
-            <Text fontWeight="medium">ใส่เฝือกแบบไหน ?</Text>
-          </HStack>
+          <VStack align="stretch" gap={5}>
+            <HStack gap={2}>
+              <StepBadge n={4} />
+              <Text fontWeight="medium">ใส่เฝือกแบบไหน ?</Text>
+            </HStack>
 
-          <Wrap gap={4}>
-            {CAST_TYPES.map((t) => {
-              const count = castItems.get(t.id) ?? 0;
-              const active = count > 0;
-              return (
-                <HStack key={t.id} gap={2}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    borderRadius="full"
-                    variant={active ? "solid" : "outline"}
-                    colorPalette="brand"
-                    aria-pressed={active}
-                    onClick={() => toggleCastType(t.id)}
-                  >
-                    <CastIcon id={t.id} />
-                    {t.label}
-                  </Button>
-                  <HStack
-                    gap={0}
-                    borderWidth="1px"
-                    borderColor="border"
-                    borderRadius="full"
-                    opacity={active ? 1 : 0.5}
-                    px={1}
-                  >
-                    <IconButton
-                      aria-label={`ลดจำนวน ${t.label}`}
-                      size="2xs"
-                      variant="ghost"
-                      disabled={count === 0}
-                      onClick={() => setCastCount(t.id, count - 1)}
+            <Wrap gap={4}>
+              {CAST_TYPES.map((t) => {
+                const count = castItems.get(t.id) ?? 0;
+                const active = count > 0;
+                return (
+                  <HStack key={t.id} gap={2}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      borderRadius="full"
+                      variant={active ? "solid" : "outline"}
+                      colorPalette="brand"
+                      aria-pressed={active}
+                      onClick={() => toggleCastType(t.id)}
                     >
-                      <Minus size={14} />
-                    </IconButton>
-                    <Text minW="5" textAlign="center" fontSize="sm" fontWeight="semibold">
-                      {count}
-                    </Text>
-                    <IconButton
-                      aria-label={`เพิ่มจำนวน ${t.label}`}
-                      size="2xs"
-                      variant="ghost"
-                      onClick={() => setCastCount(t.id, count + 1)}
+                      <CastIcon id={t.id} />
+                      {t.label}
+                    </Button>
+                    <HStack
+                      gap={0}
+                      borderWidth="1px"
+                      borderColor="border"
+                      borderRadius="full"
+                      opacity={active ? 1 : 0.5}
+                      px={1}
                     >
-                      <Plus size={14} />
-                    </IconButton>
+                      <IconButton
+                        aria-label={`ลดจำนวน ${t.label}`}
+                        size="2xs"
+                        variant="ghost"
+                        disabled={count === 0}
+                        onClick={() => setCastCount(t.id, count - 1)}
+                      >
+                        <Minus size={14} />
+                      </IconButton>
+                      <Text minW="5" textAlign="center" fontSize="sm" fontWeight="semibold">
+                        {count}
+                      </Text>
+                      <IconButton
+                        aria-label={`เพิ่มจำนวน ${t.label}`}
+                        size="2xs"
+                        variant="ghost"
+                        onClick={() => setCastCount(t.id, count + 1)}
+                      >
+                        <Plus size={14} />
+                      </IconButton>
+                    </HStack>
                   </HStack>
-                </HStack>
-              );
-            })}
-          </Wrap>
-
-          {castItems.size === 0 ? (
-            <Text fontSize="sm" color="fg.muted">
-              ยังไม่ได้เลือกเฝือก — แตะที่รายการด้านบน
-            </Text>
-          ) : (
-            <Wrap gap={2}>
-              {[...castItems].map(([id, count]) => (
-                <Badge key={id} colorPalette="brand" variant="subtle" borderRadius="full" px={3} py={1}>
-                  {castLabel(id)}
-                  {count > 1 ? ` ×${count}` : ""}
-                </Badge>
-              ))}
+                );
+              })}
             </Wrap>
-          )}
+
+            {castItems.size === 0 ? (
+              <Text fontSize="sm" color="fg.muted">
+                ยังไม่ได้เลือกเฝือก — แตะที่รายการด้านบน
+              </Text>
+            ) : (
+              <Wrap gap={2}>
+                {[...castItems].map(([id, count]) => (
+                  <Badge key={id} colorPalette="brand" variant="subtle" borderRadius="full" px={3} py={1}>
+                    {castLabel(id)}
+                    {count > 1 ? ` ×${count}` : ""}
+                  </Badge>
+                ))}
+              </Wrap>
+            )}
+          </VStack>
+
+          <Box>
+            <Button onClick={submit} disabled={!canSubmit} colorPalette="brand" w="fit-content">
+              {isPending ? "กำลังบันทึก…" : "บันทึกข้อมูล"}
+            </Button>
+          </Box>
         </VStack>
       </GlassCard>
-
-      <Box>
-        <Button onClick={submit} disabled={!canSubmit} colorPalette="brand" w="fit-content">
-          {isPending ? "กำลังบันทึก…" : "บันทึกข้อมูล"}
-        </Button>
-      </Box>
 
       {log.length > 0 && (
         <VStack align="stretch" gap={3}>
