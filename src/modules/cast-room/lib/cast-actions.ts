@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { castLogs } from "@/db/schema";
 import { PHYSICIANS } from "@/lib/physicians";
 
-import { castLabel } from "./cast-types";
+import { CAST_TYPES, castLabel } from "./cast-types";
 
 export interface CastLogCastInput {
   id: string;
@@ -25,10 +25,14 @@ export interface CastLogInput {
 }
 
 type ActionResult = { ok: true } | { ok: false; error: string };
-type Validated = { ok: true; patientName: string; diagnosis: string; casts: CastLogCastInput[] } | { ok: false; error: string };
+type Validated =
+  | { ok: true; patientName: string; diagnosis: string; casts: CastLogCastInput[] }
+  | { ok: false; error: string };
 
 const HN_PATTERN = /^\d{7}$/;
 const SHIFT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_CAST_COUNT = 20;
+const VALID_CAST_IDS = new Set(CAST_TYPES.map((t) => t.id));
 
 function validate(input: CastLogInput): Validated {
   if (!SHIFT_DATE_PATTERN.test(input.shiftDate)) {
@@ -48,13 +52,27 @@ function validate(input: CastLogInput): Validated {
   if (!PHYSICIANS.includes(input.doctorName as (typeof PHYSICIANS)[number])) {
     return { ok: false, error: "ไม่พบแพทย์เวรสำหรับวันที่นี้" };
   }
-  const casts = input.casts.filter((c) => c.count > 0 && c.count <= 20);
-  if (casts.length === 0) {
-    return { ok: false, error: "กรุณาเลือกชนิดเฝือกอย่างน้อย 1 รายการ" };
-  }
   if (!input.visitId) {
     return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
   }
+
+  const casts: CastLogCastInput[] = [];
+  for (const c of input.casts) {
+    if (!VALID_CAST_IDS.has(c.id)) {
+      return { ok: false, error: "ชนิดเฝือกไม่ถูกต้อง" };
+    }
+    if (!Number.isInteger(c.count) || c.count < 1) {
+      continue;
+    }
+    if (c.count > MAX_CAST_COUNT) {
+      return { ok: false, error: `จำนวนเฝือกต้องไม่เกิน ${MAX_CAST_COUNT}` };
+    }
+    casts.push(c);
+  }
+  if (casts.length === 0) {
+    return { ok: false, error: "กรุณาเลือกชนิดเฝือกอย่างน้อย 1 รายการ" };
+  }
+
   return { ok: true, patientName, diagnosis, casts };
 }
 
@@ -98,7 +116,8 @@ export async function submitCastLog(input: CastLogInput): Promise<ActionResult> 
 /** Same shape as a fresh submit, but for a visitId that's already on file:
  * delete the visit's existing rows first, then insert the edited set. Cast
  * types can be added or removed between the two, so a diff-based update
- * isn't worth it -- the visit's rows are always small in number. */
+ * isn't worth it -- the visit's rows are always small in number.
+ * Delete + insert run in one Neon HTTP transaction via db.batch(). */
 export async function updateCastLog(input: CastLogInput): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.isRegistered) {
@@ -111,10 +130,34 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
   const validated = validate(input);
   if (!validated.ok) return validated;
 
-  await db.delete(castLogs).where(eq(castLogs.visitId, input.visitId));
-  await db
-    .insert(castLogs)
-    .values(buildRows(input, validated, session.user.lineUserId || null, session.user.firstName ?? null));
+  const existing = await db.query.castLogs.findMany({
+    where: eq(castLogs.visitId, input.visitId),
+    columns: { loggedByLineUserId: true },
+  });
+  if (existing.length === 0) {
+    return { ok: false, error: "ไม่พบรายการที่ต้องการแก้ไข" };
+  }
+
+  const isAdmin = session.user.role === "admin";
+  const lineUserId = session.user.lineUserId;
+  const ownsVisit = existing.every(
+    (row) => !row.loggedByLineUserId || row.loggedByLineUserId === lineUserId
+  );
+  if (!isAdmin && !ownsVisit) {
+    return { ok: false, error: "ไม่มีสิทธิ์แก้ไขรายการนี้" };
+  }
+
+  const rows = buildRows(
+    input,
+    validated,
+    session.user.lineUserId || null,
+    session.user.firstName ?? null
+  );
+
+  await db.batch([
+    db.delete(castLogs).where(eq(castLogs.visitId, input.visitId)),
+    db.insert(castLogs).values(rows),
+  ]);
 
   return { ok: true };
 }

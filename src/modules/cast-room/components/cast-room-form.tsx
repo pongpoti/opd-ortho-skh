@@ -31,6 +31,7 @@ import { formatThaiDate } from "../lib/thai-date";
 import { ThaiDateInput } from "./thai-date-input";
 
 const HN_LEN = 7;
+const MAX_CAST_COUNT = 20;
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -77,7 +78,8 @@ export function CastRoomForm() {
   const setCastCount = (id: string, count: number) => {
     setCastItems((prev) => {
       const next = new Map(prev);
-      if (count > 0) next.set(id, count);
+      const clamped = Math.min(Math.max(count, 0), MAX_CAST_COUNT);
+      if (clamped > 0) next.set(id, clamped);
       else next.delete(id);
       return next;
     });
@@ -296,6 +298,7 @@ export function CastRoomForm() {
                         aria-label={`เพิ่มจำนวน ${t.label}`}
                         size="sm"
                         variant="ghost"
+                        disabled={count >= MAX_CAST_COUNT}
                         onClick={() => setCastCount(t.id, count + 1)}
                       >
                         <Plus size={16} />

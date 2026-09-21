@@ -1,16 +1,22 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { Button, Flex, Heading, Text, VStack, Spinner } from "@chakra-ui/react";
 import { Smartphone } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
 
-type GateStatus = "checking" | "blocked" | "allowed";
+type GateStatus = "checking" | "blocked" | "allowed" | "retry";
 
 export function DeviceGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<GateStatus>("checking");
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = useCallback(() => {
+    setStatus("checking");
+    setAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,7 +26,9 @@ export function DeviceGate({ children }: { children: ReactNode }) {
         await ensureLiffInitWithTimeout();
         if (!cancelled) setStatus(liff.isInClient() ? "allowed" : "blocked");
       } catch {
-        if (!cancelled) setStatus("blocked");
+        // Timeout/network failure is not the same as "not in LINE" — offer retry
+        // instead of a permanent false block for this page load.
+        if (!cancelled) setStatus("retry");
       }
     }
 
@@ -28,12 +36,31 @@ export function DeviceGate({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   if (status === "checking") {
     return (
       <Flex minH="100dvh" align="center" justify="center">
         <Spinner colorPalette="brand" size="lg" />
+      </Flex>
+    );
+  }
+
+  if (status === "retry") {
+    return (
+      <Flex minH="100dvh" align="center" justify="center" px={4}>
+        <GlassCard p={8} maxW="sm" w="full">
+          <VStack gap={4} textAlign="center">
+            <Smartphone size={40} />
+            <Heading size="lg">เชื่อมต่อไม่สำเร็จ</Heading>
+            <Text color="fg.muted">
+              ไม่สามารถเริ่มต้น LINE ได้ในขณะนี้ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่
+            </Text>
+            <Button onClick={retry} colorPalette="brand">
+              ลองอีกครั้ง
+            </Button>
+          </VStack>
+        </GlassCard>
       </Flex>
     );
   }
