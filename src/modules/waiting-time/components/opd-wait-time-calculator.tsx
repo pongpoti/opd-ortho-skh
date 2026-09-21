@@ -17,7 +17,6 @@ import {
 } from "@chakra-ui/react";
 import { ClipboardList } from "lucide-react";
 
-import { DigitBoxInput } from "@/components/ui/digit-box-input";
 import { GlassCard } from "@/components/ui/glass-card";
 import {
   buddhistYearToGregorian,
@@ -44,11 +43,10 @@ const MONTHS = [
   "ธันวาคม",
 ];
 
-// Every Buddhist year relevant here starts with "25" (2500-2599), so that
-// prefix is fixed and only the last two digits are ever entered.
-const BUDDHIST_YEAR_PREFIX = "25";
 const CURRENT_BUDDHIST_YEAR = new Date().getFullYear() + 543;
-const DEFAULT_YEAR_SUFFIX = String(CURRENT_BUDDHIST_YEAR).slice(2);
+// Current year first, then five consecutive years back -- covers any month
+// a report would realistically be run for, without needing free typing.
+const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_BUDDHIST_YEAR - i);
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -60,7 +58,7 @@ function StepBadge({ n }: { n: number }) {
 
 export function OpdWaitTimeCalculator() {
   const [month, setMonth] = useState<string>("");
-  const [yearSuffix, setYearSuffix] = useState(DEFAULT_YEAR_SUFFIX);
+  const [buddhistYear, setBuddhistYear] = useState(CURRENT_BUDDHIST_YEAR);
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -69,12 +67,10 @@ export function OpdWaitTimeCalculator() {
   const [loading, setLoading] = useState(false);
 
   const isMonthFilled = month !== "";
-  const isYearValid = yearSuffix.length === 2;
-  const buddhistYear = Number(BUDDHIST_YEAR_PREFIX + yearSuffix);
-  const canUploadFile1 = isMonthFilled && isYearValid;
+  const canUploadFile1 = isMonthFilled;
   const canUploadFile2 = canUploadFile1 && file1 !== null;
 
-  const canSubmit = isMonthFilled && isYearValid && file1 && file2 && !loading;
+  const canSubmit = isMonthFilled && file1 && file2 && !loading;
 
   async function handleSubmit() {
     setError(null);
@@ -121,7 +117,6 @@ export function OpdWaitTimeCalculator() {
               <Text fontWeight="medium">ระบุเดือนและปี</Text>
             </HStack>
             <Field.Root>
-              <Field.Label>เดือน/ปี (พ.ศ.)</Field.Label>
               <HStack gap={3} align="center" flexWrap="wrap">
                 <NativeSelect.Root flex="1" minW="160px">
                   <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
@@ -137,15 +132,21 @@ export function OpdWaitTimeCalculator() {
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>
 
-                <DigitBoxInput
-                  length={2}
-                  prefix={BUDDHIST_YEAR_PREFIX}
-                  value={yearSuffix}
-                  onChange={setYearSuffix}
-                  ariaLabel="ปี พ.ศ."
-                />
+                <NativeSelect.Root flex="1" minW="120px">
+                  <NativeSelect.Field
+                    aria-label="ปี พ.ศ."
+                    value={buddhistYear}
+                    onChange={(e) => setBuddhistYear(Number(e.target.value))}
+                  >
+                    {YEAR_OPTIONS.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
               </HStack>
-              <Field.HelperText>ค่าเริ่มต้นคือปีปัจจุบัน</Field.HelperText>
             </Field.Root>
           </VStack>
 
