@@ -3,29 +3,35 @@
 import { useRef, useEffect, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from "react";
 import { HStack, Input } from "@chakra-ui/react";
 
-import { scrollFocusedIntoView } from "../lib/scroll-into-view-on-focus";
+import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 
 /**
- * HnInput — HN as seven single-digit boxes, OTP-style, ported from
- * castroom's src/components/HnInput.tsx (HN at this hospital is always
- * exactly 7 digits).
+ * DigitBoxInput — a fixed-length value as single-digit boxes, OTP-style.
+ * Typing a digit advances focus to the next box; Backspace on an empty box
+ * steps back and clears the one before it; pasting a full value fills every
+ * box in one go.
+ *
+ * `prefix` renders extra fixed, disabled boxes before the editable ones
+ * (e.g. the "25" every Buddhist year here starts with) — `value`/`onChange`
+ * only ever carry the editable digits, not the prefix.
  */
-export const HN_LEN = 7;
-
-export interface HnInputProps {
+export interface DigitBoxInputProps {
+  length: number;
   value: string;
   onChange: (value: string) => void;
+  prefix?: string;
   ariaLabel?: string;
   describedBy?: string;
 }
 
-export function HnInput({ value, onChange, ariaLabel = "HN", describedBy }: HnInputProps) {
+export function DigitBoxInput({ length, value, onChange, prefix = "", ariaLabel = "digit", describedBy }: DigitBoxInputProps) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
-  const digits = Array.from({ length: HN_LEN }, (_, i) => value[i] ?? "");
+  const digits = Array.from({ length }, (_, i) => value[i] ?? "");
+  const total = prefix.length + length;
 
   useEffect(() => {
-    if (value.length > HN_LEN) onChange(value.slice(0, HN_LEN));
-  }, [value, onChange]);
+    if (value.length > length) onChange(value.slice(0, length));
+  }, [value, length, onChange]);
 
   const setDigit = (i: number, d: string) => {
     const next = digits.slice();
@@ -38,7 +44,7 @@ export function HnInput({ value, onChange, ariaLabel = "HN", describedBy }: HnIn
     const digit = raw.replace(/\D/g, "").slice(-1);
     if (raw && !digit) return;
     setDigit(i, digit);
-    if (digit && i < HN_LEN - 1) refs.current[i + 1]?.focus();
+    if (digit && i < length - 1) refs.current[i + 1]?.focus();
   };
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
@@ -49,43 +55,56 @@ export function HnInput({ value, onChange, ariaLabel = "HN", describedBy }: HnIn
     } else if (e.key === "ArrowLeft" && i > 0) {
       e.preventDefault();
       refs.current[i - 1]?.focus();
-    } else if (e.key === "ArrowRight" && i < HN_LEN - 1) {
+    } else if (e.key === "ArrowRight" && i < length - 1) {
       e.preventDefault();
       refs.current[i + 1]?.focus();
     }
   };
 
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, HN_LEN);
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, length);
     if (!text) return;
     e.preventDefault();
     onChange(text);
-    refs.current[Math.min(text.length, HN_LEN - 1)]?.focus();
+    refs.current[Math.min(text.length, length - 1)]?.focus();
+  };
+
+  const boxStyle = {
+    textAlign: "center" as const,
+    fontFamily: "mono",
+    fontWeight: "bold" as const,
+    fontSize: "18px",
+    px: 0,
+    h: 12,
+    minW: 0,
+    flex: "1",
   };
 
   return (
     <HStack gap={1.5} role="group" aria-label={ariaLabel}>
+      {[...prefix].map((d, i) => (
+        <Input
+          key={`prefix-${i}`}
+          {...boxStyle}
+          value={d}
+          disabled
+          aria-label={`${ariaLabel} หลักที่ ${i + 1} จาก ${total}`}
+        />
+      ))}
       {digits.map((d, i) => (
         <Input
           key={i}
           ref={(el) => {
             refs.current[i] = el;
           }}
-          textAlign="center"
-          fontFamily="mono"
-          fontWeight="bold"
-          fontSize="18px"
-          px={0}
-          h={12}
-          minW={0}
-          flex="1"
+          {...boxStyle}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete="off"
           maxLength={1}
           value={d}
-          aria-label={`${ariaLabel} หลักที่ ${i + 1} จาก ${HN_LEN}`}
+          aria-label={`${ariaLabel} หลักที่ ${prefix.length + i + 1} จาก ${total}`}
           aria-describedby={describedBy}
           onChange={(e) => handleChange(i, e)}
           onKeyDown={(e) => handleKeyDown(i, e)}
