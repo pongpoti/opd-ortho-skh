@@ -2,16 +2,18 @@
 
 import { useId, useRef, useState } from "react";
 import { Badge, Box, Button, Flex, Text, VStack, Wrap } from "@chakra-ui/react";
-import { ChevronLeft, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 
 import type { CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { formatThaiDate } from "../lib/thai-date";
 
-const ACTION_WIDTH = 92;
-const OPEN_THRESHOLD = 48;
-const CLOSE_THRESHOLD = 32;
+/** Per-action column width — matches common iOS/Android swipe action gutters. */
+const ACTION_WIDTH = 76;
+const ACTIONS_TOTAL = ACTION_WIDTH * 2;
+const OPEN_THRESHOLD = 40;
+const CLOSE_THRESHOLD = 28;
 
 type CastVisitPersonCardProps = {
   visit: CastVisitSummary;
@@ -36,13 +38,16 @@ export function CastVisitPersonCard({
     startY: number;
     origin: number;
     locked: "h" | "v" | null;
+    moved: boolean;
   } | null>(null);
 
-  const resting = open ? -ACTION_WIDTH : 0;
+  const resting = open ? -ACTIONS_TOTAL : 0;
   const translateX = dragOffset ?? resting;
   const dragging = dragOffset !== null;
+  /** Any reveal: square the content’s trailing edge so it sits flush on actions. */
+  const revealing = translateX < -0.5;
 
-  const clamp = (value: number) => Math.min(0, Math.max(-ACTION_WIDTH, value));
+  const clamp = (value: number) => Math.min(0, Math.max(-ACTIONS_TOTAL, value));
 
   const endDrag = (clientX: number) => {
     const drag = dragRef.current;
@@ -66,12 +71,12 @@ export function CastVisitPersonCard({
       isolation="isolate"
       touchAction="pan-y"
     >
+      {/* Action rail — full-height columns behind content (universal swipe pattern). */}
       <Flex
         position="absolute"
         insetY={0}
         right={0}
-        w={`${ACTION_WIDTH}px`}
-        direction="column"
+        w={`${ACTIONS_TOTAL}px`}
         zIndex={0}
         aria-hidden={!open}
       >
@@ -86,7 +91,6 @@ export function CastVisitPersonCard({
           bg="brand.solid"
           color="brand.contrast"
           cursor="pointer"
-          borderTopRightRadius="2xl"
           borderRadius={0}
           height="100%"
           onClick={() => {
@@ -113,7 +117,6 @@ export function CastVisitPersonCard({
           bg="red.solid"
           color="red.contrast"
           cursor="pointer"
-          borderBottomRightRadius="2xl"
           borderRadius={0}
           height="100%"
           onClick={() => {
@@ -137,6 +140,10 @@ export function CastVisitPersonCard({
         position="relative"
         zIndex={1}
         borderRadius="2xl"
+        /* Square the trailing edge while revealed so white box meets actions seamlessly. */
+        borderRightRadius={revealing ? 0 : undefined}
+        borderRightWidth={revealing ? 0 : undefined}
+        boxShadow={revealing ? "none" : undefined}
         transform={`translate3d(${translateX}px, 0, 0)`}
         transition={dragging ? "none" : "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)"}
         willChange="transform"
@@ -150,6 +157,7 @@ export function CastVisitPersonCard({
             startY: e.clientY,
             origin: resting,
             locked: null,
+            moved: false,
           };
           setDragOffset(resting);
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -168,11 +176,20 @@ export function CastVisitPersonCard({
           }
           if (drag.locked === "v") return;
 
+          drag.moved = true;
           e.preventDefault();
           setDragOffset(clamp(drag.origin + dx));
         }}
         onPointerUp={(e) => {
           if (dragRef.current?.pointerId !== e.pointerId) return;
+          const drag = dragRef.current;
+          // Tap content while open closes actions (standard list swipe UX).
+          if (open && drag && !drag.moved && drag.locked !== "h") {
+            dragRef.current = null;
+            setDragOffset(null);
+            onOpenChange(false);
+            return;
+          }
           endDrag(e.clientX);
         }}
         onPointerCancel={(e) => {
@@ -182,80 +199,49 @@ export function CastVisitPersonCard({
         role="group"
         aria-describedby={hintId}
       >
-        <Flex gap={3} align="stretch">
-          <VStack align="stretch" gap={3} flex="1" minW={0}>
-            <VStack align="start" gap={1}>
-              <Text fontWeight="semibold">{formatThaiDate(visit.shiftDate)}</Text>
-              <Text fontSize="sm" color="fg.muted">
-                {visit.doctorName}
-              </Text>
-              <Box display="flex" gap={2} fontSize="sm" flexWrap="wrap">
-                <Text fontFamily="mono">HN {visit.hn}</Text>
-                <Text>·</Text>
-                <Text fontWeight="medium">{visit.patientName}</Text>
-              </Box>
-              <Text fontSize="sm" color="fg.muted">
-                {visit.diagnosis}
-              </Text>
-              {visit.loggedByName && (
-                <Text fontSize="xs" color="fg.muted">
-                  บันทึกโดย {visit.loggedByName}
-                </Text>
-              )}
-            </VStack>
-            <Wrap gap={2}>
-              {visit.casts.map((cast) => (
-                <Badge key={cast.id} colorPalette="brand" variant="subtle" borderRadius="full">
-                  {cast.label}
-                  {cast.count > 1 ? ` ×${cast.count}` : ""}
-                </Badge>
-              ))}
-            </Wrap>
-          </VStack>
-
-          <Button
-            unstyled
-            aria-label={open ? "ปิดเมนูแก้ไข" : "ปัดซ้ายเพื่อแก้ไขหรือลบ"}
-            aria-expanded={open}
-            aria-describedby={hintId}
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenChange(!open);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            alignSelf="center"
-            flexShrink={0}
-            w="28px"
-            h="64px"
-            borderRadius="full"
-            bg="bg.muted"
-            color="fg.muted"
-            cursor="pointer"
-            _hover={{ color: "fg" }}
-            css={{
-              "@keyframes swipeHintPulse": {
-                "0%, 100%": { transform: "translateX(0)", opacity: 0.55 },
-                "50%": { transform: "translateX(-3px)", opacity: 1 },
-              },
-            }}
-          >
-            <Box
-              id={hintId}
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-              gap={0}
-              animation={open ? undefined : "swipeHintPulse 1.6s ease-in-out infinite"}
-              aria-hidden
-            >
-              <ChevronLeft size={14} strokeWidth={2.5} />
-              <ChevronLeft size={14} strokeWidth={2.5} style={{ marginTop: -6 }} />
+        <Text
+          id={hintId}
+          position="absolute"
+          width="1px"
+          height="1px"
+          padding={0}
+          margin="-1px"
+          overflow="hidden"
+          clip="rect(0, 0, 0, 0)"
+          whiteSpace="nowrap"
+          borderWidth={0}
+        >
+          ปัดซ้ายเพื่อแก้ไขหรือลบ
+        </Text>
+        <VStack align="stretch" gap={3}>
+          <VStack align="start" gap={1}>
+            <Text fontWeight="semibold">{formatThaiDate(visit.shiftDate)}</Text>
+            <Text fontSize="sm" color="fg.muted">
+              {visit.doctorName}
+            </Text>
+            <Box display="flex" gap={2} fontSize="sm" flexWrap="wrap">
+              <Text fontFamily="mono">HN {visit.hn}</Text>
+              <Text>·</Text>
+              <Text fontWeight="medium">{visit.patientName}</Text>
             </Box>
-          </Button>
-        </Flex>
+            <Text fontSize="sm" color="fg.muted">
+              {visit.diagnosis}
+            </Text>
+            {visit.loggedByName && (
+              <Text fontSize="xs" color="fg.muted">
+                บันทึกโดย {visit.loggedByName}
+              </Text>
+            )}
+          </VStack>
+          <Wrap gap={2}>
+            {visit.casts.map((cast) => (
+              <Badge key={cast.id} colorPalette="brand" variant="subtle" borderRadius="full">
+                {cast.label}
+                {cast.count > 1 ? ` ×${cast.count}` : ""}
+              </Badge>
+            ))}
+          </Wrap>
+        </VStack>
       </GlassCard>
     </Box>
   );
