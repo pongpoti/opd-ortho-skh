@@ -13,12 +13,14 @@ export const DUTY_LABELS: Record<DutyKey, string> = {
 };
 
 /**
- * Earliest month the duty calendar may show (month is 0-indexed).
- * App launch: October 2026 — September and earlier are not browsable.
+ * First month with active duty data (month is 0-indexed).
+ * App launch: October 2026 — earlier months still show on the calendar
+ * when they are the current date, but their days are disabled.
  */
 export const DUTY_CALENDAR_START = { year: 2026, month: 9 } as const;
 
-export function isBeforeDutyCalendarStart(year: number, month: number): boolean {
+/** True for months before the app launch month (e.g. Sep 2026). */
+export function isDutyMonthDisabled(year: number, month: number): boolean {
   const start = DUTY_CALENDAR_START;
   return year < start.year || (year === start.year && month < start.month);
 }
