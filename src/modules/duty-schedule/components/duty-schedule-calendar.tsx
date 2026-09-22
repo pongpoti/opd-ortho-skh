@@ -16,7 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { DUTY_CALENDAR_START, DUTY_LABELS, DUTY_ORDER, dutyApplies, getDutyDay, isBeforeDutyCalendarStart } from "../lib/duty-data";
+import { DUTY_LABELS, DUTY_ORDER, dutyApplies, getDutyDay, isDutyMonthDisabled } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 
 const THAI_MONTHS = [
@@ -62,26 +62,13 @@ function buildCells(year: number, month: number): Cell[] {
   return cells;
 }
 
-function clampView(year: number, month: number) {
-  if (isBeforeDutyCalendarStart(year, month)) {
-    return { year: DUTY_CALENDAR_START.year, month: DUTY_CALENDAR_START.month };
-  }
-  return { year, month };
-}
-
-function initialView() {
-  const now = new Date();
-  return clampView(now.getFullYear(), now.getMonth());
-}
-
 export function DutyScheduleCalendar() {
   const now = new Date();
-  const [view, setView] = useState(initialView);
+  const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  const atStart =
-    view.year === DUTY_CALENDAR_START.year && view.month === DUTY_CALENDAR_START.month;
+  const monthDisabled = isDutyMonthDisabled(view.year, view.month);
 
   function changeMonth(delta: number) {
     setView((v) => {
@@ -89,7 +76,7 @@ export function DutyScheduleCalendar() {
       let year = v.year;
       if (month < 0) { month = 11; year -= 1; }
       if (month > 11) { month = 0; year += 1; }
-      return clampView(year, month);
+      return { year, month };
     });
   }
 
@@ -129,13 +116,7 @@ export function DutyScheduleCalendar() {
           </Text>
         </Heading>
         <HStack gap={2}>
-          <IconButton
-            aria-label="เดือนก่อนหน้า"
-            size="sm"
-            variant="outline"
-            disabled={atStart}
-            onClick={() => changeMonth(-1)}
-          >
+          <IconButton aria-label="เดือนก่อนหน้า" size="sm" variant="outline" onClick={() => changeMonth(-1)}>
             <ChevronLeft size={16} />
           </IconButton>
           <IconButton aria-label="เดือนถัดไป" size="sm" variant="outline" onClick={() => changeMonth(1)}>
@@ -169,12 +150,17 @@ export function DutyScheduleCalendar() {
               cell.year === now.getFullYear() &&
               cell.month === now.getMonth() &&
               cell.day === now.getDate();
+            const dayDisabled = cell.outside || isDutyMonthDisabled(cell.year, cell.month);
 
             return (
               <Box
                 key={`${cell.year}-${cell.month}-${cell.day}-${cell.outside}`}
                 as="button"
-                onClick={() => !cell.outside && setSelected({ year: cell.year, month: cell.month, day: cell.day })}
+                onClick={() => {
+                  if (dayDisabled) return;
+                  setSelected({ year: cell.year, month: cell.month, day: cell.day });
+                }}
+                aria-disabled={dayDisabled || undefined}
                 aspectRatio={1}
                 w="full"
                 borderRadius="lg"
@@ -184,13 +170,30 @@ export function DutyScheduleCalendar() {
                 fontFamily="var(--font-plex-sans)"
                 fontWeight="semibold"
                 fontSize="sm"
-                bg={cell.outside ? "transparent" : isHoliday ? "holiday.subtle" : isWeekend ? "weekend.subtle" : "bg.panel"}
-                color={cell.outside ? "fg.muted" : isHoliday ? "holiday.fg" : isWeekend ? "weekend.fg" : "fg"}
-                opacity={cell.outside ? 0.5 : 1}
-                borderWidth={isToday ? "2px" : "1px"}
-                borderColor={isToday ? "brand.solid" : "glass.border"}
-                cursor={cell.outside ? "default" : "pointer"}
-                _active={cell.outside ? undefined : { transform: "scale(0.94)" }}
+                bg={
+                  cell.outside
+                    ? "transparent"
+                    : isHoliday
+                      ? "holiday.subtle"
+                      : isWeekend
+                        ? "weekend.subtle"
+                        : "bg.panel"
+                }
+                color={
+                  cell.outside || dayDisabled
+                    ? "fg.muted"
+                    : isHoliday
+                      ? "holiday.fg"
+                      : isWeekend
+                        ? "weekend.fg"
+                        : "fg"
+                }
+                opacity={cell.outside || dayDisabled ? 0.4 : 1}
+                borderWidth={isToday && !dayDisabled ? "2px" : "1px"}
+                borderColor={isToday && !dayDisabled ? "brand.solid" : "glass.border"}
+                cursor={dayDisabled ? "not-allowed" : "pointer"}
+                pointerEvents={dayDisabled ? "none" : "auto"}
+                _active={dayDisabled ? undefined : { transform: "scale(0.94)" }}
               >
                 {cell.day}
               </Box>
@@ -198,6 +201,12 @@ export function DutyScheduleCalendar() {
           })}
         </Grid>
       </GlassCard>
+
+      {monthDisabled && (
+        <Text fontSize="xs" color="fg.muted" textAlign="center">
+          เริ่มใช้งานตารางเวรตั้งแต่ตุลาคม 2569
+        </Text>
+      )}
 
       <VStack gap={0.5}>
         <Text fontSize="xs" color="fg.muted" textAlign="center">
