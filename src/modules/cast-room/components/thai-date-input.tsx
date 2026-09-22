@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Button, Dialog, Grid, HStack, IconButton, Portal, Text } from "@chakra-ui/react";
+import { useRef, useState } from "react";
+import { Box, Button, Dialog, Grid, HStack, IconButton, Portal, Text, VStack } from "@chakra-ui/react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { buildMonthCells, formatThaiDate, parseISO, thaiMonthYear, toISO, THAI_WD_SHORT } from "../lib/thai-date";
@@ -11,6 +11,8 @@ export interface ThaiDateInputProps {
   onChange: (value: string) => void;
 }
 
+const SWIPE_THRESHOLD = 55;
+
 /** Full-width date field styled and labeled entirely in Thai -- the native
  * <input type="date"> picker can't be reskinned to show Thai month/weekday
  * names (that chrome is OS-drawn, not stylable), so this replaces it with a
@@ -19,6 +21,8 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
   const selected = parseISO(value);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState({ year: selected.year, month: selected.month });
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const wheelLock = useRef(false);
 
   function openPicker() {
     setView({ year: selected.year, month: selected.month });
@@ -41,7 +45,36 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
     });
   }
 
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      changeMonth(dx < 0 ? 1 : -1);
+    }
+  }
+
+  function handleWheel(e: React.WheelEvent) {
+    if (Math.abs(e.deltaY) < 24 || wheelLock.current) return;
+    wheelLock.current = true;
+    changeMonth(e.deltaY > 0 ? 1 : -1);
+    setTimeout(() => {
+      wheelLock.current = false;
+    }, 500);
+  }
+
   const cells = buildMonthCells(view.year, view.month);
+  // Hide the next-month peek on the right: drop trailing outside days so only
+  // the current month (plus leading blanks for weekday alignment) is shown.
+  let lastInMonth = cells.length;
+  while (lastInMonth > 0 && cells[lastInMonth - 1].outside) lastInMonth -= 1;
+  const visibleCells = cells.slice(0, lastInMonth);
 
   return (
     <>
@@ -62,8 +95,14 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
         <Portal>
           <Dialog.Backdrop backdropFilter="blur(4px)" />
           <Dialog.Positioner>
-            <Dialog.Content bg="glass.solid" backdropFilter="blur(16px)" borderWidth="1px" borderColor="glass.border" maxW="320px">
-              <Dialog.Body p={4}>
+            <Dialog.Content bg="glass.solid" backdropFilter="blur(16px)" borderWidth="1px" borderColor="glass.border" maxW="320px" w="full">
+              <Dialog.Body
+                p={4}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheel}
+                style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
+              >
                 <HStack justify="space-between" mb={3}>
                   <IconButton aria-label="เดือนก่อนหน้า" variant="ghost" size="sm" onClick={() => changeMonth(-1)}>
                     <ChevronLeft size={18} />
@@ -83,18 +122,21 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                 </Grid>
 
                 <Grid templateColumns="repeat(7, 1fr)" gap={1}>
-                  {cells.map((c) => {
+                  {visibleCells.map((c) => {
+                    if (c.outside) {
+                      return <Box key={`${c.year}-${c.month}-${c.day}-outside`} aria-hidden />;
+                    }
+
                     const iso = toISO(c.year, c.month, c.day);
                     const isSelected = iso === value;
                     return (
-                      <Box key={`${c.year}-${c.month}-${c.day}-${c.outside}`}>
+                      <Box key={`${c.year}-${c.month}-${c.day}`}>
                         <Button
                           type="button"
                           size="sm"
                           w="full"
                           variant={isSelected ? "solid" : "ghost"}
                           colorPalette="brand"
-                          opacity={c.outside ? 0.35 : 1}
                           onClick={() => {
                             onChange(iso);
                             setOpen(false);
@@ -106,6 +148,12 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                     );
                   })}
                 </Grid>
+
+                <VStack gap={0} mt={3}>
+                  <Text fontSize="xs" color="fg.muted" textAlign="center">
+                    ปัดซ้าย-ขวาเพื่อเปลี่ยนเดือน
+                  </Text>
+                </VStack>
               </Dialog.Body>
             </Dialog.Content>
           </Dialog.Positioner>
