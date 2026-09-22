@@ -1,143 +1,236 @@
 /**
- * cast-icons.tsx — one pictogram per cast type, adapted from castroom's
- * src/components/CastIcons.tsx.
- *
- * Each icon starts from a limb silhouette (drawn faint, at low opacity) and
- * lays a thicker sleeve over the segment that cast type covers — a plain
- * capsule with no limb underneath reads as a thermometer, not a cast.
+ * Cast-type pictograms: a readable limb outline with a filled cast wrap over
+ * the segment that type covers, so each tile reads as a real slab/splint.
  */
 
 import type { ReactNode } from "react";
 
-const LIMB_W = 4.2;
-const LIMB_OPACITY = 0.3;
-const CAST_W = 7.5;
-
-function Ghost({ children }: { children: ReactNode }) {
-  return <g opacity={LIMB_OPACITY}>{children}</g>;
-}
-
-function Svg({ children }: { children: ReactNode }) {
+function Svg({ children, size }: { children: ReactNode; size: number }) {
+  const height = Math.round(size * 1.15);
   return (
-    <svg width="38" height="43" viewBox="0 0 34 38" fill="none" aria-hidden="true">
+    <svg width={size} height={height} viewBox="0 0 80 92" fill="none" aria-hidden="true">
       {children}
     </svg>
   );
 }
 
-function Cast({ d, w = CAST_W }: { d: string; w?: number }) {
-  return <path d={d} stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" fill="none" />;
+function Limb({ d, w = 7 }: { d: string; w?: number }) {
+  return (
+    <path
+      d={d}
+      stroke="currentColor"
+      strokeWidth={w}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+      opacity={0.28}
+    />
+  );
 }
 
-/** Hip, knee, shin, ankle, foot. `straight` holds the leg in full extension, as a knee slab does. */
-function LegGhost({ straight = false }: { straight?: boolean }) {
+function CastWrap({ d, w = 14 }: { d: string; w?: number }) {
   return (
-    <Ghost>
+    <path
+      d={d}
+      stroke="currentColor"
+      strokeWidth={w}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+      opacity={0.92}
+    />
+  );
+}
+
+function CastBand({ x, y, w, h, r = 5 }: { x: number; y: number; w: number; h: number; r?: number }) {
+  return <rect x={x} y={y} width={w} height={h} rx={r} fill="currentColor" opacity={0.88} />;
+}
+
+function Foot({ cx, cy }: { cx: number; cy: number }) {
+  return (
+    <path
+      d={`M${cx} ${cy} L${cx + 14} ${cy + 3} L${cx + 16} ${cy + 8} L${cx - 2} ${cy + 6} Z`}
+      fill="currentColor"
+      opacity={0.28}
+    />
+  );
+}
+
+function HandPalm({ cx, cy }: { cx: number; cy: number }) {
+  return (
+    <>
+      <rect x={cx - 11} y={cy} width={22} height={16} rx={7} fill="currentColor" opacity={0.28} />
+      {/* fingers */}
       <path
-        d={straight ? "M15 4 L15 30.5 L23.5 32.5" : "M15 4 L15 19 L13 30.5 L22.5 32.5"}
+        d={`M${cx - 8} ${cy + 14} V${cy + 28} M${cx - 2.5} ${cy + 14} V${cy + 30} M${cx + 3} ${cy + 14} V${cy + 29} M${cx + 8.5} ${cy + 14} V${cy + 26}`}
         stroke="currentColor"
-        strokeWidth={LIMB_W}
+        strokeWidth={3.4}
         strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
+        opacity={0.28}
       />
-    </Ghost>
-  );
-}
-
-/** Shoulder, elbow, forearm, hand. */
-function ArmGhost() {
-  return (
-    <Ghost>
-      <path d="M11 4 L10 22 L25 28" stroke="currentColor" strokeWidth={LIMB_W} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <circle cx="27.6" cy="29" r="3.5" fill="currentColor" />
-    </Ghost>
-  );
-}
-
-/** Wrist, palm, four fingers, thumb out to the left. */
-function HandGhost() {
-  return (
-    <Ghost>
-      <path d="M17 4 L17 13" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" />
-      <rect x="9" y="11" width="16" height="13" rx="5.5" fill="currentColor" />
-      <path d="M9.6 16.4 L5.4 21.4" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" fill="none" />
+      {/* thumb */}
       <path
-        d="M11.5 22 L11.5 31.5 M15.5 22 L15.5 33 M19.5 22 L19.5 32 M23.5 22 L23.5 29.5"
+        d={`M${cx - 10} ${cy + 6} L${cx - 18} ${cy + 14}`}
         stroke="currentColor"
-        strokeWidth="3"
+        strokeWidth={3.6}
         strokeLinecap="round"
-        fill="none"
+        opacity={0.28}
       />
-    </Ghost>
+    </>
   );
 }
 
-const ICONS: Record<string, () => ReactNode> = {
-  longLeg: () => (
-    <Svg>
-      <LegGhost />
-      <Cast d="M15 6.5 L15 19 L13 30.5 L20.5 32.1" />
+const ICONS: Record<string, (size: number) => ReactNode> = {
+  /** Below-knee slab: shin + ankle + foot wrapped */
+  shortLeg: (size) => (
+    <Svg size={size}>
+      <Limb d="M36 8 V42 L32 70" w={8} />
+      <Foot cx={32} cy={70} />
+      <CastWrap d="M34 44 L32 68 L42 71" w={16} />
+      <CastBand x={24} y={48} w={20} h={8} />
+      <CastBand x={23} y={60} w={22} h={8} />
     </Svg>
   ),
-  shortLeg: () => (
-    <Svg>
-      <LegGhost />
-      <Cast d="M14.5 22 L13 30.5 L20.5 32.1" />
+
+  /** Above-knee slab: thigh through foot */
+  longLeg: (size) => (
+    <Svg size={size}>
+      <Limb d="M36 6 V40 L32 70" w={8} />
+      <Foot cx={32} cy={70} />
+      <CastWrap d="M36 12 V40 L32 68 L42 71" w={16} />
+      <CastBand x={26} y={18} w={20} h={8} />
+      <CastBand x={25} y={36} w={20} h={8} />
+      <CastBand x={23} y={56} w={22} h={8} />
     </Svg>
   ),
-  kneeSlab: () => (
-    <Svg>
-      <LegGhost straight />
-      <Cast d="M15 15.5 L15 22.5" w={8} />
+
+  /** Knee slab: wrap centered on the knee */
+  kneeSlab: (size) => (
+    <Svg size={size}>
+      <Limb d="M40 6 V78" w={8} />
+      <Foot cx={40} cy={78} />
+      <CastBand x={26} y={34} w={28} h={22} r={8} />
+      <path
+        d="M30 45 H50"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        opacity={0.35}
+        strokeDasharray="3 3"
+      />
     </Svg>
   ),
-  longArm: () => (
-    <Svg>
-      <ArmGhost />
-      <Cast d="M10.8 7 L10 22 L24 27.6" />
+
+  /** Short arm: forearm + wrist */
+  shortArm: (size) => (
+    <Svg size={size}>
+      <Limb d="M24 10 L22 42 L52 58" w={7} />
+      <circle cx={58} cy={61} r={7} fill="currentColor" opacity={0.28} />
+      <CastWrap d="M34 48 L52 58" w={15} />
+      <CastBand x={36} y={48} w={18} h={10} r={4} />
     </Svg>
   ),
-  shortArm: () => (
-    <Svg>
-      <ArmGhost />
-      <Cast d="M16 24.4 L24 27.6" />
+
+  /** Long arm: upper arm through wrist */
+  longArm: (size) => (
+    <Svg size={size}>
+      <Limb d="M24 8 L22 42 L52 58" w={7} />
+      <circle cx={58} cy={61} r={7} fill="currentColor" opacity={0.28} />
+      <CastWrap d="M24 14 L22 42 L50 56" w={15} />
+      <CastBand x={14} y={18} w={20} h={9} r={4} />
+      <CastBand x={14} y={34} w={20} h={9} r={4} />
+      <CastBand x={34} y={48} w={18} h={9} r={4} />
     </Svg>
   ),
-  uSlab: () => (
-    <Svg>
-      <ArmGhost />
-      <Cast d="M11 5.5 L10 22 L12.8 23.1" />
+
+  /** U slab: hangs from shoulder down upper arm (U-shaped wrap) */
+  uSlab: (size) => (
+    <Svg size={size}>
+      <Limb d="M28 10 L26 46 L54 60" w={7} />
+      <circle cx={60} cy={63} r={7} fill="currentColor" opacity={0.28} />
+      <CastWrap d="M34 8 L26 12 L24 40" w={14} />
+      <path
+        d="M22 10 C18 18 18 28 22 36"
+        stroke="currentColor"
+        strokeWidth={10}
+        strokeLinecap="round"
+        fill="none"
+        opacity={0.88}
+      />
+      <CastBand x={16} y={14} w={18} h={8} r={4} />
     </Svg>
   ),
-  thumbSpica: () => (
-    <Svg>
-      <HandGhost />
-      <Cast d="M6 20.6 L10 16 L15.5 12.5 L17 5.5" w={6.5} />
+
+  /** Thumb spica: wrap from forearm onto thumb */
+  thumbSpica: (size) => (
+    <Svg size={size}>
+      <Limb d="M40 6 V22" w={9} />
+      <HandPalm cx={40} cy={22} />
+      <CastWrap d="M40 10 V24 L28 34 L22 42" w={11} />
+      <CastBand x={31} y={10} w={18} h={10} r={4} />
+      <path
+        d="M28 30 L20 42"
+        stroke="currentColor"
+        strokeWidth={10}
+        strokeLinecap="round"
+        opacity={0.88}
+      />
     </Svg>
   ),
-  ulnaGutter: () => (
-    <Svg>
-      <HandGhost />
-      <Cast d="M21.5 29 L21.5 22 L18.5 14 L17 5.5" w={7} />
+
+  /** Ulna gutter: ulnar side of hand + 4th/5th fingers */
+  ulnaGutter: (size) => (
+    <Svg size={size}>
+      <Limb d="M40 6 V22" w={9} />
+      <HandPalm cx={40} cy={22} />
+      <CastWrap d="M40 10 V24 L48 36 L50 52" w={12} />
+      <CastBand x={31} y={10} w={18} h={10} r={4} />
+      <path
+        d="M46 34 V54"
+        stroke="currentColor"
+        strokeWidth={11}
+        strokeLinecap="round"
+        opacity={0.88}
+      />
     </Svg>
   ),
-  buddy: () => (
-    <Svg>
-      <HandGhost />
-      <Cast d="M14.5 26 L20.5 26" w={4.2} />
-      <Cast d="M14.5 31 L20.5 31" w={4.2} />
+
+  /** Buddy: two fingers taped together */
+  buddy: (size) => (
+    <Svg size={size}>
+      <Limb d="M40 6 V22" w={9} />
+      <HandPalm cx={40} cy={22} />
+      <CastBand x={30} y={42} w={18} h={6} r={3} />
+      <CastBand x={30} y={52} w={18} h={6} r={3} />
+      <path
+        d="M34 40 V58 M42 40 V58"
+        stroke="currentColor"
+        strokeWidth={3.2}
+        strokeLinecap="round"
+        opacity={0.45}
+      />
     </Svg>
   ),
-  fingerSplint: () => (
-    <Svg>
-      <HandGhost />
-      <Cast d="M15.5 21 L15.5 31" w={5.5} />
+
+  /** Finger splint: single finger stiffened */
+  fingerSplint: (size) => (
+    <Svg size={size}>
+      <Limb d="M40 6 V22" w={9} />
+      <HandPalm cx={40} cy={22} />
+      <path
+        d="M37.5 34 V60"
+        stroke="currentColor"
+        strokeWidth={9}
+        strokeLinecap="round"
+        opacity={0.88}
+      />
+      <CastBand x={32} y={38} w={11} h={5} r={2} />
+      <CastBand x={32} y={48} w={11} h={5} r={2} />
     </Svg>
   ),
 };
 
-export function CastIcon({ id }: { id: string }) {
-  const Icon = ICONS[id];
-  return Icon ? <Icon /> : null;
+export function CastIcon({ id, size = 64 }: { id: string; size?: number }) {
+  const render = ICONS[id];
+  return render ? <>{render(size)}</> : null;
 }

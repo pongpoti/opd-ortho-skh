@@ -49,23 +49,29 @@ export function CastTypePicker({ value, onChange }: CastTypePickerProps) {
             borderColor={active ? "brand.solid" : "border"}
             bg={active ? "brand.subtle" : "bg"}
             borderRadius="2xl"
-            p={3}
-            minH="9.5rem"
+            p={4}
+            minH="11rem"
             h="auto"
             display="flex"
             flexDirection="column"
             alignItems="center"
-            justifyContent="space-between"
-            gap={2}
+            justifyContent="flex-start"
+            gap={3}
             transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease"
             boxShadow={active ? "sm" : "none"}
             _hover={{ borderColor: active ? "brand.solid" : "brand.muted", bg: active ? "brand.subtle" : "bg.subtle" }}
           >
-            <VStack gap={2} flex="1" justify="center" pointerEvents="none">
-              <Text as="span" color={active ? "brand.fg" : "fg.muted"} lineHeight={0}>
-                <CastIcon id={t.id} />
+            <VStack gap={2} flex="1" justify="center" pointerEvents="none" w="full">
+              <Text as="span" color={active ? "brand.fg" : "fg"} lineHeight={0}>
+                <CastIcon id={t.id} size={72} />
               </Text>
-              <Text fontSize="xs" fontWeight={active ? "semibold" : "medium"} textAlign="center" lineHeight="short">
+              <Text
+                fontSize="lg"
+                fontWeight={active ? "bold" : "semibold"}
+                textAlign="center"
+                lineHeight="short"
+                whiteSpace="normal"
+              >
                 {t.label}
               </Text>
             </VStack>
@@ -82,26 +88,26 @@ export function CastTypePicker({ value, onChange }: CastTypePickerProps) {
               >
                 <IconButton
                   aria-label={`ลดจำนวน ${t.label}`}
-                  size="xs"
+                  size="sm"
                   variant="ghost"
                   colorPalette="brand"
                   disabled={count === 0}
                   onClick={() => adjust(t.id, -1)}
                 >
-                  <Minus size={14} />
+                  <Minus size={16} />
                 </IconButton>
-                <Text minW="6" textAlign="center" fontSize="sm" fontWeight="bold">
+                <Text minW="7" textAlign="center" fontSize="md" fontWeight="bold">
                   {count}
                 </Text>
                 <IconButton
                   aria-label={`เพิ่มจำนวน ${t.label}`}
-                  size="xs"
+                  size="sm"
                   variant="ghost"
                   colorPalette="brand"
                   disabled={count >= MAX_CAST_COUNT}
                   onClick={() => adjust(t.id, 1)}
                 >
-                  <Plus size={14} />
+                  <Plus size={16} />
                 </IconButton>
               </HStack>
             )}
