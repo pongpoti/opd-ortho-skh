@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { Flex, Spinner } from "@chakra-ui/react";
 
 import { auth } from "@/auth";
 import { CastRoomDashboard } from "@/modules/cast-room/components/cast-room-dashboard";
@@ -8,15 +10,30 @@ export const metadata = {
   title: "รายการบันทึก — เวรห้องเฝือก",
 };
 
+function DashboardFallback() {
+  return (
+    <Flex align="center" justify="center" minH="200px" py={8}>
+      <Spinner colorPalette="brand" size="lg" />
+    </Flex>
+  );
+}
+
+async function CastRoomDashboardData() {
+  const now = new Date();
+  const result = await listCastVisitsForAdmin(now.getFullYear(), now.getMonth() + 1);
+  const initialVisits = result.ok ? result.visits : [];
+  return <CastRoomDashboard initialVisits={initialVisits} />;
+}
+
 export default async function CastRoomDashboardPage() {
   const session = await auth();
   if (session?.user?.role !== "admin") {
     redirect("/cast-room");
   }
 
-  const now = new Date();
-  const result = await listCastVisitsForAdmin(now.getFullYear(), now.getMonth() + 1);
-  const initialVisits = result.ok ? result.visits : [];
-
-  return <CastRoomDashboard initialVisits={initialVisits} />;
+  return (
+    <Suspense fallback={<DashboardFallback />}>
+      <CastRoomDashboardData />
+    </Suspense>
+  );
 }
