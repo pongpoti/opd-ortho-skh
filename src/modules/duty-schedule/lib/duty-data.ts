@@ -12,10 +12,13 @@ export const DUTY_LABELS: Record<DutyKey, string> = {
   d5: "เวรห้องเฝือก",
 };
 
-/** Whether a duty type is scheduled on a given weekday (0=Sun..6=Sat, per Date#getDay()). */
+/**
+ * Whether a duty type is scheduled on a given weekday (0=Sun..6=Sat).
+ * Matches the Oct 2569 Ortho roster note: เกตุม on Mon+Thu, ท่าฉลอม on Tue.
+ */
 export function dutyApplies(key: DutyKey, weekday: number): boolean {
-  if (key === "d3") return weekday === 1 || weekday === 2; // Mon + Tue
-  if (key === "d4") return weekday === 4; // Thu only
+  if (key === "d3") return weekday === 2; // Tue — ท่าฉลอม
+  if (key === "d4") return weekday === 1 || weekday === 4; // Mon + Thu — เกตุม
   return true; // d1, d2, d5 run every day
 }
 
@@ -38,41 +41,49 @@ type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyK
  * month. Only months present here have confirmed data; everything else is
  * unfilled until the real roster is supplied — never fabricate placeholder
  * names in this table.
+ *
+ * October 2026 (ต.ค. 2569) sources:
+ * - d1 staff: ตารางออกตรวจ OPD / เวรเสาร์–อาทิตย์ + cast-room doctor column
+ * - d2 intern: เวร แพทย์ Intern (พญ.ภรณี / พญ.ธนภรณ์)
+ * - d3 ท่าฉลอม / d4 เกตุม: เวร Ortho ท่าฉลอม เกตุม ("งด" = no assignment)
+ * - d5 cast-room nurse: เวร พยาบาลห้องเฝือก (day 31 blank in source)
  */
 const VERIFIED: Record<string, Record<number, RawEntry>> = {
   "2026-9": {
-    // October 2026 — duty 1 (staff physician), duty 3 (ท่าฉลอม), duty 4 (เกตุม)
-    1: { d1: "เฉลิมพล", d4: "ชัยวัฒน์" },
-    2: { d1: "วันทนันท์" },
-    3: { d1: "ชวพล" },
-    4: { d1: "ชวพล" },
-    5: { d1: "สิทธิพงศ์", d3: "ปิติพงศ์" },
-    6: { d1: "ธีรฉัตต์", d3: "วิฑูรย์" },
-    7: { d1: "ชัยวัฒน์" },
-    8: { d1: "วรงค์พร", d4: "พลสันต์" },
-    9: { d1: "ชวพล" },
-    10: { d1: "วิฑูรย์" },
-    11: { d1: "วิฑูรย์" },
-    12: { d1: "ปองสิทธิ์", d3: "ธีรฉัตต์" },
-    13: { holiday: true }, // d1 + d3 both pending confirmation
-    14: { d1: "ธนกร" },
-    15: { d1: "เฉลิมพล", d4: "ปองสิทธิ์" },
-    16: { d1: "วันทนันท์" },
-    17: { d1: "สิทธิพงศ์" },
-    18: { d1: "สิทธิพงศ์" },
-    19: { d1: "เทพรักษา", d3: "วรงค์พร" },
-    20: { d1: "ธีรฉัตต์", d3: "สิทธิพงศ์" },
-    21: { d1: "ชัยวัฒน์" },
-    22: { d1: "เทพรักษา", holiday: true, holidayLabel: "RCOST" }, // d4 pending confirmation
-    23: { d1: "เทพรักษา", holiday: true, holidayLabel: "RCOST" },
-    24: { d1: "เทพรักษา", holiday: true, holidayLabel: "RCOST" },
-    25: { d1: "เฉลิมพล" },
-    26: { d1: "ปองสิทธิ์", d3: "ธนกร" },
-    27: { d1: "ปิติพงศ์", d3: "โอภาส" },
-    28: { d1: "ธนกร" },
-    29: { d1: "วรงค์พร", d4: "เทพรักษา" },
-    30: { d1: "ชวพล" },
-    31: { d1: "ปิติพงศ์" },
+    1: { d1: "เฉลิมพล", d4: "ชัยวัฒน์", d5: "หทัยรัตน์" },
+    2: { d1: "ชวพล", d5: "ณัฐวุฒิ" },
+    3: { d1: "ชวพล", d2: "ภรณี", d5: "ธัญญ์ฐิตา" },
+    4: { d1: "ชวพล", d2: "ภรณี", d5: "อรัญญา" },
+    5: { d1: "สิทธิพงศ์", d4: "ปิติพงศ์", d5: "หทัยรัตน์" },
+    6: { d1: "ธีรฉัตต์", d2: "ธนภรณ์", d3: "สิทธิพงศ์", d5: "ณัฐวุฒิ" },
+    7: { d1: "ชัยวัฒน์", d5: "ธัญญ์ฐิตา" },
+    8: { d1: "วรงค์พร", d4: "พลสันต์", d5: "อรัญญา" },
+    9: { d1: "วันทนันท์", d2: "ภรณี", d5: "หทัยรัตน์" },
+    10: { d1: "วิฑูรย์", d2: "ธนภรณ์", d5: "ณัฐวุฒิ" },
+    11: { d1: "วิฑูรย์", d5: "ธัญญ์ฐิตา" },
+    12: { d1: "ปองสิทธิ์", d2: "ภรณี", d4: "ธีรฉัตต์", d5: "อรัญญา" },
+    // 13 Tue: official holiday; ท่าฉลอม marked งด — no d3
+    13: { d1: "ปิติพงศ์", d5: "หทัยรัตน์" },
+    14: { d1: "ธนกร", d2: "ธนภรณ์", d5: "ณัฐวุฒิ" },
+    15: { d1: "เฉลิมพล", d4: "ปองสิทธิ์", d5: "ธัญญ์ฐิตา" },
+    16: { d1: "วันทนันท์", d2: "ภรณี", d5: "อรัญญา" },
+    17: { d1: "ปองสิทธิ์", d5: "หทัยรัตน์" },
+    18: { d1: "ปองสิทธิ์", d5: "ณัฐวุฒิ" },
+    19: { d1: "เทพรักษา", d2: "ภรณี", d4: "วรงค์พร", d5: "ธัญญ์ฐิตา" },
+    20: { d1: "ธีรฉัตต์", d2: "ธนภรณ์", d3: "วันทนันท์", d5: "อรัญญา" },
+    21: { d1: "ชัยวัฒน์", d2: "ธนภรณ์", d5: "หทัยรัตน์" },
+    // 22 Thu: เกตุม marked งด — no d4
+    22: { d1: "เทพรักษา", d5: "ณัฐวุฒิ" },
+    23: { d1: "เทพรักษา", d5: "ธัญญ์ฐิตา" },
+    24: { d1: "เทพรักษา", d5: "อรัญญา" },
+    25: { d1: "เฉลิมพล", d5: "หทัยรัตน์" },
+    26: { d1: "ปองสิทธิ์", d4: "ธนกร", d5: "ณัฐวุฒิ" },
+    27: { d1: "ปิติพงศ์", d2: "ธนภรณ์", d3: "โอภาส", d5: "ธัญญ์ฐิตา" },
+    28: { d1: "ธนกร", d5: "อรัญญา" },
+    29: { d1: "วรงค์พร", d2: "ธนภรณ์", d4: "เทพรักษา", d5: "หทัยรัตน์" },
+    30: { d1: "วันทนันท์", d2: "ภรณี", d5: "ณัฐวุฒิ" },
+    // 31: cast-room nurse blank in source PDF
+    31: { d1: "ปิติพงศ์", d2: "ธนภรณ์" },
   },
 };
 
