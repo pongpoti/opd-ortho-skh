@@ -18,9 +18,14 @@ export function SecondaryNav() {
 
   if (!activeModule) return null;
 
+  // Module-root subpages (e.g. cast-room "บันทึกข้อมูล" at /cast-room) only
+  // match on exact path so they don't steal child routes like /cast-room/dashboard.
   const activeSubitem = activeModule.subitems
-    ?.filter((sub) => sub.href !== activeModule.href)
-    .filter((sub) => pathname === sub.href || pathname.startsWith(`${sub.href}/`))
+    ?.filter((sub) => {
+      if (pathname === sub.href) return true;
+      if (sub.href === activeModule.href) return false;
+      return pathname.startsWith(`${sub.href}/`);
+    })
     .sort((a, b) => b.href.length - a.href.length)[0];
 
   const CurrentIcon = MODULE_ICONS[activeSubitem?.icon ?? activeModule.icon];

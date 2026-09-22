@@ -49,23 +49,23 @@ export function CastTypePicker({ value, onChange }: CastTypePickerProps) {
             borderColor={active ? "brand.solid" : "border"}
             bg={active ? "brand.subtle" : "bg"}
             borderRadius="2xl"
-            p={3}
-            minH="9.5rem"
+            p={4}
+            minH="12.5rem"
             h="auto"
             display="flex"
             flexDirection="column"
             alignItems="center"
             justifyContent="space-between"
-            gap={2}
+            gap={3}
             transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease"
             boxShadow={active ? "sm" : "none"}
             _hover={{ borderColor: active ? "brand.solid" : "brand.muted", bg: active ? "brand.subtle" : "bg.subtle" }}
           >
-            <VStack gap={2} flex="1" justify="center" pointerEvents="none">
+            <VStack gap={3} flex="1" justify="center" pointerEvents="none">
               <Text as="span" color={active ? "brand.fg" : "fg.muted"} lineHeight={0}>
-                <CastIcon id={t.id} />
+                <CastIcon id={t.id} size={56} />
               </Text>
-              <Text fontSize="xs" fontWeight={active ? "semibold" : "medium"} textAlign="center" lineHeight="short">
+              <Text fontSize="md" fontWeight={active ? "semibold" : "medium"} textAlign="center" lineHeight="short">
                 {t.label}
               </Text>
             </VStack>

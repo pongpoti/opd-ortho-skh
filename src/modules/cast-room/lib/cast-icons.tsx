@@ -17,9 +17,10 @@ function Ghost({ children }: { children: ReactNode }) {
   return <g opacity={LIMB_OPACITY}>{children}</g>;
 }
 
-function Svg({ children }: { children: ReactNode }) {
+function Svg({ children, size = 38 }: { children: ReactNode; size?: number }) {
+  const height = Math.round((size * 38) / 34);
   return (
-    <svg width="38" height="43" viewBox="0 0 34 38" fill="none" aria-hidden="true">
+    <svg width={size} height={height} viewBox="0 0 34 38" fill="none" aria-hidden="true">
       {children}
     </svg>
   );
@@ -73,71 +74,71 @@ function HandGhost() {
   );
 }
 
-const ICONS: Record<string, () => ReactNode> = {
-  longLeg: () => (
-    <Svg>
+const ICONS: Record<string, (size: number) => ReactNode> = {
+  longLeg: (size) => (
+    <Svg size={size}>
       <LegGhost />
       <Cast d="M15 6.5 L15 19 L13 30.5 L20.5 32.1" />
     </Svg>
   ),
-  shortLeg: () => (
-    <Svg>
+  shortLeg: (size) => (
+    <Svg size={size}>
       <LegGhost />
       <Cast d="M14.5 22 L13 30.5 L20.5 32.1" />
     </Svg>
   ),
-  kneeSlab: () => (
-    <Svg>
+  kneeSlab: (size) => (
+    <Svg size={size}>
       <LegGhost straight />
       <Cast d="M15 15.5 L15 22.5" w={8} />
     </Svg>
   ),
-  longArm: () => (
-    <Svg>
+  longArm: (size) => (
+    <Svg size={size}>
       <ArmGhost />
       <Cast d="M10.8 7 L10 22 L24 27.6" />
     </Svg>
   ),
-  shortArm: () => (
-    <Svg>
+  shortArm: (size) => (
+    <Svg size={size}>
       <ArmGhost />
       <Cast d="M16 24.4 L24 27.6" />
     </Svg>
   ),
-  uSlab: () => (
-    <Svg>
+  uSlab: (size) => (
+    <Svg size={size}>
       <ArmGhost />
       <Cast d="M11 5.5 L10 22 L12.8 23.1" />
     </Svg>
   ),
-  thumbSpica: () => (
-    <Svg>
+  thumbSpica: (size) => (
+    <Svg size={size}>
       <HandGhost />
       <Cast d="M6 20.6 L10 16 L15.5 12.5 L17 5.5" w={6.5} />
     </Svg>
   ),
-  ulnaGutter: () => (
-    <Svg>
+  ulnaGutter: (size) => (
+    <Svg size={size}>
       <HandGhost />
       <Cast d="M21.5 29 L21.5 22 L18.5 14 L17 5.5" w={7} />
     </Svg>
   ),
-  buddy: () => (
-    <Svg>
+  buddy: (size) => (
+    <Svg size={size}>
       <HandGhost />
       <Cast d="M14.5 26 L20.5 26" w={4.2} />
       <Cast d="M14.5 31 L20.5 31" w={4.2} />
     </Svg>
   ),
-  fingerSplint: () => (
-    <Svg>
+  fingerSplint: (size) => (
+    <Svg size={size}>
       <HandGhost />
       <Cast d="M15.5 21 L15.5 31" w={5.5} />
     </Svg>
   ),
 };
 
-export function CastIcon({ id }: { id: string }) {
-  const Icon = ICONS[id];
-  return Icon ? <Icon /> : null;
+export function CastIcon({ id, size = 38 }: { id: string; size?: number }) {
+  const render = ICONS[id];
+  return render ? <>{render(size)}</> : null;
 }
