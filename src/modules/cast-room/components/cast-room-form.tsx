@@ -9,29 +9,28 @@ import {
   Circle,
   Dialog,
   Field,
+  Flex,
   HStack,
-  IconButton,
   Input,
   Portal,
   Text,
   VStack,
   Wrap,
 } from "@chakra-ui/react";
-import { Minus, Plus } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 
 import { DigitBoxInput } from "@/components/ui/digit-box-input";
 import { GlassCard } from "@/components/ui/glass-card";
 import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 
 import { submitCastLog, updateCastLog } from "../lib/cast-actions";
-import { CAST_TYPES, castLabel } from "../lib/cast-types";
-import { CastIcon } from "../lib/cast-icons";
+import { castLabel } from "../lib/cast-types";
 import { resolveDutyDoctor } from "../lib/duty-doctor";
 import { formatThaiDate } from "../lib/thai-date";
+import { CastTypePicker } from "./cast-type-picker";
 import { ThaiDateInput } from "./thai-date-input";
 
 const HN_LEN = 7;
-const MAX_CAST_COUNT = 20;
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -74,20 +73,6 @@ export function CastRoomForm() {
   const [isPending, startTransition] = useTransition();
 
   const doctorName = resolveDutyDoctor(date);
-
-  const setCastCount = (id: string, count: number) => {
-    setCastItems((prev) => {
-      const next = new Map(prev);
-      const clamped = Math.min(Math.max(count, 0), MAX_CAST_COUNT);
-      if (clamped > 0) next.set(id, clamped);
-      else next.delete(id);
-      return next;
-    });
-  };
-
-  const toggleCastType = (id: string) => {
-    setCastCount(id, castItems.has(id) ? 0 : 1);
-  };
 
   const canSubmit =
     Boolean(
@@ -186,13 +171,29 @@ export function CastRoomForm() {
             </Field.Root>
           </VStack>
 
-          <VStack align="stretch" gap={5}>
-            <HStack gap={2}>
+          <VStack align="stretch" gap={4}>
+            <HStack gap={2} justify="center">
               <StepBadge n={2} />
               <Text fontWeight="medium">แพทย์</Text>
             </HStack>
             {doctorName ? (
-              <Text fontWeight="semibold">{doctorName}</Text>
+              <Flex justify="center" w="full">
+                <Badge
+                  colorPalette="brand"
+                  variant="subtle"
+                  borderRadius="full"
+                  px={4}
+                  py={2}
+                  fontSize="md"
+                  fontWeight="semibold"
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={2}
+                >
+                  <Stethoscope size={18} aria-hidden />
+                  {doctorName}
+                </Badge>
+              </Flex>
             ) : (
               <Alert.Root status="warning">
                 <Alert.Indicator />
@@ -254,74 +255,23 @@ export function CastRoomForm() {
               <Text fontWeight="medium">ประเภทเฝือก</Text>
             </HStack>
 
-            <VStack align="stretch" gap={3}>
-              {CAST_TYPES.map((t) => {
-                const count = castItems.get(t.id) ?? 0;
-                const active = count > 0;
-                return (
-                  <HStack key={t.id} justify="space-between" gap={3}>
-                    <Button
-                      type="button"
-                      size="lg"
-                      fontSize="md"
-                      borderRadius="full"
-                      variant={active ? "solid" : "outline"}
-                      colorPalette="brand"
-                      aria-pressed={active}
-                      onClick={() => toggleCastType(t.id)}
-                    >
-                      <CastIcon id={t.id} />
-                      {t.label}
-                    </Button>
-                    <HStack
-                      gap={0}
-                      flexShrink={0}
-                      borderWidth="1px"
-                      borderColor="border"
-                      borderRadius="full"
-                      opacity={active ? 1 : 0.5}
-                      px={1}
-                    >
-                      <IconButton
-                        aria-label={`ลดจำนวน ${t.label}`}
-                        size="sm"
-                        variant="ghost"
-                        disabled={count === 0}
-                        onClick={() => setCastCount(t.id, count - 1)}
-                      >
-                        <Minus size={16} />
-                      </IconButton>
-                      <Text minW="6" textAlign="center" fontSize="md" fontWeight="semibold">
-                        {count}
-                      </Text>
-                      <IconButton
-                        aria-label={`เพิ่มจำนวน ${t.label}`}
-                        size="sm"
-                        variant="ghost"
-                        disabled={count >= MAX_CAST_COUNT}
-                        onClick={() => setCastCount(t.id, count + 1)}
-                      >
-                        <Plus size={16} />
-                      </IconButton>
-                    </HStack>
-                  </HStack>
-                );
-              })}
-            </VStack>
+            <CastTypePicker value={castItems} onChange={setCastItems} />
 
             {castItems.size === 0 ? (
-              <Text fontSize="sm" color="fg.muted">
-                ยังไม่ได้เลือกเฝือก — แตะที่รายการด้านบน
+              <Text fontSize="sm" color="fg.muted" textAlign="center">
+                ยังไม่ได้เลือกเฝือก — แตะการ์ดด้านบนเพื่อเลือกประเภท
               </Text>
             ) : (
-              <Wrap gap={2}>
-                {[...castItems].map(([id, count]) => (
-                  <Badge key={id} colorPalette="brand" variant="subtle" borderRadius="full" px={3} py={1}>
-                    {castLabel(id)}
-                    {count > 1 ? ` ×${count}` : ""}
-                  </Badge>
-                ))}
-              </Wrap>
+              <Flex justify="center" w="full">
+                <Wrap gap={2} justify="center">
+                  {[...castItems].map(([id, count]) => (
+                    <Badge key={id} colorPalette="brand" variant="subtle" borderRadius="full" px={3} py={1}>
+                      {castLabel(id)}
+                      {count > 1 ? ` ×${count}` : ""}
+                    </Badge>
+                  ))}
+                </Wrap>
+              </Flex>
             )}
           </VStack>
 

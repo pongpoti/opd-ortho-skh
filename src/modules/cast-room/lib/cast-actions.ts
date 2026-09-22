@@ -132,7 +132,7 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
 
   const existing = await db.query.castLogs.findMany({
     where: eq(castLogs.visitId, input.visitId),
-    columns: { loggedByLineUserId: true },
+    columns: { loggedByLineUserId: true, loggedByName: true },
   });
   if (existing.length === 0) {
     return { ok: false, error: "ไม่พบรายการที่ต้องการแก้ไข" };
@@ -147,11 +147,12 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
     return { ok: false, error: "ไม่มีสิทธิ์แก้ไขรายการนี้" };
   }
 
+  const preserveLogger = isAdmin && !ownsVisit && existing.length > 0;
   const rows = buildRows(
     input,
     validated,
-    session.user.lineUserId || null,
-    session.user.firstName ?? null
+    preserveLogger ? existing[0].loggedByLineUserId : session.user.lineUserId || null,
+    preserveLogger ? existing[0].loggedByName : (session.user.firstName ?? null)
   );
 
   await db.batch([

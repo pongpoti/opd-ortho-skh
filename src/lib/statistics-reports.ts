@@ -1,10 +1,6 @@
-export type StatisticsReport = {
-  slug: string;
-  name: string;
-  description: string;
-  href: string;
-  icon: "clock";
-};
+import type { ModuleSubpage } from "./module-subpages";
+
+export type StatisticsReport = ModuleSubpage;
 
 export const statisticsReports: StatisticsReport[] = [
   {
