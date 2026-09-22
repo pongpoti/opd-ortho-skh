@@ -2,10 +2,11 @@ import { SimpleGrid, Text, VStack } from "@chakra-ui/react";
 
 import { ToolLinkCard } from "@/components/tool-link-card";
 import { MODULE_ICONS } from "@/lib/module-icons";
+import { modulePageTitle } from "@/lib/modules";
 import { statisticsReports } from "@/lib/statistics-reports";
 
 export const metadata = {
-  title: "สถิติ — OPD Ortho SKH",
+  title: modulePageTitle("statistics"),
 };
 
 export default function StatisticsPage() {

@@ -36,3 +36,12 @@ export const modules: AppModule[] = [
     subitems: statisticsReports,
   },
 ];
+
+/** Browser tab title: module name, or "module - subitem" when a subpage is active. */
+export function modulePageTitle(moduleSlug: string, subitemSlug?: string): string {
+  const mod = modules.find((m) => m.slug === moduleSlug);
+  if (!mod) return "OPD Ortho SKH";
+  if (!subitemSlug) return mod.name;
+  const sub = mod.subitems?.find((s) => s.slug === subitemSlug);
+  return sub ? `${mod.name} - ${sub.name}` : mod.name;
+}

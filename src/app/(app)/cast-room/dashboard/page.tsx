@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { Flex, Spinner } from "@chakra-ui/react";
 
 import { auth } from "@/auth";
+import { modulePageTitle } from "@/lib/modules";
 import { CastRoomDashboard } from "@/modules/cast-room/components/cast-room-dashboard";
 import { listCastVisitsForAdmin } from "@/modules/cast-room/lib/cast-dashboard-actions";
 
 export const metadata = {
-  title: "รายการบันทึก — เวรห้องเฝือก",
+  title: modulePageTitle("cast-room", "dashboard"),
 };
 
 function DashboardFallback() {
