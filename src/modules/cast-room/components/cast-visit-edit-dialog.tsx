@@ -7,7 +7,6 @@ import {
   Button,
   Dialog,
   Field,
-  Flex,
   Input,
   Portal,
   Text,
@@ -98,23 +97,22 @@ function CastVisitEditForm({
           </Field.Root>
 
           {doctorName ? (
-            <Flex justify="center" w="full">
-              <Badge
-                colorPalette="brand"
-                variant="subtle"
-                borderRadius="full"
-                px={4}
-                py={2}
-                fontSize="sm"
-                fontWeight="semibold"
-                display="inline-flex"
-                alignItems="center"
-                gap={2}
-              >
-                <Stethoscope size={16} aria-hidden />
-                {doctorName}
-              </Badge>
-            </Flex>
+            <Badge
+              colorPalette="brand"
+              variant="subtle"
+              borderRadius="full"
+              px={4}
+              py={2}
+              fontSize="sm"
+              fontWeight="semibold"
+              display="inline-flex"
+              alignItems="center"
+              gap={2}
+              w="fit-content"
+            >
+              <Stethoscope size={16} aria-hidden />
+              {doctorName}
+            </Badge>
           ) : (
             <Alert.Root status="warning">
               <Alert.Indicator />

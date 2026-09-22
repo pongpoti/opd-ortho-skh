@@ -172,28 +172,27 @@ export function CastRoomForm() {
           </VStack>
 
           <VStack align="stretch" gap={4}>
-            <HStack gap={2} justify="center">
+            <HStack gap={2}>
               <StepBadge n={2} />
               <Text fontWeight="medium">แพทย์</Text>
             </HStack>
             {doctorName ? (
-              <Flex justify="center" w="full">
-                <Badge
-                  colorPalette="brand"
-                  variant="subtle"
-                  borderRadius="full"
-                  px={4}
-                  py={2}
-                  fontSize="md"
-                  fontWeight="semibold"
-                  display="inline-flex"
-                  alignItems="center"
-                  gap={2}
-                >
-                  <Stethoscope size={18} aria-hidden />
-                  {doctorName}
-                </Badge>
-              </Flex>
+              <Badge
+                colorPalette="brand"
+                variant="subtle"
+                borderRadius="full"
+                px={4}
+                py={2}
+                fontSize="md"
+                fontWeight="semibold"
+                display="inline-flex"
+                alignItems="center"
+                gap={2}
+                w="fit-content"
+              >
+                <Stethoscope size={18} aria-hidden />
+                {doctorName}
+              </Badge>
             ) : (
               <Alert.Root status="warning">
                 <Alert.Indicator />
