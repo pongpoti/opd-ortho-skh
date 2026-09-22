@@ -111,3 +111,27 @@ export async function getCastVisitForAdmin(visitId: string): Promise<VisitResult
   const [visit] = groupRows(rows);
   return { ok: true, visit };
 }
+
+type DeleteResult = { ok: true } | { ok: false; error: string };
+
+export async function deleteCastVisitForAdmin(visitId: string): Promise<DeleteResult> {
+  const session = await requireAdminSession();
+  if (!session) {
+    return { ok: false, error: "ไม่มีสิทธิ์เข้าถึง" };
+  }
+
+  if (!visitId) {
+    return { ok: false, error: "ไม่พบรายการ" };
+  }
+
+  const existing = await db.query.castLogs.findMany({
+    where: eq(castLogs.visitId, visitId),
+    columns: { visitId: true },
+  });
+  if (existing.length === 0) {
+    return { ok: false, error: "ไม่พบรายการที่ต้องการลบ" };
+  }
+
+  await db.delete(castLogs).where(eq(castLogs.visitId, visitId));
+  return { ok: true };
+}

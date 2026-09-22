@@ -5,18 +5,21 @@ import {
   Alert,
   Badge,
   Button,
+  Dialog,
   HStack,
   NativeSelect,
+  Portal,
   Text,
   VStack,
   Wrap,
 } from "@chakra-ui/react";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { THAI_MONTHS } from "../lib/thai-date";
 
 import {
+  deleteCastVisitForAdmin,
   listCastVisitsForAdmin,
   type CastVisitSummary,
 } from "../lib/cast-dashboard-actions";
@@ -41,7 +44,11 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingVisit, setEditingVisit] = useState<CastVisitSummary | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deletingVisit, setDeletingVisit] = useState<CastVisitSummary | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   const reload = useCallback(() => {
     const monthNum = Number(month);
@@ -62,6 +69,28 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const openEdit = (visit: CastVisitSummary) => {
     setEditingVisit(visit);
     setDialogOpen(true);
+  };
+
+  const openDelete = (visit: CastVisitSummary) => {
+    setDeletingVisit(visit);
+    setDeleteError(null);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!deletingVisit || isDeleting) return;
+
+    startDeleteTransition(async () => {
+      setDeleteError(null);
+      const result = await deleteCastVisitForAdmin(deletingVisit.visitId);
+      if (!result.ok) {
+        setDeleteError(result.error);
+        return;
+      }
+      setDeleteDialogOpen(false);
+      setDeletingVisit(null);
+      reload();
+    });
   };
 
   return (
@@ -146,10 +175,16 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
                       </Text>
                     )}
                   </VStack>
-                  <Button size="sm" variant="outline" colorPalette="brand" onClick={() => openEdit(visit)}>
-                    <Pencil size={16} />
-                    แก้ไข
-                  </Button>
+                  <HStack gap={2} flexShrink={0}>
+                    <Button size="sm" variant="outline" colorPalette="brand" onClick={() => openEdit(visit)}>
+                      <Pencil size={16} />
+                      แก้ไข
+                    </Button>
+                    <Button size="sm" variant="outline" colorPalette="red" onClick={() => openDelete(visit)}>
+                      <Trash2 size={16} />
+                      ลบ
+                    </Button>
+                  </HStack>
                 </HStack>
                 <Wrap gap={2}>
                   {visit.casts.map((cast) => (
@@ -171,6 +206,69 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
         onOpenChange={setDialogOpen}
         onSaved={reload}
       />
+
+      <Dialog.Root
+        open={deleteDialogOpen}
+        onOpenChange={(e) => {
+          setDeleteDialogOpen(e.open);
+          if (!e.open) {
+            setDeletingVisit(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <Portal>
+          <Dialog.Backdrop backdropFilter="blur(4px)" />
+          <Dialog.Positioner p={4}>
+            <Dialog.Content
+              maxW="md"
+              w="full"
+              bg="glass.solid"
+              backdropFilter="blur(16px)"
+              borderWidth="1px"
+              borderColor="glass.border"
+            >
+              <Dialog.Header>
+                <Dialog.Title>ยืนยันการลบ</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                <VStack align="stretch" gap={3}>
+                  <Text>
+                    ต้องการลบรายการของ{" "}
+                    <Text as="span" fontWeight="semibold">
+                      {deletingVisit?.patientName}
+                    </Text>{" "}
+                    (HN {deletingVisit?.hn}) หรือไม่?
+                  </Text>
+                  <Text fontSize="sm" color="fg.muted">
+                    การลบนี้ไม่สามารถย้อนกลับได้
+                  </Text>
+                  {deleteError && (
+                    <Alert.Root status="error">
+                      <Alert.Indicator />
+                      <Alert.Content>
+                        <Alert.Description>{deleteError}</Alert.Description>
+                      </Alert.Content>
+                    </Alert.Root>
+                  )}
+                </VStack>
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  disabled={isDeleting}
+                >
+                  ยกเลิก
+                </Button>
+                <Button colorPalette="red" onClick={confirmDelete} loading={isDeleting}>
+                  ลบ
+                </Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </VStack>
   );
 }
