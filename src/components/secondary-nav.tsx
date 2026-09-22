@@ -18,9 +18,10 @@ export function SecondaryNav() {
 
   if (!activeModule) return null;
 
-  const activeSubitem = activeModule.subitems?.find(
-    (sub) => pathname === sub.href || pathname.startsWith(`${sub.href}/`)
-  );
+  const activeSubitem = activeModule.subitems
+    ?.filter((sub) => sub.href !== activeModule.href)
+    .filter((sub) => pathname === sub.href || pathname.startsWith(`${sub.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0];
 
   const CurrentIcon = MODULE_ICONS[activeSubitem?.icon ?? activeModule.icon];
 
