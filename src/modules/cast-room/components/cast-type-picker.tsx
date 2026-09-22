@@ -7,6 +7,7 @@ import { CAST_TYPES } from "../lib/cast-types";
 import { CastIcon } from "../lib/cast-icons";
 
 const MAX_CAST_COUNT = 20;
+const CAST_ICON_SIZE = 96;
 
 type CastTypePickerProps = {
   value: Map<string, number>;
@@ -60,14 +61,16 @@ export function CastTypePicker({ value, onChange }: CastTypePickerProps) {
             transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease"
             boxShadow={active ? "sm" : "none"}
             _hover={{ borderColor: active ? "brand.solid" : "brand.muted", bg: active ? "brand.subtle" : "bg.subtle" }}
+            // Chakra Button size recipe sets `_icon` → `& :where(svg)` to ~20px.
+            // Keep counter Lucide icons small; CastIcon uses inline styles to win.
+            _icon={{ width: "auto", height: "auto" }}
           >
             <VStack gap={1.5} flex="1" justify="center" pointerEvents="none" w="full">
-              <Text as="span" color={active ? "brand.fg" : "fg"} lineHeight={0}>
-                <CastIcon id={t.id} size={96} />
-              </Text>
+              <CastIcon id={t.id} size={CAST_ICON_SIZE} />
               <Text
                 fontSize="md"
                 fontWeight={active ? "semibold" : "medium"}
+                color={active ? "brand.fg" : "fg"}
                 textAlign="center"
                 lineHeight="short"
                 whiteSpace="normal"

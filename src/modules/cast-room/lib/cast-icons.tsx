@@ -7,8 +7,16 @@ import type { ReactNode } from "react";
 
 function Svg({ children, size }: { children: ReactNode; size: number }) {
   const height = Math.round(size * 1.15);
+  // Inline width/height win over Chakra Button `_icon` (`& :where(svg)` → size token).
   return (
-    <svg width={size} height={height} viewBox="0 0 80 92" fill="none" aria-hidden="true">
+    <svg
+      width={size}
+      height={height}
+      viewBox="0 0 80 92"
+      fill="none"
+      aria-hidden="true"
+      style={{ width: size, height, flexShrink: 0 }}
+    >
       {children}
     </svg>
   );
