@@ -1,9 +1,10 @@
 import type { Viewport } from "next";
 
+import { modulePageTitle } from "@/lib/modules";
 import { OpdWaitTimeCalculator } from "@/modules/waiting-time/components/opd-wait-time-calculator";
 
 export const metadata = {
-  title: "ระยะเวลารอคอย — OPD Ortho SKH",
+  title: modulePageTitle("statistics", "waiting-time"),
 };
 
 export const viewport: Viewport = {
