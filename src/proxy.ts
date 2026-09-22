@@ -19,6 +19,15 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
+  if (
+    isAuthed &&
+    isRegistered &&
+    pathname.startsWith("/cast-room/dashboard") &&
+    req.auth?.user?.role !== "admin"
+  ) {
+    return NextResponse.redirect(new URL("/cast-room", req.url));
+  }
+
   return NextResponse.next();
 });
 
