@@ -70,11 +70,6 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
   }
 
   const cells = buildMonthCells(view.year, view.month);
-  // Hide the next-month peek on the right: drop trailing outside days so only
-  // the current month (plus leading blanks for weekday alignment) is shown.
-  let lastInMonth = cells.length;
-  while (lastInMonth > 0 && cells[lastInMonth - 1].outside) lastInMonth -= 1;
-  const visibleCells = cells.slice(0, lastInMonth);
 
   return (
     <>
@@ -122,15 +117,15 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                 </Grid>
 
                 <Grid templateColumns="repeat(7, 1fr)" gap={1}>
-                  {visibleCells.map((c) => {
-                    if (c.outside) {
-                      return <Box key={`${c.year}-${c.month}-${c.day}-outside`} aria-hidden />;
+                  {cells.map((c) => {
+                    if (c.kind === "blank") {
+                      return <Box key={c.key} minH="8" aria-hidden />;
                     }
 
                     const iso = toISO(c.year, c.month, c.day);
                     const isSelected = iso === value;
                     return (
-                      <Box key={`${c.year}-${c.month}-${c.day}`}>
+                      <Box key={iso}>
                         <Button
                           type="button"
                           size="sm"

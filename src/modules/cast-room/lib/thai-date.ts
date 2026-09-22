@@ -5,7 +5,10 @@ export const THAI_MONTHS = [
 export const THAI_WD_SHORT = ["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"];
 const BE_OFFSET = 543;
 
-export type CalendarCell = { year: number; month: number; day: number; outside: boolean };
+/** A day button, or a blank spacer used only for Monday-first weekday alignment. */
+export type CalendarCell =
+  | { kind: "day"; year: number; month: number; day: number }
+  | { kind: "blank"; key: string };
 
 function daysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -16,24 +19,22 @@ function mondayIndex(jsDay: number) {
   return (jsDay + 6) % 7;
 }
 
-/** Same grid-building approach as the duty-schedule calendar, for a consistent Monday-first month view. */
+/**
+ * Month grid for the cast-room date picker.
+ *
+ * Only current-month day numbers are included. Leading blanks keep Monday-first
+ * alignment; the last week is left short — no previous/next-month peek dates.
+ */
 export function buildMonthCells(year: number, month: number): CalendarCell[] {
   const n = daysInMonth(year, month);
   const firstWd = mondayIndex(new Date(year, month, 1).getDay());
-  const prevMonth = month - 1 < 0 ? 11 : month - 1;
-  const prevYear = month - 1 < 0 ? year - 1 : year;
-  const prevDays = daysInMonth(prevYear, prevMonth);
-  const nextMonth = month + 1 > 11 ? 0 : month + 1;
-  const nextYear = month + 1 > 11 ? year + 1 : year;
 
   const cells: CalendarCell[] = [];
   for (let i = 0; i < firstWd; i++) {
-    cells.push({ year: prevYear, month: prevMonth, day: prevDays - firstWd + 1 + i, outside: true });
+    cells.push({ kind: "blank", key: `lead-${year}-${month}-${i}` });
   }
-  for (let d = 1; d <= n; d++) cells.push({ year, month, day: d, outside: false });
-  let nextDay = 1;
-  while (cells.length % 7 !== 0) {
-    cells.push({ year: nextYear, month: nextMonth, day: nextDay++, outside: true });
+  for (let d = 1; d <= n; d++) {
+    cells.push({ kind: "day", year, month, day: d });
   }
   return cells;
 }
