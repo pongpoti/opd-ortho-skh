@@ -13,6 +13,17 @@ export const DUTY_LABELS: Record<DutyKey, string> = {
 };
 
 /**
+ * Earliest month the duty calendar may show (month is 0-indexed).
+ * App launch: October 2026 — September and earlier are not browsable.
+ */
+export const DUTY_CALENDAR_START = { year: 2026, month: 9 } as const;
+
+export function isBeforeDutyCalendarStart(year: number, month: number): boolean {
+  const start = DUTY_CALENDAR_START;
+  return year < start.year || (year === start.year && month < start.month);
+}
+
+/**
  * Whether a duty type is scheduled on a given weekday (0=Sun..6=Sat).
  * Matches the Oct 2569 Ortho roster note: เกตุม on Mon+Thu, ท่าฉลอม on Tue.
  */

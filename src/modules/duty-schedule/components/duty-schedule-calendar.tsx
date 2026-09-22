@@ -16,7 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { DUTY_LABELS, DUTY_ORDER, dutyApplies, getDutyDay } from "../lib/duty-data";
+import { DUTY_CALENDAR_START, DUTY_LABELS, DUTY_ORDER, dutyApplies, getDutyDay, isBeforeDutyCalendarStart } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 
 const THAI_MONTHS = [
@@ -62,11 +62,26 @@ function buildCells(year: number, month: number): Cell[] {
   return cells;
 }
 
+function clampView(year: number, month: number) {
+  if (isBeforeDutyCalendarStart(year, month)) {
+    return { year: DUTY_CALENDAR_START.year, month: DUTY_CALENDAR_START.month };
+  }
+  return { year, month };
+}
+
+function initialView() {
+  const now = new Date();
+  return clampView(now.getFullYear(), now.getMonth());
+}
+
 export function DutyScheduleCalendar() {
   const now = new Date();
-  const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
+  const [view, setView] = useState(initialView);
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const atStart =
+    view.year === DUTY_CALENDAR_START.year && view.month === DUTY_CALENDAR_START.month;
 
   function changeMonth(delta: number) {
     setView((v) => {
@@ -74,7 +89,7 @@ export function DutyScheduleCalendar() {
       let year = v.year;
       if (month < 0) { month = 11; year -= 1; }
       if (month > 11) { month = 0; year += 1; }
-      return { year, month };
+      return clampView(year, month);
     });
   }
 
@@ -114,7 +129,13 @@ export function DutyScheduleCalendar() {
           </Text>
         </Heading>
         <HStack gap={2}>
-          <IconButton aria-label="เดือนก่อนหน้า" size="sm" variant="outline" onClick={() => changeMonth(-1)}>
+          <IconButton
+            aria-label="เดือนก่อนหน้า"
+            size="sm"
+            variant="outline"
+            disabled={atStart}
+            onClick={() => changeMonth(-1)}
+          >
             <ChevronLeft size={16} />
           </IconButton>
           <IconButton aria-label="เดือนถัดไป" size="sm" variant="outline" onClick={() => changeMonth(1)}>
