@@ -3,7 +3,6 @@
 import { useCallback, useState, useTransition } from "react";
 import {
   Alert,
-  Badge,
   Button,
   Dialog,
   HStack,
@@ -11,9 +10,7 @@ import {
   Portal,
   Text,
   VStack,
-  Wrap,
 } from "@chakra-ui/react";
-import { Pencil, Trash2 } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { THAI_MONTHS } from "../lib/thai-date";
@@ -23,8 +20,8 @@ import {
   listCastVisitsForAdmin,
   type CastVisitSummary,
 } from "../lib/cast-dashboard-actions";
-import { formatThaiDate } from "../lib/thai-date";
 import { CastVisitEditDialog } from "./cast-visit-edit-dialog";
+import { CastVisitPersonCard } from "./cast-visit-person-card";
 
 function currentMonthYear() {
   const now = new Date();
@@ -47,6 +44,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const [deletingVisit, setDeletingVisit] = useState<CastVisitSummary | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [swipedVisitId, setSwipedVisitId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
@@ -67,11 +65,13 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   }, [month, buddhistYear]);
 
   const openEdit = (visit: CastVisitSummary) => {
+    setSwipedVisitId(null);
     setEditingVisit(visit);
     setDialogOpen(true);
   };
 
   const openDelete = (visit: CastVisitSummary) => {
+    setSwipedVisitId(null);
     setDeletingVisit(visit);
     setDeleteError(null);
     setDeleteDialogOpen(true);
@@ -153,49 +153,14 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
             {visits.length} รายการ
           </Text>
           {visits.map((visit) => (
-            <GlassCard key={visit.visitId} variant="solid" p={5}>
-              <VStack align="stretch" gap={3}>
-                <HStack justify="space-between" align="start" gap={3}>
-                  <VStack align="start" gap={1} flex="1">
-                    <Text fontWeight="semibold">{formatThaiDate(visit.shiftDate)}</Text>
-                    <Text fontSize="sm" color="fg.muted">
-                      {visit.doctorName}
-                    </Text>
-                    <HStack gap={2} fontSize="sm" flexWrap="wrap">
-                      <Text fontFamily="mono">HN {visit.hn}</Text>
-                      <Text>·</Text>
-                      <Text fontWeight="medium">{visit.patientName}</Text>
-                    </HStack>
-                    <Text fontSize="sm" color="fg.muted">
-                      {visit.diagnosis}
-                    </Text>
-                    {visit.loggedByName && (
-                      <Text fontSize="xs" color="fg.muted">
-                        บันทึกโดย {visit.loggedByName}
-                      </Text>
-                    )}
-                  </VStack>
-                  <HStack gap={2} flexShrink={0}>
-                    <Button size="sm" variant="outline" colorPalette="brand" onClick={() => openEdit(visit)}>
-                      <Pencil size={16} />
-                      แก้ไข
-                    </Button>
-                    <Button size="sm" variant="outline" colorPalette="red" onClick={() => openDelete(visit)}>
-                      <Trash2 size={16} />
-                      ลบ
-                    </Button>
-                  </HStack>
-                </HStack>
-                <Wrap gap={2}>
-                  {visit.casts.map((cast) => (
-                    <Badge key={cast.id} colorPalette="brand" variant="subtle" borderRadius="full">
-                      {cast.label}
-                      {cast.count > 1 ? ` ×${cast.count}` : ""}
-                    </Badge>
-                  ))}
-                </Wrap>
-              </VStack>
-            </GlassCard>
+            <CastVisitPersonCard
+              key={visit.visitId}
+              visit={visit}
+              open={swipedVisitId === visit.visitId}
+              onOpenChange={(nextOpen) => setSwipedVisitId(nextOpen ? visit.visitId : null)}
+              onEdit={() => openEdit(visit)}
+              onDelete={() => openDelete(visit)}
+            />
           ))}
         </VStack>
       )}
