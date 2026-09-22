@@ -37,7 +37,7 @@ function monthRange(year: number, month: number) {
 function groupRows(
   rows: Array<{
     visitId: string;
-    shiftDate: string;
+    shiftDate: string | Date;
     hn: string;
     patientName: string;
     diagnosis: string | null;
@@ -46,7 +46,7 @@ function groupRows(
     castLabel: string;
     count: number;
     loggedByName: string | null;
-    createdAt: Date;
+    createdAt: Date | string;
   }>
 ): CastVisitSummary[] {
   const byVisit = new Map<string, CastVisitSummary>();
@@ -54,15 +54,22 @@ function groupRows(
   for (const row of rows) {
     let visit = byVisit.get(row.visitId);
     if (!visit) {
+      const shiftDate =
+        typeof row.shiftDate === "string"
+          ? row.shiftDate.slice(0, 10)
+          : `${row.shiftDate.getUTCFullYear()}-${String(row.shiftDate.getUTCMonth() + 1).padStart(2, "0")}-${String(row.shiftDate.getUTCDate()).padStart(2, "0")}`;
+      const createdAt =
+        row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt);
+
       visit = {
         visitId: row.visitId,
-        shiftDate: row.shiftDate,
+        shiftDate,
         hn: row.hn,
         patientName: row.patientName,
         diagnosis: row.diagnosis ?? "",
         doctorName: row.doctorName,
         loggedByName: row.loggedByName,
-        createdAt: row.createdAt.toISOString(),
+        createdAt,
         casts: [],
       };
       byVisit.set(row.visitId, visit);
