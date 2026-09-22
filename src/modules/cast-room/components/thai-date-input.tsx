@@ -90,7 +90,15 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
         <Portal>
           <Dialog.Backdrop backdropFilter="blur(4px)" />
           <Dialog.Positioner>
-            <Dialog.Content bg="glass.solid" backdropFilter="blur(16px)" borderWidth="1px" borderColor="glass.border" maxW="320px" w="full">
+            <Dialog.Content
+              bg="glass.solid"
+              backdropFilter="blur(16px)"
+              borderWidth="1px"
+              borderColor="glass.border"
+              maxW="320px"
+              w="full"
+              overflow="hidden"
+            >
               <Dialog.Body
                 p={4}
                 onTouchStart={handleTouchStart}
@@ -108,7 +116,7 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                   </IconButton>
                 </HStack>
 
-                <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={1}>
+                <Grid templateColumns="repeat(7, minmax(0, 1fr))" gap={1} mb={1}>
                   {THAI_WD_SHORT.map((w) => (
                     <Text key={w} textAlign="center" fontSize="xs" color="fg.muted" fontWeight="medium">
                       {w}
@@ -116,20 +124,22 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                   ))}
                 </Grid>
 
-                <Grid templateColumns="repeat(7, 1fr)" gap={1}>
+                <Grid templateColumns="repeat(7, minmax(0, 1fr))" gap={1}>
                   {cells.map((c) => {
                     if (c.kind === "blank") {
-                      return <Box key={c.key} minH="8" aria-hidden />;
+                      return <Box key={c.key} minH="8" minW={0} aria-hidden />;
                     }
 
                     const iso = toISO(c.year, c.month, c.day);
                     const isSelected = iso === value;
                     return (
-                      <Box key={iso}>
+                      <Box key={iso} minW={0}>
                         <Button
                           type="button"
                           size="sm"
                           w="full"
+                          minW={0}
+                          px={0}
                           variant={isSelected ? "solid" : "ghost"}
                           colorPalette="brand"
                           onClick={() => {
