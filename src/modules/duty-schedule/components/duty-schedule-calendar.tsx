@@ -243,7 +243,7 @@ export function DutyScheduleCalendar() {
                   </IconButton>
                 </Drawer.CloseTrigger>
               </Drawer.Header>
-              <Drawer.Body>
+              <Drawer.Body pb="max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))">
                 {selectedDuty?.holiday && (
                   <Text
                     display="inline-block"
