@@ -5,6 +5,7 @@ import { Flex, Spinner } from "@chakra-ui/react";
 import { auth } from "@/auth";
 import { CastRoomDashboard } from "@/modules/cast-room/components/cast-room-dashboard";
 import { listCastVisitsForAdmin } from "@/modules/cast-room/lib/cast-dashboard-actions";
+import { operationalMonthYear } from "@/modules/cast-room/lib/operational-date";
 
 export const metadata = {
   title: "รายการบันทึก — เวรห้องเฝือก",
@@ -19,8 +20,8 @@ function DashboardFallback() {
 }
 
 async function CastRoomDashboardData() {
-  const now = new Date();
-  const result = await listCastVisitsForAdmin(now.getFullYear(), now.getMonth() + 1);
+  const { year, month } = operationalMonthYear();
+  const result = await listCastVisitsForAdmin(year, month);
   const initialVisits = result.ok ? result.visits : [];
   return <CastRoomDashboard initialVisits={initialVisits} />;
 }

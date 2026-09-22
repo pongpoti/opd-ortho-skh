@@ -26,6 +26,7 @@ import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 import { submitCastLog, updateCastLog } from "../lib/cast-actions";
 import { castLabel } from "../lib/cast-types";
 import { resolveDutyDoctor } from "../lib/duty-doctor";
+import { operationalTodayISO } from "../lib/operational-date";
 import { formatThaiDate } from "../lib/thai-date";
 import { CastTypePicker } from "./cast-type-picker";
 import { ThaiDateInput } from "./thai-date-input";
@@ -38,11 +39,6 @@ function StepBadge({ n }: { n: number }) {
       {n}
     </Circle>
   );
-}
-
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function hnHint(value: string): string | null {
@@ -61,7 +57,7 @@ interface ConfirmedEntry {
 }
 
 export function CastRoomForm() {
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(operationalTodayISO);
   const [hn, setHn] = useState("");
   const [name, setName] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -86,7 +82,7 @@ export function CastRoomForm() {
 
   const resetForm = () => {
     setEditingVisitId(null);
-    setDate(todayISO());
+    setDate(operationalTodayISO());
     setHn("");
     setName("");
     setDiagnosis("");

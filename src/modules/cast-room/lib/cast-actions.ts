@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -114,6 +115,7 @@ export async function submitCastLog(input: CastLogInput): Promise<ActionResult> 
     .insert(castLogs)
     .values(buildRows(input, validated, session.user.lineUserId || null, session.user.firstName ?? null));
 
+  revalidatePath("/cast-room/dashboard");
   return { ok: true };
 }
 
@@ -167,5 +169,6 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
     db.insert(castLogs).values(rows),
   ]);
 
+  revalidatePath("/cast-room/dashboard");
   return { ok: true };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   Alert,
   Badge,
@@ -20,21 +20,17 @@ import {
   listCastVisitsForAdmin,
   type CastVisitSummary,
 } from "../lib/cast-dashboard-actions";
+import { operationalMonthYear } from "../lib/operational-date";
 import { formatThaiDate } from "../lib/thai-date";
 import { CastVisitEditDialog } from "./cast-visit-edit-dialog";
 
-function currentMonthYear() {
-  const now = new Date();
-  return { month: now.getMonth() + 1, year: now.getFullYear() };
-}
-
 function buddhistYearOptions() {
-  const { year } = currentMonthYear();
+  const { year } = operationalMonthYear();
   return [year + 543, year + 543 - 1];
 }
 
 export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitSummary[] }) {
-  const initial = currentMonthYear();
+  const initial = operationalMonthYear();
   const [month, setMonth] = useState(String(initial.month));
   const [buddhistYear, setBuddhistYear] = useState(String(initial.year + 543));
   const [visits, setVisits] = useState(initialVisits);
@@ -58,6 +54,11 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
       setVisits(result.visits);
     });
   }, [month, buddhistYear]);
+
+  // Soft-nav / prefetch can leave a stale empty list after a new submit.
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   const openEdit = (visit: CastVisitSummary) => {
     setEditingVisit(visit);
