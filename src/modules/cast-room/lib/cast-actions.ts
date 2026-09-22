@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { castLogs } from "@/db/schema";
+import { canAccessCastRoom } from "@/lib/module-access";
 import { PHYSICIANS } from "@/lib/physicians";
 
 import { CAST_TYPES, castLabel } from "./cast-types";
@@ -102,6 +103,9 @@ export async function submitCastLog(input: CastLogInput): Promise<ActionResult> 
   if (!session?.user?.isRegistered) {
     return { ok: false, error: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล" };
   }
+  if (!canAccessCastRoom(session.user.role)) {
+    return { ok: false, error: "ไม่มีสิทธิ์บันทึกข้อมูลห้องเฝือก" };
+  }
 
   const validated = validate(input);
   if (!validated.ok) return validated;
@@ -122,6 +126,9 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
   const session = await auth();
   if (!session?.user?.isRegistered) {
     return { ok: false, error: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล" };
+  }
+  if (!canAccessCastRoom(session.user.role)) {
+    return { ok: false, error: "ไม่มีสิทธิ์แก้ไขข้อมูลห้องเฝือก" };
   }
   if (!input.visitId) {
     return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };

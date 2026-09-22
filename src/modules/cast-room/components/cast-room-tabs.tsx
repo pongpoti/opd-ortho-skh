@@ -13,12 +13,15 @@ function isTabActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function CastRoomTabs({ isAdmin }: { isAdmin: boolean }) {
+export function CastRoomTabs({ showDashboard }: { showDashboard: boolean }) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  const tabs = castRoomSubpages.filter((tab) => !tab.adminOnly || isAdmin);
-  // Highlight the destination immediately on click; fall back once the route catches up.
+  const tabs = castRoomSubpages.filter((tab) => !tab.adminOnly || showDashboard);
+
+  // Nurses only have one subpage — skip the tab row so the form is the focus.
+  if (tabs.length <= 1) return null;
+
   const activePath =
     pendingHref !== null && !isTabActive(pathname, pendingHref) ? pendingHref : pathname;
 
