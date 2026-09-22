@@ -7,9 +7,9 @@ import { Circle, Flex, Text, VStack } from "@chakra-ui/react";
 import { Home } from "lucide-react";
 
 import { MODULE_ICONS } from "@/lib/module-icons";
-import { modules } from "@/lib/modules";
+import type { AppModule } from "@/lib/modules";
 
-export function MobileDock() {
+export function MobileDock({ modules }: { modules: AppModule[] }) {
   const pathname = usePathname();
   const ref = useRef<HTMLDivElement>(null);
 

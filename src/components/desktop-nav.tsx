@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { Button, HStack } from "@chakra-ui/react";
 
 import { MODULE_ICONS } from "@/lib/module-icons";
-import { modules } from "@/lib/modules";
+import type { AppModule } from "@/lib/modules";
 
-export function DesktopNav() {
+export function DesktopNav({ modules }: { modules: AppModule[] }) {
   const pathname = usePathname();
 
   return (

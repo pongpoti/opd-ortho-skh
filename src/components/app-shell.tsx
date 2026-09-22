@@ -8,9 +8,11 @@ import { DesktopNav } from "@/components/desktop-nav";
 import { MobileDock } from "@/components/mobile-dock";
 import { ScrollableMain } from "@/components/scrollable-main";
 import { SecondaryNav } from "@/components/secondary-nav";
+import { modulesForRole } from "@/lib/module-access";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  const visibleModules = modulesForRole(session?.user?.role);
 
   return (
     <Box minH="var(--app-vh)">
@@ -43,7 +45,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               </NextLink>
             </ChakraLink>
 
-            <DesktopNav />
+            <DesktopNav modules={visibleModules} />
 
             <HStack ml="auto" gap={2}>
               {session?.user?.isRegistered && session.user.lineImage && (
@@ -57,12 +59,12 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </Flex>
         </Box>
 
-        <SecondaryNav />
+        <SecondaryNav modules={visibleModules} />
       </Box>
 
       <ScrollableMain>{children}</ScrollableMain>
 
-      <MobileDock />
+      <MobileDock modules={visibleModules} />
     </Box>
   );
 }
