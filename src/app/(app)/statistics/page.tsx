@@ -1,7 +1,6 @@
-import NextLink from "next/link";
-import { Circle, HStack, Link as ChakraLink, SimpleGrid, Text, VStack } from "@chakra-ui/react";
+import { SimpleGrid, Text, VStack } from "@chakra-ui/react";
 
-import { GlassCard } from "@/components/ui/glass-card";
+import { ToolLinkCard } from "@/components/tool-link-card";
 import { MODULE_ICONS } from "@/lib/module-icons";
 import { statisticsReports } from "@/lib/statistics-reports";
 
@@ -15,28 +14,15 @@ export default function StatisticsPage() {
       <Text color="fg.muted">เลือกรายงานที่ต้องการดู</Text>
 
       <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
-        {statisticsReports.map((report) => {
-          const Icon = MODULE_ICONS[report.icon];
-          return (
-            <ChakraLink key={report.slug} asChild _hover={{ textDecoration: "none" }}>
-              <NextLink href={report.href}>
-                <GlassCard p={6} h="full" transition="box-shadow 0.15s" _hover={{ boxShadow: "md" }}>
-                  <HStack gap={3} align="start">
-                    <Circle size={10} bg="brand.subtle" color="brand.fg" flexShrink={0}>
-                      <Icon size={20} />
-                    </Circle>
-                    <VStack align="start" gap={1}>
-                      <Text fontWeight="semibold">{report.name}</Text>
-                      <Text fontSize="sm" color="fg.muted">
-                        {report.description}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                </GlassCard>
-              </NextLink>
-            </ChakraLink>
-          );
-        })}
+        {statisticsReports.map((report) => (
+          <ToolLinkCard
+            key={report.slug}
+            href={report.href}
+            name={report.name}
+            description={report.description}
+            Icon={MODULE_ICONS[report.icon]}
+          />
+        ))}
       </SimpleGrid>
     </VStack>
   );
