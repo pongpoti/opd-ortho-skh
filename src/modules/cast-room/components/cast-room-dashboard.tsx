@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import {
   Alert,
   Button,
@@ -11,10 +11,13 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
+import { FileDown } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { PHYSICIANS } from "@/lib/physicians";
 import { THAI_MONTHS } from "../lib/thai-date";
 
+import { exportCastCaseLogPdf } from "../lib/cast-case-log-export";
 import {
   deleteCastVisitForAdmin,
   listCastVisitsForAdmin,
@@ -33,12 +36,27 @@ function buddhistYearOptions() {
   return [year + 543, year + 543 - 1];
 }
 
+function downloadBase64Pdf(filename: string, base64: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitSummary[] }) {
   const initial = currentMonthYear();
   const [month, setMonth] = useState(String(initial.month));
   const [buddhistYear, setBuddhistYear] = useState(String(initial.year + 543));
+  const [doctorFilter, setDoctorFilter] = useState("");
   const [visits, setVisits] = useState(initialVisits);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [editingVisit, setEditingVisit] = useState<CastVisitSummary | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingVisit, setDeletingVisit] = useState<CastVisitSummary | null>(null);
@@ -47,6 +65,19 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const [swipedVisitId, setSwipedVisitId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [isExporting, startExportTransition] = useTransition();
+
+  const physicianOptions = useMemo(() => {
+    const fromVisits = [...new Set(visits.map((v) => v.doctorName).filter(Boolean))];
+    const roster = new Set<string>(PHYSICIANS);
+    const extras = fromVisits.filter((n) => !roster.has(n)).sort((a, b) => a.localeCompare(b, "th"));
+    return [...PHYSICIANS, ...extras];
+  }, [visits]);
+
+  const visibleVisits = useMemo(() => {
+    if (!doctorFilter) return visits;
+    return visits.filter((v) => v.doctorName === doctorFilter);
+  }, [visits, doctorFilter]);
 
   const reload = useCallback(() => {
     const monthNum = Number(month);
@@ -64,6 +95,25 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
     });
   }, [month, buddhistYear]);
 
+  const exportPdf = () => {
+    const monthNum = Number(month);
+    const yearNum = Number(buddhistYear) - 543;
+    if (!monthNum || !yearNum) return;
+
+    startExportTransition(async () => {
+      setExportError(null);
+      const result = await exportCastCaseLogPdf(
+        yearNum,
+        monthNum,
+        doctorFilter || undefined
+      );
+      if (!result.ok) {
+        setExportError(result.error);
+        return;
+      }
+      downloadBase64Pdf(result.filename, result.pdfBase64);
+    });
+  };
   const openEdit = (visit: CastVisitSummary) => {
     setSwipedVisitId(null);
     setEditingVisit(visit);
@@ -129,6 +179,34 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
               แสดงรายการ
             </Button>
           </HStack>
+
+          <HStack gap={3} flexWrap="wrap" align="end">
+            <NativeSelect.Root flex="1" minW="200px">
+              <NativeSelect.Field
+                aria-label="แพทย์"
+                value={doctorFilter}
+                onChange={(e) => setDoctorFilter(e.target.value)}
+              >
+                <option value="">ทุกแพทย์</option>
+                {physicianOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+
+            <Button
+              variant="outline"
+              onClick={exportPdf}
+              loading={isExporting}
+              disabled={isPending}
+            >
+              <FileDown size={16} />
+              ส่งออก PDF
+            </Button>
+          </HStack>
         </VStack>
       </GlassCard>
 
@@ -141,7 +219,16 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
         </Alert.Root>
       )}
 
-      {visits.length === 0 ? (
+      {exportError && (
+        <Alert.Root status="error">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>{exportError}</Alert.Description>
+          </Alert.Content>
+        </Alert.Root>
+      )}
+
+      {visibleVisits.length === 0 ? (
         <GlassCard variant="solid" p={8}>
           <Text textAlign="center" color="fg.muted">
             ไม่มีรายการในเดือนที่เลือก
@@ -150,9 +237,9 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
       ) : (
         <VStack align="stretch" gap={3}>
           <Text fontSize="sm" color="fg.muted">
-            {visits.length} รายการ
+            {visibleVisits.length} รายการ
           </Text>
-          {visits.map((visit) => (
+          {visibleVisits.map((visit) => (
             <CastVisitPersonCard
               key={visit.visitId}
               visit={visit}
