@@ -5,13 +5,14 @@ import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 import type { CastVisitSummary } from "./cast-dashboard-actions";
+import { CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
 import { THAI_MONTHS } from "./thai-date";
 
 /** A4 landscape in PDF points (1pt = 1/72"). */
 const PAGE_W = 841.89;
 const PAGE_H = 595.28;
 const MARGIN_TOP = 22;
-const ROWS_PER_PAGE = 12;
+const ROWS_PER_PAGE = CAST_CASE_LOG_ROWS_PER_PAGE;
 const HEADER_ROW_H = 28;
 const DATA_ROW_H = 28;
 

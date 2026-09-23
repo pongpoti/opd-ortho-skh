@@ -11,7 +11,7 @@ export const castRoomSubpages: ModuleSubpage[] = [
   {
     slug: "dashboard",
     name: "รายการบันทึก",
-    description: "ดูและแก้ไขรายการที่บันทึกไว้ (ผู้ดูแลระบบ)",
+    description: "ดูรายการ สร้าง PDF และส่งให้แพทย์ (ผู้ดูแลระบบ)",
     href: "/cast-room/dashboard",
     icon: "list",
     adminOnly: true,

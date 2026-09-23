@@ -11,18 +11,16 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { FileDown } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { PHYSICIANS } from "@/lib/physicians";
 import { THAI_MONTHS } from "../lib/thai-date";
 
-import { exportCastCaseLogPdf } from "../lib/cast-case-log-export";
 import {
   deleteCastVisitForAdmin,
   listCastVisitsForAdmin,
   type CastVisitSummary,
 } from "../lib/cast-dashboard-actions";
+import { CastCaseLogExportPanel } from "./cast-case-log-export-panel";
 import { CastVisitEditDialog } from "./cast-visit-edit-dialog";
 import { CastVisitPersonCard } from "./cast-visit-person-card";
 
@@ -36,27 +34,13 @@ function buddhistYearOptions() {
   return [year + 543, year + 543 - 1];
 }
 
-function downloadBase64Pdf(filename: string, base64: string) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const blob = new Blob([bytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitSummary[] }) {
   const initial = currentMonthYear();
   const [month, setMonth] = useState(String(initial.month));
   const [buddhistYear, setBuddhistYear] = useState(String(initial.year + 543));
-  const [doctorFilter, setDoctorFilter] = useState("");
+  const [listDoctorFilter, setListDoctorFilter] = useState("");
   const [visits, setVisits] = useState(initialVisits);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
   const [editingVisit, setEditingVisit] = useState<CastVisitSummary | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingVisit, setDeletingVisit] = useState<CastVisitSummary | null>(null);
@@ -65,23 +49,22 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const [swipedVisitId, setSwipedVisitId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
-  const [isExporting, startExportTransition] = useTransition();
 
-  const physicianOptions = useMemo(() => {
-    const fromVisits = [...new Set(visits.map((v) => v.doctorName).filter(Boolean))];
-    const roster = new Set<string>(PHYSICIANS);
-    const extras = fromVisits.filter((n) => !roster.has(n)).sort((a, b) => a.localeCompare(b, "th"));
-    return [...PHYSICIANS, ...extras];
+  const monthNum = Number(month);
+  const yearNum = Number(buddhistYear) - 543;
+
+  const doctorNamesInMonth = useMemo(() => {
+    return [...new Set(visits.map((v) => v.doctorName).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b, "th")
+    );
   }, [visits]);
 
   const visibleVisits = useMemo(() => {
-    if (!doctorFilter) return visits;
-    return visits.filter((v) => v.doctorName === doctorFilter);
-  }, [visits, doctorFilter]);
+    if (!listDoctorFilter) return visits;
+    return visits.filter((v) => v.doctorName === listDoctorFilter);
+  }, [visits, listDoctorFilter]);
 
   const reload = useCallback(() => {
-    const monthNum = Number(month);
-    const yearNum = Number(buddhistYear) - 543;
     if (!monthNum || !yearNum) return;
 
     startTransition(async () => {
@@ -93,27 +76,8 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
       }
       setVisits(result.visits);
     });
-  }, [month, buddhistYear]);
+  }, [monthNum, yearNum]);
 
-  const exportPdf = () => {
-    const monthNum = Number(month);
-    const yearNum = Number(buddhistYear) - 543;
-    if (!monthNum || !yearNum) return;
-
-    startExportTransition(async () => {
-      setExportError(null);
-      const result = await exportCastCaseLogPdf(
-        yearNum,
-        monthNum,
-        doctorFilter || undefined
-      );
-      if (!result.ok) {
-        setExportError(result.error);
-        return;
-      }
-      downloadBase64Pdf(result.filename, result.pdfBase64);
-    });
-  };
   const openEdit = (visit: CastVisitSummary) => {
     setSwipedVisitId(null);
     setEditingVisit(visit);
@@ -147,9 +111,12 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
     <VStack align="stretch" gap={6}>
       <GlassCard variant="solid" p={5}>
         <VStack align="stretch" gap={4}>
-          <Text color="fg.muted">เลือกเดือนเพื่อดูรายการที่บันทึกไว้</Text>
+          <Text fontWeight="semibold">เดือนที่ต้องการ</Text>
+          <Text color="fg.muted" fontSize="sm">
+            ใช้ร่วมกันทั้งสร้าง PDF และดูรายการด้านล่าง
+          </Text>
           <HStack gap={3} flexWrap="wrap" align="end">
-            <NativeSelect.Root flex="1" minW="160px">
+            <NativeSelect.Root flex="1" minW="140px">
               <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
                 {THAI_MONTHS.map((name, i) => (
                   <option key={name} value={String(i + 1)}>
@@ -160,7 +127,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
               <NativeSelect.Indicator />
             </NativeSelect.Root>
 
-            <NativeSelect.Root flex="1" minW="120px">
+            <NativeSelect.Root flex="1" minW="110px">
               <NativeSelect.Field
                 aria-label="ปี พ.ศ."
                 value={buddhistYear}
@@ -176,19 +143,26 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
             </NativeSelect.Root>
 
             <Button colorPalette="brand" onClick={reload} loading={isPending}>
-              แสดงรายการ
+              โหลดรายการ
             </Button>
           </HStack>
+        </VStack>
+      </GlassCard>
 
-          <HStack gap={3} flexWrap="wrap" align="end">
-            <NativeSelect.Root flex="1" minW="200px">
+      <CastCaseLogExportPanel month={monthNum} year={yearNum} visits={visits} />
+
+      <GlassCard variant="solid" p={5}>
+        <VStack align="stretch" gap={3}>
+          <Text fontWeight="semibold">รายการที่บันทึกไว้</Text>
+          {doctorNamesInMonth.length > 0 ? (
+            <NativeSelect.Root w="full">
               <NativeSelect.Field
-                aria-label="แพทย์"
-                value={doctorFilter}
-                onChange={(e) => setDoctorFilter(e.target.value)}
+                aria-label="กรองแพทย์ในรายการ"
+                value={listDoctorFilter}
+                onChange={(e) => setListDoctorFilter(e.target.value)}
               >
-                <option value="">ทุกแพทย์</option>
-                {physicianOptions.map((name) => (
+                <option value="">ทุกแพทย์ในรายการ</option>
+                {doctorNamesInMonth.map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>
@@ -196,17 +170,11 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
-
-            <Button
-              variant="outline"
-              onClick={exportPdf}
-              loading={isExporting}
-              disabled={isPending}
-            >
-              <FileDown size={16} />
-              ส่งออก PDF
-            </Button>
-          </HStack>
+          ) : (
+            <Text fontSize="sm" color="fg.muted">
+              กดโหลดรายการเพื่อดูเคสในเดือนนี้
+            </Text>
+          )}
         </VStack>
       </GlassCard>
 
@@ -215,15 +183,6 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Description>{loadError}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
-      )}
-
-      {exportError && (
-        <Alert.Root status="error">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Description>{exportError}</Alert.Description>
           </Alert.Content>
         </Alert.Root>
       )}
