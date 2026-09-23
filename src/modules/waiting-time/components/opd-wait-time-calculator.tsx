@@ -139,7 +139,11 @@ export function OpdWaitTimeCalculator() {
   }
 
   return (
-    <VStack gap={8} align="stretch">
+    <VStack gap={6} align="stretch">
+      <Text color="fg.muted">
+        เข้าศูนย์คอม เลือกงานข้อมูล HosXP เลือกงานข้อมูล และเลือกระยะเวลารอคอยแพทย์ตรวจ
+      </Text>
+
       <GlassCard variant="solid" p={8}>
         <VStack align="stretch" gap={6}>
           <VStack align="stretch" gap={5}>
@@ -184,7 +188,7 @@ export function OpdWaitTimeCalculator() {
           <VStack align="stretch" gap={5} opacity={canUploadFile1 ? 1 : 0.6}>
             <HStack gap={2}>
               <StepBadge n={2} />
-              <Text fontWeight="medium">อัปโหลดไฟล์ข้อมูล</Text>
+              <Text fontWeight="medium">อัปโหลดไฟล์ CSV</Text>
             </HStack>
             <HStack gap={6} align="start" flexWrap="wrap">
               <Field.Root flex="1" minW="200px">
