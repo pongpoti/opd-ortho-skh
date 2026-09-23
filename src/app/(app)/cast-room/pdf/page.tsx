@@ -20,10 +20,16 @@ function PdfFallback() {
 }
 
 async function CastCaseLogPdfData() {
+  // Default to previous month (first option in the 6-month window).
   const now = new Date();
-  const result = await listCastVisitsForAdmin(now.getFullYear(), now.getMonth() + 1);
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const result = await listCastVisitsForAdmin(prev.getFullYear(), prev.getMonth() + 1);
   const initialVisits = result.ok ? result.visits : [];
-  return <CastCaseLogPdfPage initialVisits={initialVisits} />;
+  const initialEmptyError =
+    result.ok && initialVisits.length === 0 ? "ไม่มีรายการในเดือนที่เลือก" : null;
+  return (
+    <CastCaseLogPdfPage initialVisits={initialVisits} initialEmptyError={initialEmptyError} />
+  );
 }
 
 export default async function CastRoomPdfPage() {

@@ -57,7 +57,7 @@ export function thaiMonthYear(year: number, month: number): string {
   return `${THAI_MONTHS[month]} ${year + BE_OFFSET}`;
 }
 
-/** Last `count` calendar months ending at the current month (inclusive), newest first. */
+/** `count` calendar months ending at the previous month (current month excluded), newest first. */
 export function recentMonthOptions(count = 6): Array<{
   year: number;
   month: number; // 1-12
@@ -66,7 +66,8 @@ export function recentMonthOptions(count = 6): Array<{
 }> {
   const now = new Date();
   const options: Array<{ year: number; month: number; label: string; value: string }> = [];
-  for (let i = 0; i < count; i++) {
+  // Start at i=1 → previous month of today.
+  for (let i = 1; i <= count; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
@@ -80,7 +81,7 @@ export function recentMonthOptions(count = 6): Array<{
   return options;
 }
 
-/** True when (year, month) is within the last `count` months including current. */
+/** True when (year, month) is in the previous-`count`-months window (excludes current month). */
 export function isWithinRecentMonths(year: number, month: number, count = 6): boolean {
   if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
     return false;

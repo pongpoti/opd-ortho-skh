@@ -84,7 +84,7 @@ function validateMonth(year: number, month: number): string | null {
     return "เดือนหรือปีไม่ถูกต้อง";
   }
   if (!isWithinRecentMonths(year, month, 6)) {
-    return "เลือกได้เฉพาะ 6 เดือนล่าสุด";
+    return "เลือกได้เฉพาะ 6 เดือนก่อนหน้า (ไม่รวมเดือนปัจจุบัน)";
   }
   return null;
 }
@@ -190,6 +190,13 @@ export async function exportCastCaseLogPdf(
 
   try {
     const visits = await loadCastVisitsForMonth(year, month);
+    if (visits.length === 0) {
+      return { ok: false, error: "ไม่มีรายการในเดือนที่เลือก" };
+    }
+    const { selected } = selectVisits(visits, doctorName);
+    if (doctorName && selected.length === 0) {
+      return { ok: false, error: "ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก" };
+    }
     const { bytes, caseCount, filename } = await buildPdfBytes(year, month, doctorName, visits);
     return {
       ok: true,
@@ -225,7 +232,13 @@ export async function createCastCaseLogShareLink(
   if (invalid) return { ok: false, error: invalid };
 
   const visits = await loadCastVisitsForMonth(year, month);
+  if (visits.length === 0) {
+    return { ok: false, error: "ไม่มีรายการในเดือนที่เลือก" };
+  }
   const { selected } = selectVisits(visits, doctorName);
+  if (selected.length === 0) {
+    return { ok: false, error: "ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก" };
+  }
   const caseCount = selected.length;
   const pages = pageCountFor(caseCount);
   const label = monthLabel(year, month);
