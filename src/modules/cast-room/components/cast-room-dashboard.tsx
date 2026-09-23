@@ -20,7 +20,6 @@ import {
   listCastVisitsForAdmin,
   type CastVisitSummary,
 } from "../lib/cast-dashboard-actions";
-import { CastCaseLogExportPanel } from "./cast-case-log-export-panel";
 import { CastVisitEditDialog } from "./cast-visit-edit-dialog";
 import { CastVisitPersonCard } from "./cast-visit-person-card";
 
@@ -111,10 +110,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
     <VStack align="stretch" gap={6}>
       <GlassCard variant="solid" p={5}>
         <VStack align="stretch" gap={4}>
-          <Text fontWeight="semibold">เดือนที่ต้องการ</Text>
-          <Text color="fg.muted" fontSize="sm">
-            ใช้ร่วมกันทั้งสร้าง PDF และดูรายการด้านล่าง
-          </Text>
+          <Text color="fg.muted">เลือกเดือนเพื่อดูรายการที่บันทึกไว้</Text>
           <HStack gap={3} flexWrap="wrap" align="end">
             <NativeSelect.Root flex="1" minW="140px">
               <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
@@ -143,18 +139,11 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
             </NativeSelect.Root>
 
             <Button colorPalette="brand" onClick={reload} loading={isPending}>
-              โหลดรายการ
+              แสดงรายการ
             </Button>
           </HStack>
-        </VStack>
-      </GlassCard>
 
-      <CastCaseLogExportPanel month={monthNum} year={yearNum} visits={visits} />
-
-      <GlassCard variant="solid" p={5}>
-        <VStack align="stretch" gap={3}>
-          <Text fontWeight="semibold">รายการที่บันทึกไว้</Text>
-          {doctorNamesInMonth.length > 0 ? (
+          {doctorNamesInMonth.length > 0 && (
             <NativeSelect.Root w="full">
               <NativeSelect.Field
                 aria-label="กรองแพทย์ในรายการ"
@@ -170,10 +159,6 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
-          ) : (
-            <Text fontSize="sm" color="fg.muted">
-              กดโหลดรายการเพื่อดูเคสในเดือนนี้
-            </Text>
           )}
         </VStack>
       </GlassCard>

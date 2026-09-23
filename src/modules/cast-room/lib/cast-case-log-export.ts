@@ -6,7 +6,7 @@ import { PHYSICIANS } from "@/lib/physicians";
 import { requireAdminSession } from "@/lib/require-admin";
 
 import { loadCastVisitsForMonth } from "./cast-case-log-data";
-import { CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
+import { CAST_CASE_LOG_PAY_PER_CASE, CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
 import {
   buildCastCaseLogPdf,
   buildCastCaseLogPdfByPhysicians,
@@ -243,6 +243,7 @@ export async function createCastCaseLogShareLink(
     `เดือน: ${label}`,
     `แพทย์: ${doctorName}`,
     `จำนวน: ${caseCount} รายการ (${pages} หน้า)`,
+    `รวมค่าตอบแทน: ${caseCount * CAST_CASE_LOG_PAY_PER_CASE} บาท`,
     "",
     "ดาวน์โหลด PDF:",
     shareUrl,

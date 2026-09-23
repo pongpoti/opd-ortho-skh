@@ -5,7 +5,11 @@ import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 import type { CastVisitSummary } from "./cast-dashboard-actions";
-import { CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
+import {
+  CAST_CASE_LOG_PAY_PER_CASE,
+  CAST_CASE_LOG_ROWS_PER_PAGE,
+} from "./cast-case-log-constants";
+import { thaiBahtInWords } from "./thai-baht-words";
 import { THAI_MONTHS } from "./thai-date";
 
 /** A4 landscape in PDF points (1pt = 1/72"). */
@@ -13,6 +17,7 @@ const PAGE_W = 841.89;
 const PAGE_H = 595.28;
 const MARGIN_TOP = 22;
 const ROWS_PER_PAGE = CAST_CASE_LOG_ROWS_PER_PAGE;
+const PAY = String(CAST_CASE_LOG_PAY_PER_CASE);
 const HEADER_ROW_H = 28;
 const DATA_ROW_H = 28;
 
@@ -327,9 +332,9 @@ function drawTable(
       visit.patientName,
       visit.diagnosis,
       formatTreatment(visit),
+      PAY,
       "",
-      "",
-      "",
+      PAY,
     ];
 
     let cx = left;
@@ -388,7 +393,12 @@ function drawSignatureLine(
   });
 }
 
-function drawFooter(page: PDFPage, fonts: EmbeddedFonts, tableBottom: number) {
+function drawFooter(
+  page: PDFPage,
+  fonts: EmbeddedFonts,
+  tableBottom: number,
+  totalAmount: number | null
+) {
   const left = (PAGE_W - TABLE_W) / 2;
   const right = left + TABLE_W;
   const size = 10;
@@ -404,14 +414,20 @@ function drawFooter(page: PDFPage, fonts: EmbeddedFonts, tableBottom: number) {
   const totalLabel = "รวมค่าตอบแทน";
   const totalLabelW = fonts.regular.widthOfTextAtSize(totalLabel, size);
   const wordsFieldW = totalBoxX - left - wordsLabelW - totalLabelW - 16;
-  const unit = fonts.regular.widthOfTextAtSize(".", size);
-  page.drawText(".".repeat(Math.max(8, Math.floor(wordsFieldW / unit))), {
-    x: left + wordsLabelW,
-    y,
-    size,
-    font: fonts.regular,
-    color: INK,
-  });
+
+  if (totalAmount != null && totalAmount > 0) {
+    const words = thaiBahtInWords(totalAmount);
+    drawFitted(page, words, left + wordsLabelW, y, wordsFieldW, size, fonts.regular);
+  } else {
+    const unit = fonts.regular.widthOfTextAtSize(".", size);
+    page.drawText(".".repeat(Math.max(8, Math.floor(wordsFieldW / unit))), {
+      x: left + wordsLabelW,
+      y,
+      size,
+      font: fonts.regular,
+      color: INK,
+    });
+  }
 
   page.drawText(totalLabel, {
     x: totalBoxX - totalLabelW - 6,
@@ -428,6 +444,18 @@ function drawFooter(page: PDFPage, fonts: EmbeddedFonts, tableBottom: number) {
     borderColor: INK,
     borderWidth: 1,
   });
+
+  if (totalAmount != null && totalAmount > 0) {
+    drawCentered(
+      page,
+      String(totalAmount),
+      totalBoxX,
+      y,
+      totalBoxW,
+      size,
+      fonts.regular
+    );
+  }
 
   y -= 36;
   drawSignatureLine(page, fonts, "เจ้าหน้าที่ผู้ปฏิบัติงาน", right, y, size);
@@ -450,6 +478,7 @@ export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<U
   });
 
   const pages = chunk(sorted, ROWS_PER_PAGE);
+  const grandTotal = sorted.length * CAST_CASE_LOG_PAY_PER_CASE;
 
   pages.forEach((pageVisits, pageIndex) => {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -459,7 +488,9 @@ export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<U
       ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
     ];
     const tableBottom = drawTable(page, fonts, tableTop, padded);
-    drawFooter(page, fonts, tableBottom);
+    // Grand total only on the last page of this physician's form.
+    const totalOnPage = pageIndex === pages.length - 1 ? grandTotal : null;
+    drawFooter(page, fonts, tableBottom, totalOnPage);
   });
 
   return pdf.save();
@@ -488,6 +519,7 @@ export async function buildCastCaseLogPdfByPhysicians(
       return a.createdAt.localeCompare(b.createdAt);
     });
     const pages = chunk(sorted, ROWS_PER_PAGE);
+    const grandTotal = sorted.length * CAST_CASE_LOG_PAY_PER_CASE;
 
     pages.forEach((pageVisits, pageIndex) => {
       const page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -503,7 +535,8 @@ export async function buildCastCaseLogPdfByPhysicians(
         ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
       ];
       const tableBottom = drawTable(page, fonts, tableTop, padded);
-      drawFooter(page, fonts, tableBottom);
+      const totalOnPage = pageIndex === pages.length - 1 ? grandTotal : null;
+      drawFooter(page, fonts, tableBottom, totalOnPage);
     });
   }
 
@@ -519,7 +552,7 @@ export async function buildCastCaseLogPdfByPhysicians(
     const tableTop = drawHeader(page, fonts, input, 0, 1);
     const padded = Array.from({ length: ROWS_PER_PAGE }, () => null);
     const tableBottom = drawTable(page, fonts, tableTop, padded);
-    drawFooter(page, fonts, tableBottom);
+    drawFooter(page, fonts, tableBottom, null);
   }
 
   return pdf.save();

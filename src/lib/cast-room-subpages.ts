@@ -11,9 +11,17 @@ export const castRoomSubpages: ModuleSubpage[] = [
   {
     slug: "dashboard",
     name: "รายการบันทึก",
-    description: "ดูรายการ สร้าง PDF และส่งให้แพทย์ (ผู้ดูแลระบบ)",
+    description: "ดูและแก้ไขรายการที่บันทึกไว้ (ผู้ดูแลระบบ)",
     href: "/cast-room/dashboard",
     icon: "list",
+    adminOnly: true,
+  },
+  {
+    slug: "pdf",
+    name: "สร้าง PDF",
+    description: "สร้างและส่งบันทึก PDF ให้แพทย์ (ผู้ดูแลระบบ)",
+    href: "/cast-room/pdf",
+    icon: "file",
     adminOnly: true,
   },
 ];
