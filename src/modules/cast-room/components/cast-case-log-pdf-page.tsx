@@ -24,17 +24,7 @@ import {
   exportCastCaseLogPdf,
 } from "../lib/cast-case-log-export";
 import { listCastVisitsForAdmin, type CastVisitSummary } from "../lib/cast-dashboard-actions";
-import { THAI_MONTHS } from "../lib/thai-date";
-
-function currentMonthYear() {
-  const now = new Date();
-  return { month: now.getMonth() + 1, year: now.getFullYear() };
-}
-
-function buddhistYearOptions() {
-  const { year } = currentMonthYear();
-  return [year + 543, year + 543 - 1];
-}
+import { recentMonthOptions } from "../lib/thai-date";
 
 function downloadBase64Pdf(filename: string, base64: string) {
   const binary = atob(base64);
@@ -49,10 +39,15 @@ function downloadBase64Pdf(filename: string, base64: string) {
   URL.revokeObjectURL(url);
 }
 
+function parseMonthValue(value: string): { year: number; month: number } | null {
+  const [y, m] = value.split("-").map(Number);
+  if (!y || !m) return null;
+  return { year: y, month: m };
+}
+
 export function CastCaseLogPdfPage({ initialVisits }: { initialVisits: CastVisitSummary[] }) {
-  const initial = currentMonthYear();
-  const [month, setMonth] = useState(String(initial.month));
-  const [buddhistYear, setBuddhistYear] = useState(String(initial.year + 543));
+  const monthOptions = useMemo(() => recentMonthOptions(6), []);
+  const [monthValue, setMonthValue] = useState(monthOptions[0]?.value ?? "");
   const [doctorName, setDoctorName] = useState("");
   const [visits, setVisits] = useState(initialVisits);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -62,8 +57,9 @@ export function CastCaseLogPdfPage({ initialVisits }: { initialVisits: CastVisit
   const [isDownloading, startDownload] = useTransition();
   const [isSharing, startShare] = useTransition();
 
-  const monthNum = Number(month);
-  const yearNum = Number(buddhistYear) - 543;
+  const selected = parseMonthValue(monthValue);
+  const monthNum = selected?.month ?? 0;
+  const yearNum = selected?.year ?? 0;
 
   const physicianOptions = useMemo(() => {
     const fromVisits = [...new Set(visits.map((v) => v.doctorName).filter(Boolean))];
@@ -165,31 +161,21 @@ export function CastCaseLogPdfPage({ initialVisits }: { initialVisits: CastVisit
               สร้างบันทึก PDF
             </Text>
             <Text color="fg.muted" fontSize="sm">
-              เลือกเดือนและแพทย์ แล้วดาวน์โหลดหรือส่งไฟล์เข้าแชท LINE
+              เลือกเดือน (ย้อนหลังได้ 6 เดือนรวมเดือนปัจจุบัน) และแพทย์
+              แล้วดาวน์โหลดหรือส่งไฟล์เข้าแชท LINE
             </Text>
           </VStack>
 
           <HStack gap={3} flexWrap="wrap" align="end">
-            <NativeSelect.Root flex="1" minW="140px">
-              <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
-                {THAI_MONTHS.map((name, i) => (
-                  <option key={name} value={String(i + 1)}>
-                    {name}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-
-            <NativeSelect.Root flex="1" minW="110px">
+            <NativeSelect.Root flex="1" minW="200px">
               <NativeSelect.Field
-                aria-label="ปี พ.ศ."
-                value={buddhistYear}
-                onChange={(e) => setBuddhistYear(e.target.value)}
+                aria-label="เดือน"
+                value={monthValue}
+                onChange={(e) => setMonthValue(e.target.value)}
               >
-                {buddhistYearOptions().map((be) => (
-                  <option key={be} value={String(be)}>
-                    {be}
+                {monthOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </NativeSelect.Field>

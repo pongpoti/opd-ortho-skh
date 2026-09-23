@@ -56,3 +56,34 @@ export function formatThaiDate(iso: string): string {
 export function thaiMonthYear(year: number, month: number): string {
   return `${THAI_MONTHS[month]} ${year + BE_OFFSET}`;
 }
+
+/** Last `count` calendar months ending at the current month (inclusive), newest first. */
+export function recentMonthOptions(count = 6): Array<{
+  year: number;
+  month: number; // 1-12
+  label: string;
+  value: string; // "YYYY-MM"
+}> {
+  const now = new Date();
+  const options: Array<{ year: number; month: number; label: string; value: string }> = [];
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    options.push({
+      year,
+      month,
+      label: `${THAI_MONTHS[month - 1]} ${year + BE_OFFSET}`,
+      value: `${year}-${String(month).padStart(2, "0")}`,
+    });
+  }
+  return options;
+}
+
+/** True when (year, month) is within the last `count` months including current. */
+export function isWithinRecentMonths(year: number, month: number, count = 6): boolean {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return false;
+  }
+  return recentMonthOptions(count).some((o) => o.year === year && o.month === month);
+}

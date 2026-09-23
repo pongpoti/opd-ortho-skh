@@ -19,7 +19,7 @@ import {
   verifyCastCaseLogShareToken,
 } from "./cast-case-log-share";
 import type { CastVisitSummary } from "./cast-dashboard-actions";
-import { THAI_MONTHS } from "./thai-date";
+import { isWithinRecentMonths, THAI_MONTHS } from "./thai-date";
 
 /**
  * Cast-room case-log PDF architecture
@@ -82,6 +82,9 @@ function pageCountFor(caseCount: number): number {
 function validateMonth(year: number, month: number): string | null {
   if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
     return "เดือนหรือปีไม่ถูกต้อง";
+  }
+  if (!isWithinRecentMonths(year, month, 6)) {
+    return "เลือกได้เฉพาะ 6 เดือนล่าสุด";
   }
   return null;
 }
