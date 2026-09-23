@@ -19,6 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { Stethoscope } from "lucide-react";
 
+import { BackToTopButton } from "@/components/back-to-top-button";
 import { DigitBoxInput } from "@/components/ui/digit-box-input";
 import { GlassCard } from "@/components/ui/glass-card";
 import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
@@ -340,6 +341,8 @@ export function CastRoomForm() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
+
+      <BackToTopButton />
     </VStack>
   );
 }
