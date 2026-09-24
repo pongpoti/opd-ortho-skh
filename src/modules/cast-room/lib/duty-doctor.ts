@@ -1,4 +1,4 @@
-import { getDutyDay } from "@/modules/duty-schedule/lib/duty-data";
+import { getDutyDay, isDutyMarker } from "@/modules/duty-schedule/lib/duty-data";
 import { PHYSICIANS } from "@/lib/physicians";
 
 import { parseISO } from "./thai-date";
@@ -13,6 +13,6 @@ import { parseISO } from "./thai-date";
 export function resolveDutyDoctor(iso: string): string | null {
   const { year, month, day } = parseISO(iso);
   const firstName = getDutyDay(year, month, day).entries.d1;
-  if (!firstName) return null;
+  if (!firstName || isDutyMarker(firstName)) return null;
   return PHYSICIANS.find((full) => full.startsWith(`${firstName} `)) ?? null;
 }

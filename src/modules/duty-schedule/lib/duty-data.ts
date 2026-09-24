@@ -12,6 +12,16 @@ export const DUTY_LABELS: Record<DutyKey, string> = {
   d5: "เวรห้องเฝือก",
 };
 
+/** Explicit roster markers: absent ("-") or cancelled ("งด") — not "ยังไม่ระบุ". */
+export function isDutyMarker(name: string | undefined): name is "-" | "งด" {
+  return name === "-" || name === "งด";
+}
+
+/** Label shown in the day drawer for a duty slot. */
+export function formatDutyDisplayName(name: string | undefined): string {
+  return name ?? "ยังไม่ระบุ";
+}
+
 /**
  * First month with active duty data (month is 0-indexed).
  * App launch: October 2026 — earlier months still show on the calendar
@@ -58,7 +68,7 @@ type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyK
  * October 2026 (ต.ค. 2569) sources:
  * - d1 staff: ตารางออกตรวจ OPD / เวรเสาร์–อาทิตย์ + cast-room doctor column
  * - d2 intern: เวร แพทย์ Intern (พญ.ภรณี / พญ.ธนภรณ์); "-" = absent that day
- * - d3 ท่าฉลอม / d4 เกตุม: เวร Ortho ท่าฉลอม เกตุม ("งด" = no assignment)
+ * - d3 ท่าฉลอม / d4 เกตุม: เวร Ortho ท่าฉลอม เกตุม ("งด" stored when cancelled)
  * - d5 cast-room nurse: เวร พยาบาลห้องเฝือก (day 31 blank in source)
  *
  * November–December 2026 (พ.ย.–ธ.ค. 2569) sources:
@@ -80,8 +90,8 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
     10: { d1: "วิฑูรย์", d2: "ธนภรณ์", d5: "ณัฐวุฒิ" },
     11: { d1: "วิฑูรย์", d2: "-", d5: "ธัญญ์ฐิตา" },
     12: { d1: "ปองสิทธิ์", d2: "ภรณี", d4: "ธีรฉัตต์", d5: "อรัญญา" },
-    // 13 Tue: official holiday; ท่าฉลอม marked งด — no d3
-    13: { d1: "ปิติพงศ์", d2: "-", d5: "หทัยรัตน์" },
+    // 13 Tue: official holiday; ท่าฉลอม marked งด
+    13: { d1: "ปิติพงศ์", d2: "-", d3: "งด", d5: "หทัยรัตน์" },
     14: { d1: "ธนกร", d2: "ธนภรณ์", d5: "ณัฐวุฒิ" },
     15: { d1: "เฉลิมพล", d2: "-", d4: "ปองสิทธิ์", d5: "ธัญญ์ฐิตา" },
     16: { d1: "วันทนันท์", d2: "ภรณี", d5: "อรัญญา" },
@@ -90,8 +100,8 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
     19: { d1: "เทพรักษา", d2: "ภรณี", d4: "วรงค์พร", d5: "ธัญญ์ฐิตา" },
     20: { d1: "ธีรฉัตต์", d2: "ธนภรณ์", d3: "วันทนันท์", d5: "อรัญญา" },
     21: { d1: "ชัยวัฒน์", d2: "ธนภรณ์", d5: "หทัยรัตน์" },
-    // 22 Thu: เกตุม marked งด — no d4
-    22: { d1: "เทพรักษา", d2: "-", d5: "ณัฐวุฒิ" },
+    // 22 Thu: เกตุม marked งด
+    22: { d1: "เทพรักษา", d2: "-", d4: "งด", d5: "ณัฐวุฒิ" },
     23: { d1: "เทพรักษา", d2: "-", d5: "ธัญญ์ฐิตา" },
     24: { d1: "เทพรักษา", d2: "-", d5: "อรัญญา" },
     25: { d1: "เฉลิมพล", d2: "-", d5: "หทัยรัตน์" },
@@ -142,12 +152,12 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
     4: { d1: "วันทนันท์" },
     5: { d1: "ชวพล" },
     6: { d1: "ชวพล" },
-    // 7 Mon: highlighted งด on OPD roster (substitute holiday after วันพ่อ) — no d4
-    7: { d1: "ปองสิทธิ์" },
+    // 7 Mon: substitute holiday after วันพ่อ; เกตุม marked งด
+    7: { holiday: true, holidayLabel: "วันหยุดชดเชยวันพ่อแห่งชาติ", d1: "ปองสิทธิ์", d4: "งด" },
     8: { d1: "ปิติพงศ์", d3: "สิทธิพงศ์" },
     9: { d1: "ชัยวัฒน์" },
     // 10 Thu: วันรัฐธรรมนูญ — เกตุม marked งด
-    10: { d1: "วรงค์พร" },
+    10: { d1: "วรงค์พร", d4: "งด" },
     11: { d1: "ชวพล" },
     12: { d1: "ปองสิทธิ์" },
     13: { d1: "ปองสิทธิ์" },
@@ -169,7 +179,7 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
     29: { d1: "ธีรฉัตต์", d3: "โอภาส" },
     30: { d1: "ชัยวัฒน์" },
     // 31 Thu: วันสิ้นปี — เกตุม marked งด
-    31: { d1: "ชัยวัฒน์" },
+    31: { d1: "ชัยวัฒน์", d4: "งด" },
   },
 };
 
