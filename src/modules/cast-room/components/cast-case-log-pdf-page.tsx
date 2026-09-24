@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Alert,
   Button,
@@ -62,18 +62,21 @@ export function CastCaseLogPdfPage({
   const [isPending, startLoad] = useTransition();
   const [isDownloading, startDownload] = useTransition();
   const [isSharing, startShare] = useTransition();
+  /** Skip the first effect run — SSR already loaded the default month. */
+  const skipNextMonthLoad = useRef(true);
 
   const selected = parseMonthValue(monthValue);
   const monthNum = selected?.month ?? 0;
   const yearNum = selected?.year ?? 0;
 
   const physicianOptions = useMemo(() => {
-    const fromVisits = [...new Set(visits.map((v) => v.doctorName).filter(Boolean))];
+    const withVisits = new Set(visits.map((v) => v.doctorName).filter(Boolean));
+    const fromRoster = PHYSICIANS.filter((name) => withVisits.has(name));
     const roster = new Set<string>(PHYSICIANS);
-    const extras = fromVisits
-      .filter((n) => !roster.has(n))
+    const extras = [...withVisits]
+      .filter((name) => !roster.has(name))
       .sort((a, b) => a.localeCompare(b, "th"));
-    return [...PHYSICIANS, ...extras];
+    return [...fromRoster, ...extras];
   }, [visits]);
 
   const caseCount = useMemo(() => {
@@ -88,13 +91,13 @@ export function CastCaseLogPdfPage({
 
   const busy = isPending || isDownloading || isSharing;
 
-  const reload = useCallback(() => {
-    if (!monthNum || !yearNum) return;
+  const reload = useCallback((year: number, month: number) => {
+    if (!month || !year) return;
     startLoad(async () => {
       setLoadError(null);
       setError(null);
       setSuccess(null);
-      const result = await listCastVisitsForAdmin(yearNum, monthNum);
+      const result = await listCastVisitsForAdmin(year, month);
       if (!result.ok) {
         setVisits([]);
         setLoadError(result.error);
@@ -105,13 +108,19 @@ export function CastCaseLogPdfPage({
         setLoadError("ไม่มีรายการในเดือนที่เลือก");
       }
     });
-  }, [monthNum, yearNum]);
+  }, []);
+
+  useEffect(() => {
+    if (skipNextMonthLoad.current) {
+      skipNextMonthLoad.current = false;
+      return;
+    }
+    reload(yearNum, monthNum);
+  }, [monthValue, monthNum, yearNum, reload]);
 
   const onMonthChange = (value: string) => {
     setMonthValue(value);
     setDoctorName("");
-    setVisits([]);
-    setLoadError(null);
     setError(null);
     setSuccess(null);
   };
@@ -205,32 +214,30 @@ export function CastCaseLogPdfPage({
             </Text>
           </VStack>
 
-          <HStack gap={3} flexWrap="wrap" align="end">
-            <NativeSelect.Root flex="1" minW="200px">
-              <NativeSelect.Field
-                aria-label="เดือน"
-                value={monthValue}
-                onChange={(e) => onMonthChange(e.target.value)}
-              >
-                {monthOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+          <NativeSelect.Root w="full" disabled={busy}>
+            <NativeSelect.Field
+              aria-label="เดือน"
+              value={monthValue}
+              onChange={(e) => onMonthChange(e.target.value)}
+            >
+              {monthOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
 
-            <Button colorPalette="brand" onClick={reload} loading={isPending} disabled={busy}>
-              โหลดรายการ
-            </Button>
-          </HStack>
-
-          <NativeSelect.Root w="full">
+          <NativeSelect.Root w="full" disabled={busy || !monthHasLogs}>
             <NativeSelect.Field
               aria-label="แพทย์"
               value={doctorName}
-              onChange={(e) => setDoctorName(e.target.value)}
+              onChange={(e) => {
+                setDoctorName(e.target.value);
+                setError(null);
+                setSuccess(null);
+              }}
             >
               <option value="">ทุกแพทย์ (ดาวน์โหลดรวม)</option>
               {physicianOptions.map((name) => (
@@ -252,7 +259,11 @@ export function CastCaseLogPdfPage({
             bg="brand.subtle"
           >
             <Text fontSize="sm" color="fg.muted">
-              {doctorName ? doctorName : "ทุกแพทย์ที่มีรายการ"}
+              {isPending
+                ? "กำลังโหลด…"
+                : doctorName
+                  ? doctorName
+                  : "ทุกแพทย์ที่มีรายการ"}
             </Text>
             <Text fontSize="sm" fontWeight="medium">
               {caseCount} รายการ · {pageCount} หน้า · รวม {payTotal} บาท
@@ -282,7 +293,7 @@ export function CastCaseLogPdfPage({
               <FileDown size={16} />
               ดาวน์โหลด PDF
             </Button>
-            {!doctorName && (
+            {!doctorName && monthHasLogs && (
               <Text fontSize="xs" color="fg.muted">
                 เลือกแพทย์เพื่อส่งในแชท — ดาวน์โหลดรวมทุกแพทย์ได้ทันที
               </Text>
