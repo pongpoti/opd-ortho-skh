@@ -23,7 +23,7 @@ import {
   createCastCaseLogShareLink,
   exportCastCaseLogPdf,
 } from "../lib/cast-case-log-export";
-import { listCastVisitsForAdmin, type CastVisitSummary } from "../lib/cast-dashboard-actions";
+import { listCastVisitsForAdmin, seedPongsitAugust2026Dummy, type CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { recentMonthOptions } from "../lib/thai-date";
 
 function downloadBase64Pdf(filename: string, base64: string) {
@@ -62,6 +62,7 @@ export function CastCaseLogPdfPage({
   const [isPending, startLoad] = useTransition();
   const [isDownloading, startDownload] = useTransition();
   const [isSharing, startShare] = useTransition();
+  const [isSeeding, startSeed] = useTransition();
   /** Skip the first effect run — SSR already loaded the default month. */
   const skipNextMonthLoad = useRef(true);
 
@@ -80,7 +81,7 @@ export function CastCaseLogPdfPage({
   }, [visits]);
 
   const caseCount = useMemo(() => {
-    if (!doctorName) return visits.length;
+    if (!doctorName) return 0;
     return visits.filter((v) => v.doctorName === doctorName).length;
   }, [visits, doctorName]);
 
@@ -88,8 +89,10 @@ export function CastCaseLogPdfPage({
     caseCount <= 0 ? 1 : Math.ceil(caseCount / CAST_CASE_LOG_ROWS_PER_PAGE);
   const payTotal = caseCount * CAST_CASE_LOG_PAY_PER_CASE;
   const monthHasLogs = visits.length > 0;
+  const canExport = Boolean(doctorName) && monthHasLogs && caseCount > 0;
 
-  const busy = isPending || isDownloading || isSharing;
+  const busy = isPending || isDownloading || isSharing || isSeeding;
+  const canSeedAugustDummy = yearNum === 2026 && monthNum === 8;
 
   const reload = useCallback((year: number, month: number) => {
     if (!month || !year) return;
@@ -126,11 +129,15 @@ export function CastCaseLogPdfPage({
   };
 
   const download = () => {
+    if (!doctorName) {
+      setError("กรุณาเลือกแพทย์ก่อนดาวน์โหลด");
+      return;
+    }
     if (!monthHasLogs) {
       setError("ไม่มีรายการในเดือนที่เลือก");
       return;
     }
-    if (doctorName && caseCount === 0) {
+    if (caseCount === 0) {
       setError("ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก");
       return;
     }
@@ -138,7 +145,7 @@ export function CastCaseLogPdfPage({
     startDownload(async () => {
       setError(null);
       setSuccess(null);
-      const result = await exportCastCaseLogPdf(yearNum, monthNum, doctorName || undefined);
+      const result = await exportCastCaseLogPdf(yearNum, monthNum, doctorName);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -182,9 +189,75 @@ export function CastCaseLogPdfPage({
           return;
         }
 
-        const shared = await liff.shareTargetPicker([
-          { type: "text", text: result.chatText },
-        ]);
+        // shareTargetPicker cannot attach PDF files; send a Flex card with a
+        // URI button that opens the signed PDF link (works inside LINE).
+        const altText = [
+          `บันทึกห้องเฝือก · ${result.monthLabel}`,
+          `${result.doctorName} · ${result.caseCount} รายการ`,
+          result.shareUrl,
+        ].join("\n");
+
+        let shared: { status: string } | undefined | void;
+        try {
+          shared = await liff.shareTargetPicker([
+            {
+              type: "flex",
+              altText,
+              contents: {
+                type: "bubble",
+                size: "kilo",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  spacing: "sm",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "บันทึกห้องเฝือก",
+                      weight: "bold",
+                      size: "md",
+                      wrap: true,
+                    },
+                    {
+                      type: "text",
+                      text: `${result.monthLabel} · ${result.doctorName}`,
+                      size: "sm",
+                      color: "#666666",
+                      wrap: true,
+                    },
+                    {
+                      type: "text",
+                      text: `${result.caseCount} รายการ · รวม ${result.caseCount * CAST_CASE_LOG_PAY_PER_CASE} บาท`,
+                      size: "sm",
+                      wrap: true,
+                    },
+                  ],
+                },
+                footer: {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "button",
+                      style: "primary",
+                      color: "#0F766E",
+                      action: {
+                        type: "uri",
+                        label: "เปิด PDF",
+                        uri: result.shareUrl,
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ]);
+        } catch {
+          // Some channels only allow text via shareTargetPicker — fall back.
+          shared = await liff.shareTargetPicker([
+            { type: "text", text: result.chatText },
+          ]);
+        }
 
         if (shared) {
           setSuccess(`ส่งลิงก์ PDF ไปยังแชทแล้ว · ${result.caseCount} รายการ`);
@@ -200,6 +273,28 @@ export function CastCaseLogPdfPage({
     });
   };
 
+  const seedAugustDummy = () => {
+    if (!canSeedAugustDummy) return;
+    startSeed(async () => {
+      setError(null);
+      setLoadError(null);
+      const result = await seedPongsitAugust2026Dummy();
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const listed = await listCastVisitsForAdmin(2026, 8);
+      if (!listed.ok) {
+        setVisits([]);
+        setLoadError(listed.error);
+        return;
+      }
+      setVisits(listed.visits);
+      setDoctorName("ปองสิทธิ์ โพธิคุณ");
+      setSuccess(`ใส่ข้อมูลทดสอบแล้ว · ${result.visitCount} วัน (1–31 ส.ค. 2569)`);
+    });
+  };
+
   return (
     <VStack align="stretch" gap={6}>
       <GlassCard variant="solid" p={5}>
@@ -210,7 +305,7 @@ export function CastCaseLogPdfPage({
             </Text>
             <Text color="fg.muted" fontSize="sm">
               เลือกเดือน (ย้อนหลัง 6 เดือน นับจากเดือนก่อนหน้า ไม่รวมเดือนปัจจุบัน) และแพทย์
-              แล้วดาวน์โหลดหรือส่งไฟล์เข้าแชท LINE
+              แล้วดาวน์โหลด PDF หรือส่งลิงก์เข้าแชท LINE
             </Text>
           </VStack>
 
@@ -239,7 +334,9 @@ export function CastCaseLogPdfPage({
                 setSuccess(null);
               }}
             >
-              <option value="">ทุกแพทย์ (ดาวน์โหลดรวม)</option>
+              <option value="" disabled>
+                เลือกแพทย์
+              </option>
               {physicianOptions.map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -263,14 +360,18 @@ export function CastCaseLogPdfPage({
                 ? "กำลังโหลด…"
                 : doctorName
                   ? doctorName
-                  : "ทุกแพทย์ที่มีรายการ"}
+                  : "ยังไม่ได้เลือกแพทย์"}
             </Text>
             <Text fontSize="sm" fontWeight="medium">
-              {caseCount} รายการ · {pageCount} หน้า · รวม {payTotal} บาท
-              <Text as="span" color="fg.muted" fontWeight="normal">
-                {" "}
-                (รายการละ {CAST_CASE_LOG_PAY_PER_CASE})
-              </Text>
+              {doctorName
+                ? `${caseCount} รายการ · ${pageCount} หน้า · รวม ${payTotal} บาท`
+                : "—"}
+              {doctorName && (
+                <Text as="span" color="fg.muted" fontWeight="normal">
+                  {" "}
+                  (รายการละ {CAST_CASE_LOG_PAY_PER_CASE})
+                </Text>
+              )}
             </Text>
           </HStack>
 
@@ -279,7 +380,7 @@ export function CastCaseLogPdfPage({
               colorPalette="brand"
               onClick={shareToChat}
               loading={isSharing}
-              disabled={busy || !doctorName || !monthHasLogs || caseCount === 0}
+              disabled={busy || !canExport}
             >
               <MessageCircle size={16} />
               ส่งในแชท LINE
@@ -288,14 +389,14 @@ export function CastCaseLogPdfPage({
               variant="outline"
               onClick={download}
               loading={isDownloading}
-              disabled={busy || !monthHasLogs || (Boolean(doctorName) && caseCount === 0)}
+              disabled={busy || !canExport}
             >
               <FileDown size={16} />
               ดาวน์โหลด PDF
             </Button>
             {!doctorName && monthHasLogs && (
               <Text fontSize="xs" color="fg.muted">
-                เลือกแพทย์เพื่อส่งในแชท — ดาวน์โหลดรวมทุกแพทย์ได้ทันที
+                เลือกแพทย์ก่อนดาวน์โหลดหรือส่งในแชท LINE
               </Text>
             )}
           </VStack>
@@ -307,6 +408,18 @@ export function CastCaseLogPdfPage({
                 <Alert.Description>{loadError}</Alert.Description>
               </Alert.Content>
             </Alert.Root>
+          )}
+          {canSeedAugustDummy && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={seedAugustDummy}
+              loading={isSeeding}
+              disabled={busy}
+              alignSelf="flex-start"
+            >
+              ใส่ข้อมูลทดสอบ ปองสิทธิ์ ส.ค. 2569 (วันละ 1 รายการ)
+            </Button>
           )}
           {error && (
             <Alert.Root status="error">

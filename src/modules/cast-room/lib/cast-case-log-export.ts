@@ -24,11 +24,12 @@ import { isWithinRecentMonths, THAI_MONTHS } from "./thai-date";
 /**
  * Cast-room case-log PDF architecture
  * -----------------------------------
- * 1. UI (`CastCaseLogExportPanel`) — admin picks month + physician, sees case count.
+ * 1. UI (`CastCaseLogPdfPage`) — admin picks month + physician, sees case count.
  * 2. Server action — loads visits, builds PDF bytes (or a signed share token).
  * 3. Download — PDF bytes returned as base64 for immediate file save.
  * 4. Send to LINE chat — signed URL (`/api/cast-room/case-log-pdf?token=…`)
- *    shared via `liff.shareTargetPicker` (no Messaging API / Blob required).
+ *    shared via `liff.shareTargetPicker` (Flex URI button; no Messaging API
+ *    push / binary PDF attachment required).
  * 5. Share route — verifies HMAC token, regenerates PDF on the fly, streams it.
  */
 
@@ -176,7 +177,7 @@ async function appOrigin(): Promise<string> {
   return "http://localhost:3000";
 }
 
-/** Generate PDF bytes for download (admin only). */
+/** Generate PDF bytes for download (admin only). Requires a selected physician. */
 export async function exportCastCaseLogPdf(
   year: number,
   month: number,
@@ -184,6 +185,10 @@ export async function exportCastCaseLogPdf(
 ): Promise<ExportCastCaseLogResult> {
   const session = await requireAdminSession();
   if (!session) return { ok: false, error: "ไม่มีสิทธิ์เข้าถึง" };
+
+  if (!doctorName) {
+    return { ok: false, error: "กรุณาเลือกแพทย์ก่อนดาวน์โหลด" };
+  }
 
   const invalid = validateMonth(year, month);
   if (invalid) return { ok: false, error: invalid };
@@ -194,7 +199,7 @@ export async function exportCastCaseLogPdf(
       return { ok: false, error: "ไม่มีรายการในเดือนที่เลือก" };
     }
     const { selected } = selectVisits(visits, doctorName);
-    if (doctorName && selected.length === 0) {
+    if (selected.length === 0) {
       return { ok: false, error: "ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก" };
     }
     const { bytes, caseCount, filename } = await buildPdfBytes(year, month, doctorName, visits);
@@ -205,7 +210,7 @@ export async function exportCastCaseLogPdf(
       caseCount,
       pageCount: pageCountFor(caseCount),
       monthLabel: monthLabel(year, month),
-      doctorName: doctorName ?? null,
+      doctorName,
     };
   } catch {
     return { ok: false, error: "สร้าง PDF ไม่สำเร็จ" };
