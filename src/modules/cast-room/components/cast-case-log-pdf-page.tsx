@@ -23,7 +23,7 @@ import {
   createCastCaseLogShareLink,
   exportCastCaseLogPdf,
 } from "../lib/cast-case-log-export";
-import { listCastVisitsForAdmin, type CastVisitSummary } from "../lib/cast-dashboard-actions";
+import { listCastVisitsForAdmin, seedPongsitAugust2026Dummy, type CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { recentMonthOptions } from "../lib/thai-date";
 
 function downloadBase64Pdf(filename: string, base64: string) {
@@ -62,6 +62,7 @@ export function CastCaseLogPdfPage({
   const [isPending, startLoad] = useTransition();
   const [isDownloading, startDownload] = useTransition();
   const [isSharing, startShare] = useTransition();
+  const [isSeeding, startSeed] = useTransition();
   /** Skip the first effect run — SSR already loaded the default month. */
   const skipNextMonthLoad = useRef(true);
 
@@ -90,7 +91,8 @@ export function CastCaseLogPdfPage({
   const monthHasLogs = visits.length > 0;
   const canExport = Boolean(doctorName) && monthHasLogs && caseCount > 0;
 
-  const busy = isPending || isDownloading || isSharing;
+  const busy = isPending || isDownloading || isSharing || isSeeding;
+  const canSeedAugustDummy = yearNum === 2026 && monthNum === 8;
 
   const reload = useCallback((year: number, month: number) => {
     if (!month || !year) return;
@@ -271,6 +273,28 @@ export function CastCaseLogPdfPage({
     });
   };
 
+  const seedAugustDummy = () => {
+    if (!canSeedAugustDummy) return;
+    startSeed(async () => {
+      setError(null);
+      setLoadError(null);
+      const result = await seedPongsitAugust2026Dummy();
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const listed = await listCastVisitsForAdmin(2026, 8);
+      if (!listed.ok) {
+        setVisits([]);
+        setLoadError(listed.error);
+        return;
+      }
+      setVisits(listed.visits);
+      setDoctorName("ปองสิทธิ์ โพธิคุณ");
+      setSuccess(`ใส่ข้อมูลทดสอบแล้ว · ${result.visitCount} วัน (1–31 ส.ค. 2569)`);
+    });
+  };
+
   return (
     <VStack align="stretch" gap={6}>
       <GlassCard variant="solid" p={5}>
@@ -384,6 +408,18 @@ export function CastCaseLogPdfPage({
                 <Alert.Description>{loadError}</Alert.Description>
               </Alert.Content>
             </Alert.Root>
+          )}
+          {canSeedAugustDummy && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={seedAugustDummy}
+              loading={isSeeding}
+              disabled={busy}
+              alignSelf="flex-start"
+            >
+              ใส่ข้อมูลทดสอบ ปองสิทธิ์ ส.ค. 2569 (วันละ 1 รายการ)
+            </Button>
           )}
           {error && (
             <Alert.Root status="error">
