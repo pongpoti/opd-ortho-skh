@@ -266,6 +266,8 @@ export function DutyScheduleCalendar() {
                   {DUTY_ORDER.filter((key) => dutyApplies(key, selectedWeekday)).map((key) => {
                     const Icon = DUTY_ICONS[key];
                     const name = selectedDuty?.entries[key];
+                    const isAbsent = name === "-";
+                    const isUnset = !name;
                     return (
                       <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
                         <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
@@ -275,8 +277,12 @@ export function DutyScheduleCalendar() {
                           <Text fontSize="xs" fontWeight="semibold" color="fg.muted">
                             {DUTY_LABELS[key]}
                           </Text>
-                          <Text fontSize="md" fontWeight="semibold" color={name ? "fg" : "fg.muted"}>
-                            {name ?? "ยังไม่ระบุ"}
+                          <Text
+                            fontSize="md"
+                            fontWeight="semibold"
+                            color={isUnset || isAbsent ? "fg.muted" : "fg"}
+                          >
+                            {isUnset ? "ยังไม่ระบุ" : name}
                           </Text>
                         </VStack>
                       </HStack>
