@@ -25,6 +25,7 @@ export function CastRoomTabs({ showDashboard }: { showDashboard: boolean }) {
   // Nurses only have one subpage — skip the tab row so the form is the focus.
   if (tabs.length <= 1) return null;
 
+  // Optimistic highlight while the route transition catches up.
   const activePath =
     pendingHref !== null && !isTabActive(pathname, pendingHref) ? pendingHref : pathname;
 
