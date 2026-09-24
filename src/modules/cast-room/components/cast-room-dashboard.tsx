@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import {
   Alert,
   Button,
@@ -37,6 +37,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const initial = currentMonthYear();
   const [month, setMonth] = useState(String(initial.month));
   const [buddhistYear, setBuddhistYear] = useState(String(initial.year + 543));
+  const [listDoctorFilter, setListDoctorFilter] = useState("");
   const [visits, setVisits] = useState(initialVisits);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingVisit, setEditingVisit] = useState<CastVisitSummary | null>(null);
@@ -48,9 +49,21 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
+  const monthNum = Number(month);
+  const yearNum = Number(buddhistYear) - 543;
+
+  const doctorNamesInMonth = useMemo(() => {
+    return [...new Set(visits.map((v) => v.doctorName).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b, "th")
+    );
+  }, [visits]);
+
+  const visibleVisits = useMemo(() => {
+    if (!listDoctorFilter) return visits;
+    return visits.filter((v) => v.doctorName === listDoctorFilter);
+  }, [visits, listDoctorFilter]);
+
   const reload = useCallback(() => {
-    const monthNum = Number(month);
-    const yearNum = Number(buddhistYear) - 543;
     if (!monthNum || !yearNum) return;
 
     startTransition(async () => {
@@ -62,7 +75,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
       }
       setVisits(result.visits);
     });
-  }, [month, buddhistYear]);
+  }, [monthNum, yearNum]);
 
   const openEdit = (visit: CastVisitSummary) => {
     setSwipedVisitId(null);
@@ -99,7 +112,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
         <VStack align="stretch" gap={4}>
           <Text color="fg.muted">เลือกเดือนเพื่อดูรายการที่บันทึกไว้</Text>
           <HStack gap={3} flexWrap="wrap" align="end">
-            <NativeSelect.Root flex="1" minW="160px">
+            <NativeSelect.Root flex="1" minW="140px">
               <NativeSelect.Field value={month} onChange={(e) => setMonth(e.target.value)}>
                 {THAI_MONTHS.map((name, i) => (
                   <option key={name} value={String(i + 1)}>
@@ -110,7 +123,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
               <NativeSelect.Indicator />
             </NativeSelect.Root>
 
-            <NativeSelect.Root flex="1" minW="120px">
+            <NativeSelect.Root flex="1" minW="110px">
               <NativeSelect.Field
                 aria-label="ปี พ.ศ."
                 value={buddhistYear}
@@ -129,6 +142,24 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
               แสดงรายการ
             </Button>
           </HStack>
+
+          {doctorNamesInMonth.length > 0 && (
+            <NativeSelect.Root w="full">
+              <NativeSelect.Field
+                aria-label="กรองแพทย์ในรายการ"
+                value={listDoctorFilter}
+                onChange={(e) => setListDoctorFilter(e.target.value)}
+              >
+                <option value="">ทุกแพทย์ในรายการ</option>
+                {doctorNamesInMonth.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          )}
         </VStack>
       </GlassCard>
 
@@ -141,7 +172,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
         </Alert.Root>
       )}
 
-      {visits.length === 0 ? (
+      {visibleVisits.length === 0 ? (
         <GlassCard variant="solid" p={8}>
           <Text textAlign="center" color="fg.muted">
             ไม่มีรายการในเดือนที่เลือก
@@ -150,9 +181,9 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
       ) : (
         <VStack align="stretch" gap={3}>
           <Text fontSize="sm" color="fg.muted">
-            {visits.length} รายการ
+            {visibleVisits.length} รายการ
           </Text>
-          {visits.map((visit) => (
+          {visibleVisits.map((visit) => (
             <CastVisitPersonCard
               key={visit.visitId}
               visit={visit}

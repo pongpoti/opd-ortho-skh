@@ -25,7 +25,10 @@ export default auth((req) => {
     if (!canAccessCastRoom(role)) {
       return NextResponse.redirect(new URL("/", req.url));
     }
-    if (pathname.startsWith("/cast-room/dashboard") && !canAccessCastRoomDashboard(role)) {
+    if (
+      (pathname.startsWith("/cast-room/dashboard") || pathname.startsWith("/cast-room/pdf")) &&
+      !canAccessCastRoomDashboard(role)
+    ) {
       return NextResponse.redirect(new URL("/cast-room", req.url));
     }
   }
