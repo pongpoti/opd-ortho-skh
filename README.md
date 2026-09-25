@@ -49,6 +49,22 @@ can't be exercised in a fully offline/sandboxed environment. Until the env
 vars above are set, the app will still build and deploy, but the login page
 will show a sign-in error.
 
+## LINE rich menu
+
+A branded 2×2 rich menu under `line/rich-menu/` opens the LIFF app (home,
+duty schedule, cast room, statistics). Deploy it with the manual GitHub
+Action **Deploy LINE Rich Menu**, or locally via
+`scripts/line/deploy-rich-menu.sh`.
+
+Repository secrets (add before running the Action):
+
+| Secret | Value |
+| --- | --- |
+| `LINE_CHANNEL_ACCESS_TOKEN` | Messaging API long-lived channel access token |
+| `LINE_LIFF_ID` | Same LIFF ID as `NEXT_PUBLIC_LIFF_ID` |
+
+See `line/rich-menu/README.md` for image regeneration and API details.
+
 ## Development
 
 ```bash

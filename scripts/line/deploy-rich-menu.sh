@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# Deploy the OPD Ortho SKH rich menu via LINE Messaging API.
+#
+# Required env:
+#   LINE_CHANNEL_ACCESS_TOKEN  — Messaging API long-lived channel access token
+#   LINE_LIFF_ID               — LIFF app ID (builds https://liff.line.me/{id}/…)
+#
+# Optional env:
+#   SET_DEFAULT=true|false     — set as default rich menu (default: true)
+#   DELETE_OLD=true|false      — delete other rich menus after success (default: true)
+#   CHAT_BAR_TEXT              — override chat bar label
+#   SELECTED=true|false        — open rich menu by default (default: true)
+#
+# Usage (from repo root):
+#   LINE_CHANNEL_ACCESS_TOKEN=… LINE_LIFF_ID=… ./scripts/line/deploy-rich-menu.sh
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+MENU_DIR="$ROOT/line/rich-menu"
+IMAGE="$MENU_DIR/richmenu.png"
+CONFIG_TEMPLATE="$MENU_DIR/config.json"
+API="https://api.line.me/v2/bot"
+API_DATA="https://api-data.line.me/v2/bot"
+
+SET_DEFAULT="${SET_DEFAULT:-true}"
+DELETE_OLD="${DELETE_OLD:-true}"
+SELECTED="${SELECTED:-true}"
+
+die() { echo "error: $*" >&2; exit 1; }
+
+[[ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ]] || die "LINE_CHANNEL_ACCESS_TOKEN is required"
+[[ -n "${LINE_LIFF_ID:-}" ]] || die "LINE_LIFF_ID is required"
+[[ -f "$IMAGE" ]] || die "missing rich menu image: $IMAGE"
+[[ -f "$CONFIG_TEMPLATE" ]] || die "missing config template: $CONFIG_TEMPLATE"
+
+# Accept either bare LIFF ID or a full https://liff.line.me/{id} URL.
+LIFF_ID="${LINE_LIFF_ID#https://liff.line.me/}"
+LIFF_ID="${LIFF_ID%%/*}"
+[[ -n "$LIFF_ID" ]] || die "could not parse LINE_LIFF_ID"
+
+LIFF_HOME="https://liff.line.me/${LIFF_ID}"
+LIFF_DUTY="https://liff.line.me/${LIFF_ID}/duty-schedule"
+LIFF_CAST="https://liff.line.me/${LIFF_ID}/cast-room"
+LIFF_STATS="https://liff.line.me/${LIFF_ID}/statistics"
+
+auth=(-H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}")
+
+echo "==> Verifying Messaging API token…"
+bot_info="$(curl -fsS "${auth[@]}" "$API/info")"
+echo "    bot: $(echo "$bot_info" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("displayName","?"), "/", d.get("basicId","?"))')"
+
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
+CONFIG="$WORKDIR/richmenu.json"
+
+python3 - "$CONFIG_TEMPLATE" "$CONFIG" "$LIFF_HOME" "$LIFF_DUTY" "$LIFF_CAST" "$LIFF_STATS" "$SELECTED" "${CHAT_BAR_TEXT:-}" <<'PY'
+import json, sys
+src, dst, home, duty, cast, stats, selected, chat_bar = sys.argv[1:9]
+with open(src, encoding="utf-8") as f:
+    raw = f.read()
+raw = (
+    raw.replace("{{LIFF_HOME}}", home)
+    .replace("{{LIFF_DUTY}}", duty)
+    .replace("{{LIFF_CAST}}", cast)
+    .replace("{{LIFF_STATS}}", stats)
+)
+obj = json.loads(raw)
+obj["selected"] = selected.lower() in ("1", "true", "yes")
+if chat_bar:
+    obj["chatBarText"] = chat_bar
+with open(dst, "w", encoding="utf-8") as f:
+    json.dump(obj, f, ensure_ascii=False, indent=2)
+    f.write("\n")
+print(f"LIFF home: {home}")
+PY
+
+echo "==> Validating rich menu object…"
+curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
+  -d @"$CONFIG" "$API/richmenu/validate" >/dev/null
+echo "    ok"
+
+echo "==> Creating rich menu…"
+create_resp="$(curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
+  -d @"$CONFIG" "$API/richmenu")"
+RICH_MENU_ID="$(echo "$create_resp" | python3 -c 'import sys,json; print(json.load(sys.stdin)["richMenuId"])')"
+echo "    richMenuId=$RICH_MENU_ID"
+
+echo "==> Uploading image ($(du -h "$IMAGE" | cut -f1))…"
+curl -fsS "${auth[@]}" -H "Content-Type: image/png" \
+  --data-binary @"$IMAGE" \
+  "$API_DATA/richmenu/${RICH_MENU_ID}/content" >/dev/null
+echo "    uploaded"
+
+if [[ "$SET_DEFAULT" == "true" ]]; then
+  echo "==> Setting as default rich menu…"
+  curl -fsS -X POST "${auth[@]}" "$API/user/all/richmenu/${RICH_MENU_ID}" >/dev/null
+  echo "    default set"
+else
+  echo "==> Skipping set-default (SET_DEFAULT=$SET_DEFAULT)"
+fi
+
+if [[ "$DELETE_OLD" == "true" ]]; then
+  echo "==> Cleaning up older rich menus…"
+  curl -fsS "${auth[@]}" "$API/richmenu/list" \
+    | RICH_MENU_ID="$RICH_MENU_ID" LINE_CHANNEL_ACCESS_TOKEN="$LINE_CHANNEL_ACCESS_TOKEN" \
+      python3 "$ROOT/scripts/line/delete-old-rich-menus.py"
+else
+  echo "==> Skipping delete-old (DELETE_OLD=$DELETE_OLD)"
+fi
+
+echo
+echo "Done. Rich menu is live:"
+echo "  richMenuId=$RICH_MENU_ID"
+echo "  LIFF=$LIFF_HOME"

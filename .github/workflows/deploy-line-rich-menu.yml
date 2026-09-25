@@ -1,0 +1,66 @@
+name: Deploy LINE Rich Menu
+
+# Manually build & publish the OPD Ortho SKH rich menu via Messaging API.
+# Secrets required (repo Settings → Secrets and variables → Actions):
+#   LINE_CHANNEL_ACCESS_TOKEN  — Messaging API channel access token
+#   LINE_LIFF_ID               — LIFF app ID (or full https://liff.line.me/{id} URL)
+
+on:
+  workflow_dispatch:
+    inputs:
+      set_default:
+        description: Set this rich menu as the default for all friends
+        type: boolean
+        default: true
+      delete_old:
+        description: Delete other rich menus after a successful deploy
+        type: boolean
+        default: true
+      selected:
+        description: Open the rich menu by default in chat
+        type: boolean
+        default: true
+      chat_bar_text:
+        description: Chat bar label (Thai OK). Leave blank to keep the designed default.
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Create + upload + set rich menu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require secrets
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_LIFF_ID: ${{ secrets.LINE_LIFF_ID }}
+        run: |
+          missing=0
+          if [ -z "$LINE_CHANNEL_ACCESS_TOKEN" ]; then
+            echo "::error::Missing secret LINE_CHANNEL_ACCESS_TOKEN"
+            missing=1
+          fi
+          if [ -z "$LINE_LIFF_ID" ]; then
+            echo "::error::Missing secret LINE_LIFF_ID"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Deploy rich menu
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_LIFF_ID: ${{ secrets.LINE_LIFF_ID }}
+          SET_DEFAULT: ${{ inputs.set_default }}
+          DELETE_OLD: ${{ inputs.delete_old }}
+          SELECTED: ${{ inputs.selected }}
+          CHAT_BAR_TEXT: ${{ inputs.chat_bar_text }}
+        run: |
+          chmod +x scripts/line/deploy-rich-menu.sh
+          ./scripts/line/deploy-rich-menu.sh
