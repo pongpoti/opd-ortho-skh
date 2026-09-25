@@ -1,12 +1,10 @@
 "use server";
 
-import { and, desc, eq, gte, like, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/db";
 import { castLogs } from "@/db/schema";
 import { requireAdminSession } from "@/lib/require-admin";
-
-import { CAST_TYPES } from "./cast-types";
 
 export type CastVisitCast = {
   id: string;
@@ -136,107 +134,4 @@ export async function deleteCastVisitForAdmin(visitId: string): Promise<DeleteRe
 
   await db.delete(castLogs).where(eq(castLogs.visitId, visitId));
   return { ok: true };
-}
-
-const SEED_VISIT_PREFIX = "seed-pongsit-2026-08-";
-const SEED_DOCTOR = "ปองสิทธิ์ โพธิคุณ";
-const SEED_PATIENTS = [
-  "สมชาย ใจดี",
-  "สมหญิง รักเรียน",
-  "วิชัย มีสุข",
-  "นภา สว่าง",
-  "ประยุทธ์ เจริญ",
-  "กมลวรรณ ทองดี",
-  "อนุชา พิทักษ์",
-  "สุภาพร งามดี",
-  "ธนาคาร รุ่งเรือง",
-  "พิมพ์ใจ เย็นใจ",
-  "อริสา ดวงดี",
-  "มานพ ตั้งตรง",
-  "รัตนา สุขใจ",
-  "ชัยวัฒน์ ยั่งยืน",
-  "เบญจมาศ แก้วใส",
-];
-const SEED_DIAGNOSES = [
-  "Fracture distal radius",
-  "Ankle sprain",
-  "Metacarpal fracture",
-  "Colles fracture",
-  "Tibial plateau fracture",
-  "Finger dislocation",
-  "Thumb UCL injury",
-  "Olecranon fracture",
-  "Patella fracture",
-  "Boxers fracture",
-  "Distal fibula fracture",
-  "Scaphoid fracture",
-];
-
-type SeedResult =
-  | { ok: true; visitCount: number }
-  | { ok: false; error: string };
-
-/** Idempotent admin seed: 1 visit/day for ปองสิทธิ์ across August 2026. */
-export async function seedPongsitAugust2026Dummy(): Promise<SeedResult> {
-  const session = await requireAdminSession();
-  if (!session) {
-    return { ok: false, error: "ไม่มีสิทธิ์เข้าถึง" };
-  }
-
-  try {
-    await db.delete(castLogs).where(like(castLogs.visitId, `${SEED_VISIT_PREFIX}%`));
-
-    const rows: Array<typeof castLogs.$inferInsert> = [];
-    for (let day = 1; day <= 31; day++) {
-      const visitId = `${SEED_VISIT_PREFIX}${String(day).padStart(2, "0")}`;
-      const shiftDate = `2026-08-${String(day).padStart(2, "0")}`;
-      const hn = String(1_000_000 + day).padStart(7, "0");
-      const patientName = SEED_PATIENTS[(day - 1) % SEED_PATIENTS.length];
-      const diagnosis = SEED_DIAGNOSES[(day - 1) % SEED_DIAGNOSES.length];
-      const primary = CAST_TYPES[(day - 1) % CAST_TYPES.length];
-      const hour = 17 + (day % 4);
-      const minute = (day * 7) % 60;
-      const createdAt = new Date(
-        `2026-08-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+07:00`
-      );
-
-      rows.push({
-        visitId,
-        shiftDate,
-        hn,
-        patientName,
-        diagnosis,
-        doctorName: SEED_DOCTOR,
-        castType: primary.id,
-        castLabel: primary.label,
-        count: day % 3 === 0 ? 2 : 1,
-        loggedByLineUserId: null,
-        loggedByName: "seed-dummy",
-        createdAt,
-      });
-
-      if (day % 5 === 0) {
-        const secondary = CAST_TYPES[day % CAST_TYPES.length];
-        rows.push({
-          visitId,
-          shiftDate,
-          hn,
-          patientName,
-          diagnosis,
-          doctorName: SEED_DOCTOR,
-          castType: secondary.id,
-          castLabel: secondary.label,
-          count: 1,
-          loggedByLineUserId: null,
-          loggedByName: "seed-dummy",
-          createdAt,
-        });
-      }
-    }
-
-    await db.insert(castLogs).values(rows);
-    return { ok: true, visitCount: 31 };
-  } catch {
-    return { ok: false, error: "สร้างข้อมูลทดสอบไม่สำเร็จ" };
-  }
 }
