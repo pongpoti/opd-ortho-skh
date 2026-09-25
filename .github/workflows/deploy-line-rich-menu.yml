@@ -21,7 +21,7 @@ on:
         type: boolean
         default: true
       chat_bar_text:
-        description: Chat bar label (Thai OK). Leave blank to keep the designed default.
+        description: Chat bar label (max 14 chars). Leave blank to keep "เปิดแอป".
         type: string
         required: false
         default: ""

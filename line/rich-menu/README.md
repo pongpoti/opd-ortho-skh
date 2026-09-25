@@ -40,3 +40,5 @@ export LINE_LIFF_ID=…
 ```
 
 The script validates the menu object, creates it, uploads `richmenu.png`, sets it as the default, and optionally deletes older rich menus.
+
+Note: LINE limits `chatBarText` to **14 grapheme clusters**. Keep overrides short (the default is `เปิดแอป`).
