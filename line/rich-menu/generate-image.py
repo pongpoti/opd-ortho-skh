@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generate the OPD Ortho SKH LINE rich-menu image (2500x1686 PNG)."""
+"""Generate the OPD Ortho SKH LINE rich-menu image (2500x1686 PNG).
+
+Single full-bleed CTA that opens the main LIFF URL.
+"""
 
 from __future__ import annotations
 
@@ -13,18 +16,13 @@ FONT_BOLD = ROOT / "public" / "fonts" / "Sarabun-Bold.ttf"
 FONT_REG = ROOT / "public" / "fonts" / "Sarabun-Regular.ttf"
 
 W, H = 2500, 1686
-GAP = 22
-PAD = 44
+PAD = 72
 
 BRAND_600 = (22, 114, 105)
+BRAND_500 = (31, 143, 134)
+BRAND_400 = (75, 184, 174)
 FG = (17, 61, 57)
 MUTED = (78, 108, 118)
-DOCK = {
-    "home": (31, 143, 134),
-    "calendar": (193, 122, 46),
-    "cross": (220, 38, 38),
-    "chart": (53, 116, 181),
-}
 
 
 def soft_blob(size: tuple[int, int], color: tuple[int, int, int], alpha: int) -> Image.Image:
@@ -35,7 +33,6 @@ def soft_blob(size: tuple[int, int], color: tuple[int, int, int], alpha: int) ->
 
 
 def make_background() -> Image.Image:
-    # Soft teal/blue wash matching BackgroundGradient
     top = Image.new("RGB", (1, H))
     tp = top.load()
     for y in range(H):
@@ -46,9 +43,9 @@ def make_background() -> Image.Image:
             int(250 + (252 - 250) * t),
         )
     img = top.resize((W, H), Image.Resampling.BILINEAR).convert("RGBA")
-    img.alpha_composite(soft_blob((1400, 1400), (169, 232, 226), 170), dest=(-200, -350))
-    img.alpha_composite(soft_blob((1500, 1500), (188, 217, 245), 150), dest=(1400, -400))
-    img.alpha_composite(soft_blob((1600, 1400), (205, 238, 230), 140), dest=(450, 900))
+    img.alpha_composite(soft_blob((1600, 1600), (169, 232, 226), 180), dest=(-250, -400))
+    img.alpha_composite(soft_blob((1700, 1700), (188, 217, 245), 155), dest=(1300, -450))
+    img.alpha_composite(soft_blob((1800, 1500), (205, 238, 230), 145), dest=(350, 850))
     return img
 
 
@@ -63,112 +60,67 @@ def rounded_rect(
     draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
 
 
-def draw_home_icon(draw: ImageDraw.ImageDraw, cx: int, cy: int, color: tuple[int, int, int], s: int = 40) -> None:
-    roof = [(cx, cy - s), (cx - s, cy - 2), (cx + s, cy - 2)]
-    draw.line(roof + [roof[0]], fill=color, width=9, joint="curve")
-    body = [cx - int(s * 0.7), cy - 2, cx + int(s * 0.7), cy + s + 4]
-    draw.rectangle(body, outline=color, width=9)
-    door = [cx - 14, cy + 12, cx + 14, cy + s + 4]
-    draw.rectangle(door, outline=color, width=7)
-
-
-def draw_calendar_icon(draw: ImageDraw.ImageDraw, cx: int, cy: int, color: tuple[int, int, int], s: int = 40) -> None:
-    box = [cx - s, cy - int(s * 0.65), cx + s, cy + s]
-    rounded_rect(draw, tuple(box), 14, outline=color, width=9)
-    draw.line([(cx - s + 12, cy - 4), (cx + s - 12, cy - 4)], fill=color, width=8)
-    for dx in (-20, 0, 20):
-        draw.ellipse((cx + dx - 6, cy + 16, cx + dx + 6, cy + 28), fill=color)
-    for dx in (-24, 24):
-        draw.line([(cx + dx, cy - int(s * 0.95)), (cx + dx, cy - int(s * 0.4))], fill=color, width=9)
-
-
-def draw_cross_icon(draw: ImageDraw.ImageDraw, cx: int, cy: int, color: tuple[int, int, int], s: int = 40) -> None:
-    arm_w = int(s * 0.4)
-    arm_h = int(s * 1.05)
-    draw.rounded_rectangle([cx - arm_w, cy - arm_h, cx + arm_w, cy + arm_h], radius=10, fill=color)
-    draw.rounded_rectangle([cx - arm_h, cy - arm_w, cx + arm_h, cy + arm_w], radius=10, fill=color)
-
-
-def draw_chart_icon(draw: ImageDraw.ImageDraw, cx: int, cy: int, color: tuple[int, int, int], s: int = 40) -> None:
-    base_y = cy + s
-    for dx, h in ((-30, 30), (0, 54), (30, 42)):
-        draw.rounded_rectangle([cx + dx - 11, base_y - h, cx + dx + 11, base_y], radius=7, fill=color)
-
-
-def cell_boxes() -> list[tuple[int, int, int, int]]:
-    cw = (W - PAD * 2 - GAP) // 2
-    ch = (H - PAD * 2 - GAP) // 2
-    boxes = []
-    for row in range(2):
-        for col in range(2):
-            x0 = PAD + col * (cw + GAP)
-            y0 = PAD + row * (ch + GAP)
-            boxes.append((x0, y0, x0 + cw, y0 + ch))
-    return boxes
+def draw_heart(draw: ImageDraw.ImageDraw, cx: int, cy: int, size: int, color: tuple[int, int, int]) -> None:
+    # Classic filled heart (two circles + triangle), crisp at rich-menu scale.
+    r = size // 2
+    draw.ellipse((cx - size, cy - r - 8, cx, cy + r - 8), fill=color)
+    draw.ellipse((cx, cy - r - 8, cx + size, cy + r - 8), fill=color)
+    draw.polygon(
+        [
+            (cx - size + 4, cy + 6),
+            (cx + size - 4, cy + 6),
+            (cx, cy + size + 18),
+        ],
+        fill=color,
+    )
 
 
 def main() -> None:
-    bold = ImageFont.truetype(str(FONT_BOLD), 78)
-    reg = ImageFont.truetype(str(FONT_REG), 38)
-    brand = ImageFont.truetype(str(FONT_BOLD), 36)
+    title_font = ImageFont.truetype(str(FONT_BOLD), 110)
+    brand_font = ImageFont.truetype(str(FONT_BOLD), 64)
+    sub_font = ImageFont.truetype(str(FONT_REG), 48)
+    cta_font = ImageFont.truetype(str(FONT_BOLD), 56)
 
     base = make_background()
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(layer)
 
-    tiles = [
-        {
-            "title": "หน้าแรก",
-            "subtitle": "เปิดแอป OPD Ortho",
-            "accent": DOCK["home"],
-            "icon": draw_home_icon,
-            "brand": True,
-        },
-        {
-            "title": "ตารางเวร",
-            "subtitle": "เวรแพทย์และพยาบาล",
-            "accent": DOCK["calendar"],
-            "icon": draw_calendar_icon,
-            "brand": False,
-        },
-        {
-            "title": "เวรห้องเฝือก",
-            "subtitle": "บันทึกผู้ป่วยใส่เฝือก",
-            "accent": DOCK["cross"],
-            "icon": draw_cross_icon,
-            "brand": False,
-        },
-        {
-            "title": "สถิติ",
-            "subtitle": "รายงานของแผนก",
-            "accent": DOCK["chart"],
-            "icon": draw_chart_icon,
-            "brand": False,
-        },
-    ]
+    panel = (PAD, PAD, W - PAD, H - PAD)
+    rounded_rect(draw, panel, 72, fill=(255, 255, 255, 178))
+    rounded_rect(draw, panel, 72, outline=(255, 255, 255, 230), width=5)
+    rounded_rect(draw, (PAD + 8, PAD + 8, W - PAD - 8, H - PAD - 8), 64, outline=(*BRAND_500, 70), width=5)
 
-    for box, tile in zip(cell_boxes(), tiles):
-        x0, y0, x1, y1 = box
-        rounded_rect(draw, box, 52, fill=(255, 255, 255, 175))
-        rounded_rect(draw, box, 52, outline=(255, 255, 255, 220), width=4)
-        rounded_rect(draw, (x0 + 5, y0 + 5, x1 - 5, y1 - 5), 46, outline=(*tile["accent"], 78), width=4)
+    cx = W // 2
+    icon_y = 400
+    r = 140
+    draw.ellipse((cx - r, icon_y - r, cx + r, icon_y + r), fill=(*BRAND_500, 38))
+    draw_heart(draw, cx, icon_y - 6, 78, BRAND_600)
+    draw_heart(draw, cx, icon_y - 6, 58, BRAND_400)
 
-        cx = (x0 + x1) // 2
-        icon_y = y0 + 220
-        r = 86
-        draw.ellipse((cx - r, icon_y - r, cx + r, icon_y + r), fill=(*tile["accent"], 40))
-        tile["icon"](draw, cx, icon_y, tile["accent"], 40)
+    line1 = "OPD Orthopedic"
+    line2 = "Samutsakhon Hospital"
+    w1 = draw.textlength(line1, font=title_font)
+    w2 = draw.textlength(line2, font=brand_font)
+    draw.text((cx - w1 / 2, 620), line1, font=title_font, fill=BRAND_600)
+    draw.text((cx - w2 / 2, 760), line2, font=brand_font, fill=BRAND_600)
 
-        tw = draw.textlength(tile["title"], font=bold)
-        draw.text((cx - tw / 2, y0 + 360), tile["title"], font=bold, fill=FG)
+    sub = "เลือกเครื่องมือสำหรับงาน OPD ออร์โธปิดิกส์"
+    sw = draw.textlength(sub, font=sub_font)
+    draw.text((cx - sw / 2, 900), sub, font=sub_font, fill=MUTED)
 
-        sw = draw.textlength(tile["subtitle"], font=reg)
-        draw.text((cx - sw / 2, y0 + 460), tile["subtitle"], font=reg, fill=MUTED)
+    # CTA pill
+    cta = "แตะเพื่อเปิดแอป"
+    cw = draw.textlength(cta, font=cta_font)
+    pill_w = int(cw + 140)
+    pill_h = 120
+    px0 = cx - pill_w // 2
+    py0 = 1120
+    rounded_rect(draw, (px0, py0, px0 + pill_w, py0 + pill_h), 60, fill=(*BRAND_600, 235))
+    draw.text((cx - cw / 2, py0 + 28), cta, font=cta_font, fill=(255, 255, 255, 255))
 
-        if tile["brand"]:
-            tag = "OPD Orthopedic · SKH"
-            bw = draw.textlength(tag, font=brand)
-            draw.text((cx - bw / 2, y1 - 120), tag, font=brand, fill=BRAND_600)
+    tag = "OPD Ortho · SKH"
+    tw = draw.textlength(tag, font=sub_font)
+    draw.text((cx - tw / 2, H - PAD - 100), tag, font=sub_font, fill=MUTED)
 
     out = Image.alpha_composite(base, layer).convert("RGB")
     out.save(OUT, format="PNG", optimize=True)

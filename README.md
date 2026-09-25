@@ -51,8 +51,8 @@ will show a sign-in error.
 
 ## LINE rich menu
 
-A branded 2×2 rich menu under `line/rich-menu/` opens the LIFF app (home,
-duty schedule, cast room, statistics). Deploy it with the manual GitHub
+A branded single-tap rich menu under `line/rich-menu/` opens the main LIFF
+URL (`https://liff.line.me/{LIFF_ID}`). Deploy it with the manual GitHub
 Action **Deploy LINE Rich Menu**, or locally via
 `scripts/line/deploy-rich-menu.sh`.
 
