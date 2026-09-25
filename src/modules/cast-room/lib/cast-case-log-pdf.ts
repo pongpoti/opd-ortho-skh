@@ -220,17 +220,18 @@ function wrapFittedLines(
   for (const token of tokens) {
     if (overflow) break;
 
-    const candidate = current + token;
-    if (!current || widthOk(candidate)) {
-      current = candidate;
+    if (current && widthOk(current + token)) {
+      current += token;
       continue;
     }
 
-    if (!startNewLine()) {
-      overflow = true;
-      // Keep a remnant on the last line for ellipsis.
-      current = (lines.pop() ?? "") + token;
-      break;
+    if (current) {
+      if (!startNewLine()) {
+        overflow = true;
+        // Keep a remnant on the last line for ellipsis.
+        current = (lines.pop() ?? "") + token;
+        break;
+      }
     }
 
     if (widthOk(token)) {
