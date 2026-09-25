@@ -68,8 +68,8 @@ function nowHHMM(): string {
 
 export function CastRoomForm() {
   const [date, setDate] = useState(todayISO());
-  const [time, setTime] = useState(nowHHMM);
-  const [useCurrentTime, setUseCurrentTime] = useState(true);
+  const [time, setTime] = useState("");
+  const [useCurrentTime, setUseCurrentTime] = useState(false);
   const [hn, setHn] = useState("");
   const [name, setName] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -95,8 +95,8 @@ export function CastRoomForm() {
   const resetForm = () => {
     setEditingVisitId(null);
     setDate(todayISO());
-    setTime(nowHHMM());
-    setUseCurrentTime(true);
+    setTime("");
+    setUseCurrentTime(false);
     setHn("");
     setName("");
     setDiagnosis("");
