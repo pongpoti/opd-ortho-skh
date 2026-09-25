@@ -3,12 +3,12 @@
 #
 # Required env:
 #   LINE_CHANNEL_ACCESS_TOKEN  — Messaging API long-lived channel access token
-#   LINE_LIFF_ID               — LIFF app ID (builds https://liff.line.me/{id}/…)
+#   LINE_LIFF_ID               — LIFF app ID (builds https://liff.line.me/{id})
 #
 # Optional env:
 #   SET_DEFAULT=true|false     — set as default rich menu (default: true)
 #   DELETE_OLD=true|false      — delete other rich menus after success (default: true)
-#   CHAT_BAR_TEXT              — override chat bar label
+#   CHAT_BAR_TEXT              — override chat bar label (max 14 chars)
 #   SELECTED=true|false        — open rich menu by default (default: true)
 #
 # Usage (from repo root):
@@ -59,10 +59,7 @@ LIFF_ID="${LINE_LIFF_ID#https://liff.line.me/}"
 LIFF_ID="${LIFF_ID%%/*}"
 [[ -n "$LIFF_ID" ]] || die "could not parse LINE_LIFF_ID"
 
-LIFF_HOME="https://liff.line.me/${LIFF_ID}"
-LIFF_DUTY="https://liff.line.me/${LIFF_ID}/duty-schedule"
-LIFF_CAST="https://liff.line.me/${LIFF_ID}/cast-room"
-LIFF_STATS="https://liff.line.me/${LIFF_ID}/statistics"
+LIFF_URL="https://liff.line.me/${LIFF_ID}"
 
 auth=(-H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}")
 
@@ -74,7 +71,7 @@ WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 CONFIG="$WORKDIR/richmenu.json"
 
-python3 - "$CONFIG_TEMPLATE" "$CONFIG" "$LIFF_HOME" "$LIFF_DUTY" "$LIFF_CAST" "$LIFF_STATS" "$SELECTED" "${CHAT_BAR_TEXT:-}" <<'PY'
+python3 - "$CONFIG_TEMPLATE" "$CONFIG" "$LIFF_URL" "$SELECTED" "${CHAT_BAR_TEXT:-}" <<'PY'
 import json, sys
 
 # LINE counts rich-menu chatBarText / name in grapheme clusters.
@@ -82,15 +79,10 @@ import json, sys
 MAX_CHAT_BAR = 14
 MAX_LABEL = 20
 
-src, dst, home, duty, cast, stats, selected, chat_bar = sys.argv[1:9]
+src, dst, liff_url, selected, chat_bar = sys.argv[1:6]
 with open(src, encoding="utf-8") as f:
     raw = f.read()
-raw = (
-    raw.replace("{{LIFF_HOME}}", home)
-    .replace("{{LIFF_DUTY}}", duty)
-    .replace("{{LIFF_CAST}}", cast)
-    .replace("{{LIFF_STATS}}", stats)
-)
+raw = raw.replace("{{LIFF_URL}}", liff_url)
 obj = json.loads(raw)
 obj["selected"] = selected.lower() in ("1", "true", "yes")
 if chat_bar:
@@ -111,8 +103,9 @@ for area in obj.get("areas", []):
 with open(dst, "w", encoding="utf-8") as f:
     json.dump(obj, f, ensure_ascii=False, indent=2)
     f.write("\n")
-print(f"LIFF home: {home}")
+print(f"LIFF URL: {liff_url}")
 print(f"chatBarText ({len(chat)}): {chat}")
+print(f"areas: {len(obj.get('areas', []))}")
 PY
 
 echo "==> Validating rich menu object…"
@@ -152,4 +145,4 @@ fi
 echo
 echo "Done. Rich menu is live:"
 echo "  richMenuId=$RICH_MENU_ID"
-echo "  LIFF=$LIFF_HOME"
+echo "  LIFF=$LIFF_URL"

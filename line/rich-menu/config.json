@@ -4,39 +4,15 @@
     "height": 1686
   },
   "selected": true,
-  "name": "OPD Ortho SKH — LIFF modules",
+  "name": "OPD Ortho SKH — open LIFF",
   "chatBarText": "เปิดแอป",
   "areas": [
     {
-      "bounds": { "x": 0, "y": 0, "width": 1250, "height": 843 },
+      "bounds": { "x": 0, "y": 0, "width": 2500, "height": 1686 },
       "action": {
         "type": "uri",
-        "label": "หน้าแรก",
-        "uri": "{{LIFF_HOME}}"
-      }
-    },
-    {
-      "bounds": { "x": 1250, "y": 0, "width": 1250, "height": 843 },
-      "action": {
-        "type": "uri",
-        "label": "ตารางเวร",
-        "uri": "{{LIFF_DUTY}}"
-      }
-    },
-    {
-      "bounds": { "x": 0, "y": 843, "width": 1250, "height": 843 },
-      "action": {
-        "type": "uri",
-        "label": "เวรห้องเฝือก",
-        "uri": "{{LIFF_CAST}}"
-      }
-    },
-    {
-      "bounds": { "x": 1250, "y": 843, "width": 1250, "height": 843 },
-      "action": {
-        "type": "uri",
-        "label": "สถิติ",
-        "uri": "{{LIFF_STATS}}"
+        "label": "เปิดแอป",
+        "uri": "{{LIFF_URL}}"
       }
     }
   ]

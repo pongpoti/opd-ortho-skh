@@ -1,18 +1,13 @@
 # LINE rich menu (OPD Ortho SKH)
 
-Branded 2×2 rich menu that opens the LIFF app module routes.
+Single full-area rich menu that opens the main LIFF app URL:
 
-| Tile | Opens |
-| --- | --- |
-| หน้าแรก | `https://liff.line.me/{LIFF_ID}` |
-| ตารางเวร | `https://liff.line.me/{LIFF_ID}/duty-schedule` |
-| เวรห้องเฝือก | `https://liff.line.me/{LIFF_ID}/cast-room` |
-| สถิติ | `https://liff.line.me/{LIFF_ID}/statistics` |
+`https://liff.line.me/{LIFF_ID}`
 
 ## Files
 
 - `richmenu.png` — 2500×1686 image (LINE full-size rich menu)
-- `config.json` — Messaging API rich menu object (URI placeholders)
+- `config.json` — Messaging API rich menu object (one URI area)
 - `generate-image.py` — regenerates `richmenu.png` from the app theme
 
 ## Regenerate the image
@@ -27,7 +22,7 @@ python3 line/rich-menu/generate-image.py
 ### GitHub Actions (manual)
 
 1. Add repository secrets:
-   - `LINE_CHANNEL_ACCESS_TOKEN` — Messaging API long-lived token (LINE Developers Console → Messaging API channel → Channel access token)
+   - `LINE_CHANNEL_ACCESS_TOKEN` — Messaging API long-lived token
    - `LINE_LIFF_ID` — the same LIFF ID as `NEXT_PUBLIC_LIFF_ID` (or the full `https://liff.line.me/{id}` URL)
 2. Actions → **Deploy LINE Rich Menu** → **Run workflow**
 
