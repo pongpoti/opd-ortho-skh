@@ -6,14 +6,14 @@ Single full-area rich menu that opens the main LIFF app URL:
 
 ## Files
 
-- `richmenu.png` — 2500×1686 image (LINE full-size rich menu)
+- `richmenu.jpg` — 2500×1686 image uploaded to LINE (JPEG under 1 MB)
 - `config.json` — Messaging API rich menu object (one URI area)
-- `generate-image.py` — regenerates `richmenu.png` from the app theme
+- `generate-image.py` — regenerates `richmenu.jpg` from the app theme
 
 ## Regenerate the image
 
 ```bash
-pip install pillow
+pip install pillow cairosvg
 python3 line/rich-menu/generate-image.py
 ```
 
@@ -34,6 +34,6 @@ export LINE_LIFF_ID=…
 ./scripts/line/deploy-rich-menu.sh
 ```
 
-The script validates the menu object, creates it, uploads `richmenu.png`, sets it as the default, and optionally deletes older rich menus.
+The script validates the menu object, creates it, uploads `richmenu.jpg`, sets it as the default, and optionally deletes older rich menus.
 
 Note: LINE limits `chatBarText` to **14 grapheme clusters**. Keep overrides short (the default is `เปิดแอป`).
