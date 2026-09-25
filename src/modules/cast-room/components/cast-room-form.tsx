@@ -61,11 +61,6 @@ interface ConfirmedEntry {
   casts: Array<{ id: string; count: number }>;
 }
 
-function nowHHMM(): string {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 export function CastRoomForm() {
   const [date, setDate] = useState(todayISO());
   const [time, setTime] = useState("");
