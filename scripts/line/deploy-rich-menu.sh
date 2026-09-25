@@ -127,7 +127,9 @@ echo "    uploaded"
 
 if [[ "$SET_DEFAULT" == "true" ]]; then
   echo "==> Setting as default rich menu…"
-  line_curl -X POST "${auth[@]}" "$API/user/all/richmenu/${RICH_MENU_ID}" >/dev/null
+  # Empty-body POST must send Content-Length: 0; otherwise Akamai/LINE returns HTTP 411.
+  line_curl -X POST -H "Content-Length: 0" "${auth[@]}" \
+    "$API/user/all/richmenu/${RICH_MENU_ID}" >/dev/null
   echo "    default set"
 else
   echo "==> Skipping set-default (SET_DEFAULT=$SET_DEFAULT)"
