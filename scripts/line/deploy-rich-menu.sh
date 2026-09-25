@@ -18,7 +18,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MENU_DIR="$ROOT/line/rich-menu"
-IMAGE="$MENU_DIR/richmenu.png"
+IMAGE="$MENU_DIR/richmenu.jpg"
 CONFIG_TEMPLATE="$MENU_DIR/config.json"
 API="https://api.line.me/v2/bot"
 API_DATA="https://api-data.line.me/v2/bot"
@@ -120,7 +120,7 @@ RICH_MENU_ID="$(echo "$create_resp" | python3 -c 'import sys,json; print(json.lo
 echo "    richMenuId=$RICH_MENU_ID"
 
 echo "==> Uploading image ($(du -h "$IMAGE" | cut -f1))…"
-line_curl "${auth[@]}" -H "Content-Type: image/png" \
+line_curl "${auth[@]}" -H "Content-Type: image/jpeg" \
   --data-binary @"$IMAGE" \
   "$API_DATA/richmenu/${RICH_MENU_ID}/content" >/dev/null
 echo "    uploaded"
