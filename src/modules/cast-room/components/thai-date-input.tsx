@@ -22,7 +22,7 @@ import { buildMonthCells, formatThaiDate, parseISO, thaiMonthYear, toISO, THAI_W
 export interface ThaiDateInputProps {
   value: string;
   onChange: (value: string) => void;
-  /** `HH:mm` (24-hour) — when omitted, the picker keeps time internally. */
+  /** `HH:mm` (24-hour), or empty when not yet chosen. */
   time?: string;
   onTimeChange?: (time: string) => void;
   useCurrentTime?: boolean;
@@ -39,11 +39,9 @@ function nowHHMM(): string {
 }
 
 function splitHHMM(time: string): { hour: string; minute: string } {
-  const [hour = "00", minute = "00"] = time.split(":");
-  return {
-    hour: hour.padStart(2, "0"),
-    minute: minute.padStart(2, "0"),
-  };
+  const match = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!match) return { hour: "", minute: "" };
+  return { hour: match[1], minute: match[2] };
 }
 
 /** Full-width date field styled and labeled entirely in Thai -- the native
@@ -62,30 +60,61 @@ export function ThaiDateInput({
   const [open, setOpen] = useState(false);
   const [view, setView] = useState({ year: selected.year, month: selected.month });
   const [draftDate, setDraftDate] = useState(value);
-  const [internalTime, setInternalTime] = useState(timeProp ?? nowHHMM());
-  const [internalUseCurrentTime, setInternalUseCurrentTime] = useState(useCurrentTimeProp ?? true);
+  const [internalTime, setInternalTime] = useState(timeProp ?? "");
+  const [internalUseCurrentTime, setInternalUseCurrentTime] = useState(useCurrentTimeProp ?? false);
+  const [draftHour, setDraftHour] = useState("");
+  const [draftMinute, setDraftMinute] = useState("");
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
 
   const time = timeProp ?? internalTime;
   const useCurrentTime = useCurrentTimeProp ?? internalUseCurrentTime;
+  const timeComplete = Boolean(draftHour) && Boolean(draftMinute);
+  const canConfirm = useCurrentTime || timeComplete;
 
   function setTime(next: string) {
     if (timeProp === undefined) setInternalTime(next);
     onTimeChange?.(next);
   }
 
+  function applyCurrentTime() {
+    const now = nowHHMM();
+    const parts = splitHHMM(now);
+    setDraftHour(parts.hour);
+    setDraftMinute(parts.minute);
+    setTime(now);
+  }
+
+  function clearTimeDraft() {
+    setDraftHour("");
+    setDraftMinute("");
+    setTime("");
+  }
+
   function setUseCurrentTime(next: boolean) {
     if (useCurrentTimeProp === undefined) setInternalUseCurrentTime(next);
     onUseCurrentTimeChange?.(next);
-    if (next) setTime(nowHHMM());
+    if (next) applyCurrentTime();
+    else clearTimeDraft();
+  }
+
+  function setHour(nextHour: string) {
+    setDraftHour(nextHour);
+    if (nextHour && draftMinute) setTime(`${nextHour}:${draftMinute}`);
+    else setTime("");
+  }
+
+  function setMinute(nextMinute: string) {
+    setDraftMinute(nextMinute);
+    if (draftHour && nextMinute) setTime(`${draftHour}:${nextMinute}`);
+    else setTime("");
   }
 
   useEffect(() => {
     if (!open || !useCurrentTime) return;
-    setTime(nowHHMM());
+    applyCurrentTime();
     const id = window.setInterval(() => {
-      setTime(nowHHMM());
+      applyCurrentTime();
     }, 15_000);
     return () => window.clearInterval(id);
     // Refresh wall-clock while "use current time" is on and the picker is open.
@@ -95,12 +124,19 @@ export function ThaiDateInput({
   function openPicker() {
     setView({ year: selected.year, month: selected.month });
     setDraftDate(value);
-    if (useCurrentTime) setTime(nowHHMM());
+    if (useCurrentTime) {
+      applyCurrentTime();
+    } else {
+      const parts = splitHHMM(time);
+      setDraftHour(parts.hour);
+      setDraftMinute(parts.minute);
+    }
     setOpen(true);
   }
 
   function confirmSelection() {
-    if (useCurrentTime) setTime(nowHHMM());
+    if (!canConfirm) return;
+    if (useCurrentTime) applyCurrentTime();
     onChange(draftDate);
     setOpen(false);
   }
@@ -146,16 +182,9 @@ export function ThaiDateInput({
   }
 
   const cells = buildMonthCells(view.year, view.month);
-  const buttonLabel = `${formatThaiDate(value)} · ${time}${useCurrentTime ? " (ปัจจุบัน)" : ""}`;
-  const { hour, minute } = splitHHMM(time);
-
-  function setHour(nextHour: string) {
-    setTime(`${nextHour}:${minute}`);
-  }
-
-  function setMinute(nextMinute: string) {
-    setTime(`${hour}:${nextMinute}`);
-  }
+  const buttonLabel = time
+    ? `${formatThaiDate(value)} · ${time}${useCurrentTime ? " (ปัจจุบัน)" : ""}`
+    : formatThaiDate(value);
 
   return (
     <>
@@ -239,15 +268,19 @@ export function ThaiDateInput({
 
                 <VStack align="stretch" gap={3} mt={4} pt={3} borderTopWidth="1px" borderColor="glass.border">
                   <Field.Root>
-                    <Field.Label fontSize="sm">เวลา (24 ชม.)</Field.Label>
-                    <HStack gap={2}>
+                    <Field.Label fontSize="sm" textAlign="center" w="full">
+                      เวลา (24 ชม.)
+                    </Field.Label>
+                    <HStack gap={2} justify="center" maxW="200px" mx="auto" w="full">
                       <NativeSelect.Root flex="1" disabled={useCurrentTime}>
                         <NativeSelect.Field
                           fontSize="16px"
-                          value={hour}
+                          textAlign="center"
+                          value={draftHour}
                           aria-label="ชั่วโมง"
                           onChange={(e) => setHour(e.target.value)}
                         >
+                          <option value="">-</option>
                           {HOURS.map((h) => (
                             <option key={h} value={h}>
                               {h}
@@ -262,10 +295,12 @@ export function ThaiDateInput({
                       <NativeSelect.Root flex="1" disabled={useCurrentTime}>
                         <NativeSelect.Field
                           fontSize="16px"
-                          value={minute}
+                          textAlign="center"
+                          value={draftMinute}
                           aria-label="นาที"
                           onChange={(e) => setMinute(e.target.value)}
                         >
+                          <option value="">-</option>
                           {MINUTES.map((m) => (
                             <option key={m} value={m}>
                               {m}
@@ -281,6 +316,7 @@ export function ThaiDateInput({
                     checked={useCurrentTime}
                     onCheckedChange={(e) => setUseCurrentTime(!!e.checked)}
                     colorPalette="brand"
+                    justifyContent="center"
                   >
                     <Checkbox.HiddenInput />
                     <Checkbox.Control>
@@ -290,8 +326,14 @@ export function ThaiDateInput({
                   </Checkbox.Root>
                 </VStack>
 
-                <VStack gap={2} mt={3}>
-                  <Button type="button" colorPalette="brand" w="full" onClick={confirmSelection}>
+                <VStack gap={2} mt={6}>
+                  <Button
+                    type="button"
+                    colorPalette="brand"
+                    w="full"
+                    disabled={!canConfirm}
+                    onClick={confirmSelection}
+                  >
                     ตกลง
                   </Button>
                   <Text fontSize="xs" color="fg.muted" textAlign="center">
