@@ -9,7 +9,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { FileDown, MessageCircle } from "lucide-react";
+import { FileDown } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInit, liff } from "@/lib/liff-client";
@@ -19,24 +19,26 @@ import {
   CAST_CASE_LOG_PAY_PER_CASE,
   CAST_CASE_LOG_ROWS_PER_PAGE,
 } from "../lib/cast-case-log-constants";
-import {
-  createCastCaseLogShareLink,
-  exportCastCaseLogPdf,
-} from "../lib/cast-case-log-export";
+import { createCastCaseLogPdfLink } from "../lib/cast-case-log-export";
 import { listCastVisitsForAdmin, seedPongsitAugust2026Dummy, type CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { recentMonthOptions } from "../lib/thai-date";
 
-function downloadBase64Pdf(filename: string, base64: string) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const blob = new Blob([bytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+/** Open the signed HTTPS PDF URL — blob downloads fail silently in LINE WebView. */
+async function openPdfUrl(url: string) {
+  try {
+    await ensureLiffInit();
+    if (liff.isInClient()) {
+      liff.openWindow({ url, external: true });
+      return;
+    }
+  } catch {
+    // Outside LIFF or init failed — fall through to browser open.
+  }
+
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (!opened) {
+    window.location.assign(url);
+  }
 }
 
 function parseMonthValue(value: string): { year: number; month: number } | null {
@@ -61,7 +63,6 @@ export function CastCaseLogPdfPage({
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startLoad] = useTransition();
   const [isDownloading, startDownload] = useTransition();
-  const [isSharing, startShare] = useTransition();
   const [isSeeding, startSeed] = useTransition();
   /** Skip the first effect run — SSR already loaded the default month. */
   const skipNextMonthLoad = useRef(true);
@@ -91,7 +92,7 @@ export function CastCaseLogPdfPage({
   const monthHasLogs = visits.length > 0;
   const canExport = Boolean(doctorName) && monthHasLogs && caseCount > 0;
 
-  const busy = isPending || isDownloading || isSharing || isSeeding;
+  const busy = isPending || isDownloading || isSeeding;
   const canSeedAugustDummy = yearNum === 2026 && monthNum === 8;
 
   const reload = useCallback((year: number, month: number) => {
@@ -145,131 +146,15 @@ export function CastCaseLogPdfPage({
     startDownload(async () => {
       setError(null);
       setSuccess(null);
-      const result = await exportCastCaseLogPdf(yearNum, monthNum, doctorName);
+      const result = await createCastCaseLogPdfLink(yearNum, monthNum, doctorName);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      downloadBase64Pdf(result.filename, result.pdfBase64);
+      await openPdfUrl(result.pdfUrl);
       setSuccess(
-        `ดาวน์โหลดแล้ว · ${result.caseCount} รายการ · รวม ${result.caseCount * CAST_CASE_LOG_PAY_PER_CASE} บาท`
+        `เปิด PDF แล้ว · ${result.caseCount} รายการ · รวม ${result.caseCount * CAST_CASE_LOG_PAY_PER_CASE} บาท`
       );
-    });
-  };
-
-  const shareToChat = () => {
-    if (!doctorName) {
-      setError("กรุณาเลือกแพทย์ก่อนส่งในแชท");
-      return;
-    }
-    if (!monthHasLogs) {
-      setError("ไม่มีรายการในเดือนที่เลือก");
-      return;
-    }
-    if (caseCount === 0) {
-      setError("ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก");
-      return;
-    }
-
-    startShare(async () => {
-      setError(null);
-      setSuccess(null);
-
-      const result = await createCastCaseLogShareLink(yearNum, monthNum, doctorName);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      try {
-        await ensureLiffInit();
-        if (!liff.isApiAvailable("shareTargetPicker")) {
-          await navigator.clipboard.writeText(result.chatText);
-          setSuccess("คัดลอกลิงก์ PDF แล้ว — วางในแชท LINE ได้เลย");
-          return;
-        }
-
-        // shareTargetPicker cannot attach PDF files; send a Flex card with a
-        // URI button that opens the signed PDF link (works inside LINE).
-        const altText = [
-          `บันทึกห้องเฝือก · ${result.monthLabel}`,
-          `${result.doctorName} · ${result.caseCount} รายการ`,
-          result.shareUrl,
-        ].join("\n");
-
-        let shared: { status: string } | undefined | void;
-        try {
-          shared = await liff.shareTargetPicker([
-            {
-              type: "flex",
-              altText,
-              contents: {
-                type: "bubble",
-                size: "kilo",
-                body: {
-                  type: "box",
-                  layout: "vertical",
-                  spacing: "sm",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "บันทึกห้องเฝือก",
-                      weight: "bold",
-                      size: "md",
-                      wrap: true,
-                    },
-                    {
-                      type: "text",
-                      text: `${result.monthLabel} · ${result.doctorName}`,
-                      size: "sm",
-                      color: "#666666",
-                      wrap: true,
-                    },
-                    {
-                      type: "text",
-                      text: `${result.caseCount} รายการ · รวม ${result.caseCount * CAST_CASE_LOG_PAY_PER_CASE} บาท`,
-                      size: "sm",
-                      wrap: true,
-                    },
-                  ],
-                },
-                footer: {
-                  type: "box",
-                  layout: "vertical",
-                  contents: [
-                    {
-                      type: "button",
-                      style: "primary",
-                      color: "#0F766E",
-                      action: {
-                        type: "uri",
-                        label: "เปิด PDF",
-                        uri: result.shareUrl,
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          ]);
-        } catch {
-          // Some channels only allow text via shareTargetPicker — fall back.
-          shared = await liff.shareTargetPicker([
-            { type: "text", text: result.chatText },
-          ]);
-        }
-
-        if (shared) {
-          setSuccess(`ส่งลิงก์ PDF ไปยังแชทแล้ว · ${result.caseCount} รายการ`);
-        }
-      } catch {
-        try {
-          await navigator.clipboard.writeText(result.chatText);
-          setSuccess("คัดลอกลิงก์ PDF แล้ว — วางในแชท LINE ได้เลย");
-        } catch {
-          setError("ส่งในแชทไม่สำเร็จ กรุณาดาวน์โหลดแทน");
-        }
-      }
     });
   };
 
@@ -305,7 +190,7 @@ export function CastCaseLogPdfPage({
             </Text>
             <Text color="fg.muted" fontSize="sm">
               เลือกเดือน (ย้อนหลัง 6 เดือน นับจากเดือนก่อนหน้า ไม่รวมเดือนปัจจุบัน) และแพทย์
-              แล้วดาวน์โหลด PDF หรือส่งลิงก์เข้าแชท LINE
+              แล้วเปิดดู PDF
             </Text>
           </VStack>
 
@@ -378,15 +263,6 @@ export function CastCaseLogPdfPage({
           <VStack align="stretch" gap={2}>
             <Button
               colorPalette="brand"
-              onClick={shareToChat}
-              loading={isSharing}
-              disabled={busy || !canExport}
-            >
-              <MessageCircle size={16} />
-              ส่งในแชท LINE
-            </Button>
-            <Button
-              variant="outline"
               onClick={download}
               loading={isDownloading}
               disabled={busy || !canExport}
@@ -396,7 +272,7 @@ export function CastCaseLogPdfPage({
             </Button>
             {!doctorName && monthHasLogs && (
               <Text fontSize="xs" color="fg.muted">
-                เลือกแพทย์ก่อนดาวน์โหลดหรือส่งในแชท LINE
+                เลือกแพทย์ก่อนดาวน์โหลด PDF
               </Text>
             )}
           </VStack>
