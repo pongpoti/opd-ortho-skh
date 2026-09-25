@@ -5,7 +5,7 @@
   },
   "selected": true,
   "name": "OPD Ortho SKH — LIFF modules",
-  "chatBarText": "เปิดแอป OPD Ortho",
+  "chatBarText": "เปิดแอป",
   "areas": [
     {
       "bounds": { "x": 0, "y": 0, "width": 1250, "height": 843 },

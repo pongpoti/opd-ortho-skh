@@ -29,6 +29,26 @@ SELECTED="${SELECTED:-true}"
 
 die() { echo "error: $*" >&2; exit 1; }
 
+# curl -f hides the response body on HTTP errors; capture it for debugging.
+line_curl() {
+  local tmp status
+  tmp="$(mktemp)"
+  status="$(curl -sS -o "$tmp" -w "%{http_code}" "$@")" || {
+    cat "$tmp" >&2 || true
+    rm -f "$tmp"
+    die "curl transport failure"
+  }
+  if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
+    echo "error: LINE API HTTP $status" >&2
+    cat "$tmp" >&2 || true
+    echo >&2
+    rm -f "$tmp"
+    exit 1
+  fi
+  cat "$tmp"
+  rm -f "$tmp"
+}
+
 [[ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ]] || die "LINE_CHANNEL_ACCESS_TOKEN is required"
 [[ -n "${LINE_LIFF_ID:-}" ]] || die "LINE_LIFF_ID is required"
 [[ -f "$IMAGE" ]] || die "missing rich menu image: $IMAGE"
@@ -47,7 +67,7 @@ LIFF_STATS="https://liff.line.me/${LIFF_ID}/statistics"
 auth=(-H "Authorization: Bearer ${LINE_CHANNEL_ACCESS_TOKEN}")
 
 echo "==> Verifying Messaging API token…"
-bot_info="$(curl -fsS "${auth[@]}" "$API/info")"
+bot_info="$(line_curl "${auth[@]}" "$API/info")"
 echo "    bot: $(echo "$bot_info" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("displayName","?"), "/", d.get("basicId","?"))')"
 
 WORKDIR="$(mktemp -d)"
@@ -56,6 +76,12 @@ CONFIG="$WORKDIR/richmenu.json"
 
 python3 - "$CONFIG_TEMPLATE" "$CONFIG" "$LIFF_HOME" "$LIFF_DUTY" "$LIFF_CAST" "$LIFF_STATS" "$SELECTED" "${CHAT_BAR_TEXT:-}" <<'PY'
 import json, sys
+
+# LINE counts rich-menu chatBarText / name in grapheme clusters.
+# chatBarText max is 14; action labels max is 20.
+MAX_CHAT_BAR = 14
+MAX_LABEL = 20
+
 src, dst, home, duty, cast, stats, selected, chat_bar = sys.argv[1:9]
 with open(src, encoding="utf-8") as f:
     raw = f.read()
@@ -69,32 +95,46 @@ obj = json.loads(raw)
 obj["selected"] = selected.lower() in ("1", "true", "yes")
 if chat_bar:
     obj["chatBarText"] = chat_bar
+
+chat = obj.get("chatBarText", "")
+if len(chat) > MAX_CHAT_BAR:
+    raise SystemExit(
+        f"chatBarText is {len(chat)} grapheme clusters (max {MAX_CHAT_BAR}): {chat!r}"
+    )
+for area in obj.get("areas", []):
+    label = area.get("action", {}).get("label", "")
+    if len(label) > MAX_LABEL:
+        raise SystemExit(
+            f"action label is {len(label)} grapheme clusters (max {MAX_LABEL}): {label!r}"
+        )
+
 with open(dst, "w", encoding="utf-8") as f:
     json.dump(obj, f, ensure_ascii=False, indent=2)
     f.write("\n")
 print(f"LIFF home: {home}")
+print(f"chatBarText ({len(chat)}): {chat}")
 PY
 
 echo "==> Validating rich menu object…"
-curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
+line_curl "${auth[@]}" -H "Content-Type: application/json" \
   -d @"$CONFIG" "$API/richmenu/validate" >/dev/null
 echo "    ok"
 
 echo "==> Creating rich menu…"
-create_resp="$(curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
+create_resp="$(line_curl "${auth[@]}" -H "Content-Type: application/json" \
   -d @"$CONFIG" "$API/richmenu")"
 RICH_MENU_ID="$(echo "$create_resp" | python3 -c 'import sys,json; print(json.load(sys.stdin)["richMenuId"])')"
 echo "    richMenuId=$RICH_MENU_ID"
 
 echo "==> Uploading image ($(du -h "$IMAGE" | cut -f1))…"
-curl -fsS "${auth[@]}" -H "Content-Type: image/png" \
+line_curl "${auth[@]}" -H "Content-Type: image/png" \
   --data-binary @"$IMAGE" \
   "$API_DATA/richmenu/${RICH_MENU_ID}/content" >/dev/null
 echo "    uploaded"
 
 if [[ "$SET_DEFAULT" == "true" ]]; then
   echo "==> Setting as default rich menu…"
-  curl -fsS -X POST "${auth[@]}" "$API/user/all/richmenu/${RICH_MENU_ID}" >/dev/null
+  line_curl -X POST "${auth[@]}" "$API/user/all/richmenu/${RICH_MENU_ID}" >/dev/null
   echo "    default set"
 else
   echo "==> Skipping set-default (SET_DEFAULT=$SET_DEFAULT)"
@@ -102,7 +142,7 @@ fi
 
 if [[ "$DELETE_OLD" == "true" ]]; then
   echo "==> Cleaning up older rich menus…"
-  curl -fsS "${auth[@]}" "$API/richmenu/list" \
+  line_curl "${auth[@]}" "$API/richmenu/list" \
     | RICH_MENU_ID="$RICH_MENU_ID" LINE_CHANNEL_ACCESS_TOKEN="$LINE_CHANNEL_ACCESS_TOKEN" \
       python3 "$ROOT/scripts/line/delete-old-rich-menus.py"
 else
