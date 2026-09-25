@@ -34,6 +34,7 @@ export type CastCaseLogPdfInput = {
   year: number; // Gregorian
   staff: CastCaseLogPdfStaff;
   visits: CastVisitSummary[];
+  /** Optional override for the top-right label (defaults to `ฉบับที่ {page}`). */
   sequenceNumber?: string;
 };
 
@@ -70,6 +71,7 @@ function formatTimeBangkok(iso: string): string {
   }).format(d);
 }
 
+/** Join cast types for the treatment column, e.g. `Short Leg Slab, Long Arm Slab ×2`. */
 function formatTreatment(visit: CastVisitSummary): string {
   return visit.casts
     .map((c) => (c.count > 1 ? `${c.label} ×${c.count}` : c.label))
@@ -134,6 +136,161 @@ function drawFitted(
   page.drawText(value, { x: drawX, y, size: drawSize, font, color: INK });
 }
 
+/** Soft-break tokens: prefer splitting after commas/spaces; else by character (Thai). */
+function tokenizeForWrap(text: string): string[] {
+  const tokens: string[] = [];
+  let buf = "";
+  for (const ch of text) {
+    buf += ch;
+    if (ch === " " || ch === ",") {
+      tokens.push(buf);
+      buf = "";
+    }
+  }
+  if (buf) tokens.push(buf);
+  return tokens;
+}
+
+function ellipsizeToWidth(text: string, font: PDFFont, size: number, maxWidth: number): string {
+  let value = text;
+  if (font.widthOfTextAtSize(value, size) <= maxWidth) return value;
+  while (value.length > 1 && font.widthOfTextAtSize(`${value}…`, size) > maxWidth) {
+    value = value.slice(0, -1);
+  }
+  return `${value}…`;
+}
+
+/**
+ * Wrap long diagnosis / multi-cast treatment into up to `maxLines` lines.
+ * Prefers breaks after commas/spaces; otherwise wraps by character (Thai text).
+ * Remaining overflow on the last line is ellipsized.
+ */
+function wrapFittedLines(
+  text: string,
+  maxWidth: number,
+  size: number,
+  font: PDFFont,
+  maxLines: number
+): { lines: string[]; size: number } {
+  const value = text.trim();
+  if (!value) return { lines: [], size };
+
+  let drawSize = size;
+  if (font.widthOfTextAtSize(value, drawSize) > maxWidth) {
+    // Try shrinking before wrapping when a single line almost fits.
+    while (drawSize > 7.5 && font.widthOfTextAtSize(value, drawSize) > maxWidth * 1.35) {
+      drawSize -= 0.5;
+    }
+  }
+
+  const tokens = tokenizeForWrap(value);
+  const lines: string[] = [];
+  let current = "";
+  let overflow = false;
+
+  const widthOk = (s: string) => font.widthOfTextAtSize(s, drawSize) <= maxWidth;
+
+  const startNewLine = () => {
+    if (current) lines.push(current);
+    current = "";
+    return lines.length < maxLines;
+  };
+
+  const appendChars = (chunk: string) => {
+    for (const ch of chunk) {
+      const next = current + ch;
+      if (current && !widthOk(next)) {
+        if (!startNewLine()) {
+          overflow = true;
+          // Restore last line so ellipsize can mark that more text existed.
+          current = lines.pop() ?? "";
+          return;
+        }
+        current = ch;
+        if (!widthOk(current)) {
+          overflow = true;
+          return;
+        }
+      } else {
+        current = next;
+      }
+    }
+  };
+
+  for (const token of tokens) {
+    if (overflow) break;
+
+    const candidate = current + token;
+    if (!current || widthOk(candidate)) {
+      current = candidate;
+      continue;
+    }
+
+    if (!startNewLine()) {
+      overflow = true;
+      // Keep a remnant on the last line for ellipsis.
+      current = (lines.pop() ?? "") + token;
+      break;
+    }
+
+    if (widthOk(token)) {
+      current = token;
+    } else {
+      appendChars(token);
+    }
+  }
+
+  if (current) {
+    if (lines.length < maxLines) {
+      lines.push(current);
+    } else {
+      overflow = true;
+      if (lines.length > 0) {
+        lines[lines.length - 1] = lines[lines.length - 1] + current;
+      } else {
+        lines.push(current);
+      }
+    }
+  }
+
+  if (lines.length === 0) return { lines: [], size: drawSize };
+
+  if (overflow || !widthOk(lines[lines.length - 1])) {
+    lines[lines.length - 1] = ellipsizeToWidth(lines[lines.length - 1], font, drawSize, maxWidth);
+  }
+
+  // Keep original size when one short line already fits.
+  if (lines.length === 1 && font.widthOfTextAtSize(lines[0], size) <= maxWidth) {
+    return { lines, size };
+  }
+
+  return { lines, size: drawSize };
+}
+
+function drawWrappedCell(
+  page: PDFPage,
+  text: string,
+  x: number,
+  rowBottom: number,
+  maxWidth: number,
+  size: number,
+  font: PDFFont,
+  maxLines = 2
+) {
+  const { lines, size: drawSize } = wrapFittedLines(text, maxWidth, size, font, maxLines);
+  if (lines.length === 0) return;
+
+  const lineGap = drawSize + 2;
+  const blockH = lines.length * drawSize + (lines.length - 1) * 2;
+  // Baseline of the bottom line, vertically centered in the row.
+  let y = rowBottom + (DATA_ROW_H - blockH) / 2;
+
+  for (let i = lines.length - 1; i >= 0; i--) {
+    page.drawText(lines[i], { x, y, size: drawSize, font, color: INK });
+    y += lineGap;
+  }
+}
+
 function drawDottedField(
   page: PDFPage,
   label: string,
@@ -184,25 +341,27 @@ function drawHeader(
   page: PDFPage,
   fonts: EmbeddedFonts,
   input: CastCaseLogPdfInput,
-  pageIndex: number,
-  pageCount: number
+  pageIndex: number
 ) {
   const contentLeft = (PAGE_W - TABLE_W) / 2;
   let y = PAGE_H - MARGIN_TOP;
 
-  const seq =
-    input.sequenceNumber ??
-    (pageCount > 1 ? `${pageIndex + 1}/${pageCount}` : "");
-  drawDottedField(
-    page,
-    "ลำดับที่ ",
-    seq || undefined,
-    contentLeft + TABLE_W - 150,
-    y - 12,
-    150,
-    10,
-    fonts
-  );
+  // Rightmost edition label, e.g. "ฉบับที่ 1"
+  const edition =
+    input.sequenceNumber?.trim() ||
+    `ฉบับที่ ${pageIndex + 1}`;
+  const editionSize = 10;
+  const editionText = edition.startsWith("ฉบับที่")
+    ? edition
+    : `ฉบับที่ ${edition}`;
+  const editionW = fonts.regular.widthOfTextAtSize(editionText, editionSize);
+  page.drawText(editionText, {
+    x: contentLeft + TABLE_W - editionW,
+    y: y - 12,
+    size: editionSize,
+    font: fonts.regular,
+    color: INK,
+  });
 
   y -= 30;
   const title =
@@ -341,16 +500,25 @@ function drawTable(
     const textY = rowBottom + 9;
     for (let c = 0; c < COLS.length; c++) {
       const pad = 3;
-      drawFitted(
-        page,
-        cells[c] ?? "",
-        cx + pad,
-        textY,
-        COLS[c].width - pad * 2,
-        9,
-        fonts.regular,
-        c <= 1 || c >= 5 ? "center" : "left"
-      );
+      const cellX = cx + pad;
+      const cellW = COLS[c].width - pad * 2;
+      const value = cells[c] ?? "";
+
+      // Diagnosis + treatment wrap up to 2 lines (multi-cast / long text).
+      if (c === 3 || c === 4) {
+        drawWrappedCell(page, value, cellX, rowBottom, cellW, 9, fonts.regular, 2);
+      } else {
+        drawFitted(
+          page,
+          value,
+          cellX,
+          textY,
+          cellW,
+          9,
+          fonts.regular,
+          c <= 1 || c >= 5 ? "center" : "left"
+        );
+      }
       cx += COLS[c].width;
     }
   }
@@ -478,19 +646,18 @@ export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<U
   });
 
   const pages = chunk(sorted, ROWS_PER_PAGE);
-  const grandTotal = sorted.length * CAST_CASE_LOG_PAY_PER_CASE;
 
   pages.forEach((pageVisits, pageIndex) => {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
-    const tableTop = drawHeader(page, fonts, input, pageIndex, pages.length);
+    const tableTop = drawHeader(page, fonts, input, pageIndex);
     const padded: Array<CastVisitSummary | null> = [
       ...pageVisits,
       ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
     ];
     const tableBottom = drawTable(page, fonts, tableTop, padded);
-    // Grand total only on the last page of this physician's form.
-    const totalOnPage = pageIndex === pages.length - 1 ? grandTotal : null;
-    drawFooter(page, fonts, tableBottom, totalOnPage);
+    // Per-page total from rows on this page only (not the whole month).
+    const pageTotal = pageVisits.length * CAST_CASE_LOG_PAY_PER_CASE;
+    drawFooter(page, fonts, tableBottom, pageVisits.length > 0 ? pageTotal : null);
   });
 
   return pdf.save();
@@ -519,7 +686,6 @@ export async function buildCastCaseLogPdfByPhysicians(
       return a.createdAt.localeCompare(b.createdAt);
     });
     const pages = chunk(sorted, ROWS_PER_PAGE);
-    const grandTotal = sorted.length * CAST_CASE_LOG_PAY_PER_CASE;
 
     pages.forEach((pageVisits, pageIndex) => {
       const page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -529,14 +695,14 @@ export async function buildCastCaseLogPdfByPhysicians(
         staff: group.staff,
         visits: group.visits,
       };
-      const tableTop = drawHeader(page, fonts, input, pageIndex, pages.length);
+      const tableTop = drawHeader(page, fonts, input, pageIndex);
       const padded: Array<CastVisitSummary | null> = [
         ...pageVisits,
         ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
       ];
       const tableBottom = drawTable(page, fonts, tableTop, padded);
-      const totalOnPage = pageIndex === pages.length - 1 ? grandTotal : null;
-      drawFooter(page, fonts, tableBottom, totalOnPage);
+      const pageTotal = pageVisits.length * CAST_CASE_LOG_PAY_PER_CASE;
+      drawFooter(page, fonts, tableBottom, pageVisits.length > 0 ? pageTotal : null);
     });
   }
 
@@ -549,7 +715,7 @@ export async function buildCastCaseLogPdfByPhysicians(
       staff: groups[0]?.staff ?? { name: "", position: "แพทย์", group: "ศัลยกรรมกระดูก" },
       visits: [],
     };
-    const tableTop = drawHeader(page, fonts, input, 0, 1);
+    const tableTop = drawHeader(page, fonts, input, 0);
     const padded = Array.from({ length: ROWS_PER_PAGE }, () => null);
     const tableBottom = drawTable(page, fonts, tableTop, padded);
     drawFooter(page, fonts, tableBottom, null);
