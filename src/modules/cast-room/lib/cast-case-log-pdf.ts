@@ -9,6 +9,14 @@ import {
   CAST_CASE_LOG_PAY_PER_CASE,
   CAST_CASE_LOG_ROWS_PER_PAGE,
 } from "./cast-case-log-constants";
+import {
+  CAST_CASE_LOG_LAYOUT,
+  formatCastTreatment,
+  measureVisitRowHeight,
+  paginateVisitsByHeight,
+  wrapLines,
+  type WidthFn,
+} from "./cast-case-log-layout";
 import { thaiBahtInWords } from "./thai-baht-words";
 import { THAI_MONTHS } from "./thai-date";
 
@@ -16,10 +24,15 @@ import { THAI_MONTHS } from "./thai-date";
 const PAGE_W = 841.89;
 const PAGE_H = 595.28;
 const MARGIN_TOP = 22;
+/** Empty-row fill target when all visits are single-line (~28pt each). */
 const ROWS_PER_PAGE = CAST_CASE_LOG_ROWS_PER_PAGE;
 const PAY = String(CAST_CASE_LOG_PAY_PER_CASE);
-const HEADER_ROW_H = 28;
-const DATA_ROW_H = 28;
+const HEADER_ROW_H = CAST_CASE_LOG_LAYOUT.HEADER_ROW_H;
+/** Minimum / empty data-row height (single-line). */
+const DATA_ROW_H = CAST_CASE_LOG_LAYOUT.DATA_ROW_H;
+const CELL_FONT_SIZE = CAST_CASE_LOG_LAYOUT.CELL_FONT_SIZE;
+const CELL_LINE_GAP = CAST_CASE_LOG_LAYOUT.CELL_LINE_GAP;
+const FOOTER_SPACE = CAST_CASE_LOG_LAYOUT.FOOTER_SPACE;
 
 const INK = rgb(0, 0, 0);
 
@@ -73,18 +86,7 @@ function formatTimeBangkok(iso: string): string {
 
 /** Join cast types for the treatment column, e.g. `Short Leg Slab, Long Arm Slab ×2`. */
 function formatTreatment(visit: CastVisitSummary): string {
-  return visit.casts
-    .map((c) => (c.count > 1 ? `${c.label} ×${c.count}` : c.label))
-    .join(", ");
-}
-
-function chunk<T>(items: T[], size: number): T[][] {
-  if (items.length === 0) return [[]];
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    out.push(items.slice(i, i + size));
-  }
-  return out;
+  return formatCastTreatment(visit);
 }
 
 function drawCentered(
@@ -136,159 +138,39 @@ function drawFitted(
   page.drawText(value, { x: drawX, y, size: drawSize, font, color: INK });
 }
 
-/** Soft-break tokens: prefer splitting after commas/spaces; else by character (Thai). */
-function tokenizeForWrap(text: string): string[] {
-  const tokens: string[] = [];
-  let buf = "";
-  for (const ch of text) {
-    buf += ch;
-    if (ch === " " || ch === ",") {
-      tokens.push(buf);
-      buf = "";
-    }
-  }
-  if (buf) tokens.push(buf);
-  return tokens;
+function fontWidthFn(font: PDFFont): WidthFn {
+  return (text, size) => font.widthOfTextAtSize(text, size);
 }
 
-function ellipsizeToWidth(text: string, font: PDFFont, size: number, maxWidth: number): string {
-  let value = text;
-  if (font.widthOfTextAtSize(value, size) <= maxWidth) return value;
-  while (value.length > 1 && font.widthOfTextAtSize(`${value}…`, size) > maxWidth) {
-    value = value.slice(0, -1);
-  }
-  return `${value}…`;
+function maxTableBodyHeight(tableTop: number): number {
+  return Math.max(DATA_ROW_H, tableTop - FOOTER_SPACE - HEADER_ROW_H);
 }
 
-/**
- * Wrap long diagnosis / multi-cast treatment into up to `maxLines` lines.
- * Prefers breaks after commas/spaces; otherwise wraps by character (Thai text).
- * Remaining overflow on the last line is ellipsized.
- */
-function wrapFittedLines(
-  text: string,
-  maxWidth: number,
-  size: number,
-  font: PDFFont,
-  maxLines: number
-): { lines: string[]; size: number } {
-  const value = text.trim();
-  if (!value) return { lines: [], size };
-
-  let drawSize = size;
-  if (font.widthOfTextAtSize(value, drawSize) > maxWidth) {
-    // Try shrinking before wrapping when a single line almost fits.
-    while (drawSize > 7.5 && font.widthOfTextAtSize(value, drawSize) > maxWidth * 1.35) {
-      drawSize -= 0.5;
-    }
-  }
-
-  const tokens = tokenizeForWrap(value);
-  const lines: string[] = [];
-  let current = "";
-  let overflow = false;
-
-  const widthOk = (s: string) => font.widthOfTextAtSize(s, drawSize) <= maxWidth;
-
-  const startNewLine = () => {
-    if (current) lines.push(current);
-    current = "";
-    return lines.length < maxLines;
-  };
-
-  const appendChars = (chunk: string) => {
-    for (const ch of chunk) {
-      const next = current + ch;
-      if (current && !widthOk(next)) {
-        if (!startNewLine()) {
-          overflow = true;
-          // Restore last line so ellipsize can mark that more text existed.
-          current = lines.pop() ?? "";
-          return;
-        }
-        current = ch;
-        if (!widthOk(current)) {
-          overflow = true;
-          return;
-        }
-      } else {
-        current = next;
-      }
-    }
-  };
-
-  for (const token of tokens) {
-    if (overflow) break;
-
-    if (current && widthOk(current + token)) {
-      current += token;
-      continue;
-    }
-
-    if (current) {
-      if (!startNewLine()) {
-        overflow = true;
-        // Keep a remnant on the last line for ellipsis.
-        current = (lines.pop() ?? "") + token;
-        break;
-      }
-    }
-
-    if (widthOk(token)) {
-      current = token;
-    } else {
-      appendChars(token);
-    }
-  }
-
-  if (current) {
-    if (lines.length < maxLines) {
-      lines.push(current);
-    } else {
-      overflow = true;
-      if (lines.length > 0) {
-        lines[lines.length - 1] = lines[lines.length - 1] + current;
-      } else {
-        lines.push(current);
-      }
-    }
-  }
-
-  if (lines.length === 0) return { lines: [], size: drawSize };
-
-  if (overflow || !widthOk(lines[lines.length - 1])) {
-    lines[lines.length - 1] = ellipsizeToWidth(lines[lines.length - 1], font, drawSize, maxWidth);
-  }
-
-  // Keep original size when one short line already fits.
-  if (lines.length === 1 && font.widthOfTextAtSize(lines[0], size) <= maxWidth) {
-    return { lines, size };
-  }
-
-  return { lines, size: drawSize };
-}
-
-function drawWrappedCell(
+function drawWrappedCellInRow(
   page: PDFPage,
   text: string,
   x: number,
   rowBottom: number,
+  rowHeight: number,
   maxWidth: number,
-  size: number,
-  font: PDFFont,
-  maxLines = 2
+  font: PDFFont
 ) {
-  const { lines, size: drawSize } = wrapFittedLines(text, maxWidth, size, font, maxLines);
+  const lines = wrapLines(text, maxWidth, CELL_FONT_SIZE, fontWidthFn(font));
   if (lines.length === 0) return;
 
-  const lineGap = drawSize + 2;
-  const blockH = lines.length * drawSize + (lines.length - 1) * 2;
-  // Baseline of the bottom line, vertically centered in the row.
-  let y = rowBottom + (DATA_ROW_H - blockH) / 2;
+  const blockH =
+    lines.length * CELL_FONT_SIZE + (lines.length - 1) * CELL_LINE_GAP;
+  let y = rowBottom + (rowHeight - blockH) / 2;
 
   for (let i = lines.length - 1; i >= 0; i--) {
-    page.drawText(lines[i], { x, y, size: drawSize, font, color: INK });
-    y += lineGap;
+    page.drawText(lines[i], {
+      x,
+      y,
+      size: CELL_FONT_SIZE,
+      font,
+      color: INK,
+    });
+    y += CELL_FONT_SIZE + CELL_LINE_GAP;
   }
 }
 
@@ -423,13 +305,35 @@ function drawTable(
   page: PDFPage,
   fonts: EmbeddedFonts,
   topY: number,
-  rows: Array<CastVisitSummary | null>
+  visits: CastVisitSummary[]
 ) {
   const left = (PAGE_W - TABLE_W) / 2;
-  const tableH = HEADER_ROW_H + DATA_ROW_H * ROWS_PER_PAGE;
+  const widthOf = fontWidthFn(fonts.regular);
+  const maxBody = maxTableBodyHeight(topY);
+
+  const visitHeights = visits.map((v) => measureVisitRowHeight(v, widthOf));
+  let used = visitHeights.reduce((sum, h) => sum + h, 0);
+
+  // Pad leftover body space with empty single-line rows (keeps form look).
+  const emptyHeights: number[] = [];
+  const shortContent =
+    visits.length <= ROWS_PER_PAGE && visitHeights.every((h) => h <= DATA_ROW_H);
+  while (used + DATA_ROW_H <= maxBody) {
+    if (shortContent && visits.length + emptyHeights.length >= ROWS_PER_PAGE) break;
+    emptyHeights.push(DATA_ROW_H);
+    used += DATA_ROW_H;
+  }
+
+  const rowHeights = [...visitHeights, ...emptyHeights];
+  // Always keep at least the classic empty grid when there are no visits.
+  if (rowHeights.length === 0) {
+    for (let i = 0; i < ROWS_PER_PAGE; i++) rowHeights.push(DATA_ROW_H);
+  }
+
+  const bodyH = rowHeights.reduce((sum, h) => sum + h, 0);
+  const tableH = HEADER_ROW_H + bodyH;
   const bottom = topY - tableH;
 
-  // Outer border
   page.drawRectangle({
     x: left,
     y: bottom,
@@ -439,7 +343,6 @@ function drawTable(
     borderWidth: 1,
   });
 
-  // Header bottom line
   page.drawLine({
     start: { x: left, y: topY - HEADER_ROW_H },
     end: { x: left + TABLE_W, y: topY - HEADER_ROW_H },
@@ -447,7 +350,6 @@ function drawTable(
     color: INK,
   });
 
-  // Vertical lines + header labels
   let x = left;
   for (const col of COLS) {
     if (x > left) {
@@ -470,10 +372,10 @@ function drawTable(
     x += col.width;
   }
 
-  // Horizontal row lines + cell values
-  for (let i = 0; i < ROWS_PER_PAGE; i++) {
-    const rowTop = topY - HEADER_ROW_H - i * DATA_ROW_H;
-    const rowBottom = rowTop - DATA_ROW_H;
+  let rowTop = topY - HEADER_ROW_H;
+  for (let i = 0; i < rowHeights.length; i++) {
+    const rowH = rowHeights[i];
+    const rowBottom = rowTop - rowH;
     if (i > 0) {
       page.drawLine({
         start: { x: left, y: rowTop },
@@ -483,45 +385,54 @@ function drawTable(
       });
     }
 
-    const visit = rows[i] ?? null;
-    if (!visit) continue;
+    const visit = visits[i] ?? null;
+    if (visit) {
+      const cells = [
+        formatTimeBangkok(visit.createdAt),
+        visit.hn,
+        visit.patientName,
+        visit.diagnosis,
+        formatTreatment(visit),
+        PAY,
+        "",
+        PAY,
+      ];
 
-    const cells = [
-      formatTimeBangkok(visit.createdAt),
-      visit.hn,
-      visit.patientName,
-      visit.diagnosis,
-      formatTreatment(visit),
-      PAY,
-      "",
-      PAY,
-    ];
+      let cx = left;
+      const textY = rowBottom + (rowH - CELL_FONT_SIZE) / 2;
+      for (let c = 0; c < COLS.length; c++) {
+        const pad = 3;
+        const cellX = cx + pad;
+        const cellW = COLS[c].width - pad * 2;
+        const value = cells[c] ?? "";
 
-    let cx = left;
-    const textY = rowBottom + 9;
-    for (let c = 0; c < COLS.length; c++) {
-      const pad = 3;
-      const cellX = cx + pad;
-      const cellW = COLS[c].width - pad * 2;
-      const value = cells[c] ?? "";
-
-      // Diagnosis + treatment wrap up to 2 lines (multi-cast / long text).
-      if (c === 3 || c === 4) {
-        drawWrappedCell(page, value, cellX, rowBottom, cellW, 9, fonts.regular, 2);
-      } else {
-        drawFitted(
-          page,
-          value,
-          cellX,
-          textY,
-          cellW,
-          9,
-          fonts.regular,
-          c <= 1 || c >= 5 ? "center" : "left"
-        );
+        if (c === 3 || c === 4) {
+          drawWrappedCellInRow(
+            page,
+            value,
+            cellX,
+            rowBottom,
+            rowH,
+            cellW,
+            fonts.regular
+          );
+        } else {
+          drawFitted(
+            page,
+            value,
+            cellX,
+            textY,
+            cellW,
+            CELL_FONT_SIZE,
+            fonts.regular,
+            c <= 1 || c >= 5 ? "center" : "left"
+          );
+        }
+        cx += COLS[c].width;
       }
-      cx += COLS[c].width;
     }
+
+    rowTop = rowBottom;
   }
 
   return bottom;
@@ -634,11 +545,14 @@ function drawFooter(
 
 /**
  * Build one A4-landscape case-log PDF for a single physician/month.
- * Extra visits spill onto additional pages (12 rows each).
+ * Row height grows with wrapped diagnosis/cast text (no truncation).
+ * Persons that no longer fit spill onto the next page; each page totals
+ * only its own rows.
  */
 export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const fonts = await loadFonts(pdf);
+  const widthOf = fontWidthFn(fonts.regular);
 
   const sorted = [...input.visits].sort((a, b) => {
     const byDate = a.shiftDate.localeCompare(b.shiftDate);
@@ -646,17 +560,12 @@ export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<U
     return a.createdAt.localeCompare(b.createdAt);
   });
 
-  const pages = chunk(sorted, ROWS_PER_PAGE);
+  const pages = paginateVisitsByHeight(sorted, widthOf);
 
   pages.forEach((pageVisits, pageIndex) => {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     const tableTop = drawHeader(page, fonts, input, pageIndex);
-    const padded: Array<CastVisitSummary | null> = [
-      ...pageVisits,
-      ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
-    ];
-    const tableBottom = drawTable(page, fonts, tableTop, padded);
-    // Per-page total from rows on this page only (not the whole month).
+    const tableBottom = drawTable(page, fonts, tableTop, pageVisits);
     const pageTotal = pageVisits.length * CAST_CASE_LOG_PAY_PER_CASE;
     drawFooter(page, fonts, tableBottom, pageVisits.length > 0 ? pageTotal : null);
   });
@@ -675,6 +584,7 @@ export async function buildCastCaseLogPdfByPhysicians(
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const fonts = await loadFonts(pdf);
+  const widthOf = fontWidthFn(fonts.regular);
   let wrote = false;
 
   for (const group of groups) {
@@ -686,7 +596,7 @@ export async function buildCastCaseLogPdfByPhysicians(
       if (byDate !== 0) return byDate;
       return a.createdAt.localeCompare(b.createdAt);
     });
-    const pages = chunk(sorted, ROWS_PER_PAGE);
+    const pages = paginateVisitsByHeight(sorted, widthOf);
 
     pages.forEach((pageVisits, pageIndex) => {
       const page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -697,11 +607,7 @@ export async function buildCastCaseLogPdfByPhysicians(
         visits: group.visits,
       };
       const tableTop = drawHeader(page, fonts, input, pageIndex);
-      const padded: Array<CastVisitSummary | null> = [
-        ...pageVisits,
-        ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
-      ];
-      const tableBottom = drawTable(page, fonts, tableTop, padded);
+      const tableBottom = drawTable(page, fonts, tableTop, pageVisits);
       const pageTotal = pageVisits.length * CAST_CASE_LOG_PAY_PER_CASE;
       drawFooter(page, fonts, tableBottom, pageVisits.length > 0 ? pageTotal : null);
     });
@@ -717,8 +623,7 @@ export async function buildCastCaseLogPdfByPhysicians(
       visits: [],
     };
     const tableTop = drawHeader(page, fonts, input, 0);
-    const padded = Array.from({ length: ROWS_PER_PAGE }, () => null);
-    const tableBottom = drawTable(page, fonts, tableTop, padded);
+    const tableBottom = drawTable(page, fonts, tableTop, []);
     drawFooter(page, fonts, tableBottom, null);
   }
 

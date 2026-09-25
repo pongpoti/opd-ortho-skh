@@ -15,11 +15,9 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInit, liff } from "@/lib/liff-client";
 import { PHYSICIANS } from "@/lib/physicians";
 
-import {
-  CAST_CASE_LOG_PAY_PER_CASE,
-  CAST_CASE_LOG_ROWS_PER_PAGE,
-} from "../lib/cast-case-log-constants";
+import { CAST_CASE_LOG_PAY_PER_CASE } from "../lib/cast-case-log-constants";
 import { createCastCaseLogPdfLink } from "../lib/cast-case-log-export";
+import { estimateCastCaseLogPageCount } from "../lib/cast-case-log-layout";
 import { listCastVisitsForAdmin, seedPongsitAugust2026Dummy, type CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { recentMonthOptions } from "../lib/thai-date";
 
@@ -81,13 +79,13 @@ export function CastCaseLogPdfPage({
     return [...fromRoster, ...extras];
   }, [visits]);
 
-  const caseCount = useMemo(() => {
-    if (!doctorName) return 0;
-    return visits.filter((v) => v.doctorName === doctorName).length;
+  const doctorVisits = useMemo(() => {
+    if (!doctorName) return [];
+    return visits.filter((v) => v.doctorName === doctorName);
   }, [visits, doctorName]);
 
-  const pageCount =
-    caseCount <= 0 ? 1 : Math.ceil(caseCount / CAST_CASE_LOG_ROWS_PER_PAGE);
+  const caseCount = doctorVisits.length;
+  const pageCount = estimateCastCaseLogPageCount(doctorVisits);
   const payTotal = caseCount * CAST_CASE_LOG_PAY_PER_CASE;
   const monthHasLogs = visits.length > 0;
   const canExport = Boolean(doctorName) && monthHasLogs && caseCount > 0;
