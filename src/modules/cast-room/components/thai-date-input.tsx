@@ -10,7 +10,7 @@ import {
   Grid,
   HStack,
   IconButton,
-  Input,
+  NativeSelect,
   Portal,
   Text,
   VStack,
@@ -22,7 +22,7 @@ import { buildMonthCells, formatThaiDate, parseISO, thaiMonthYear, toISO, THAI_W
 export interface ThaiDateInputProps {
   value: string;
   onChange: (value: string) => void;
-  /** `HH:mm` — when omitted, the picker keeps time internally. */
+  /** `HH:mm` (24-hour) — when omitted, the picker keeps time internally. */
   time?: string;
   onTimeChange?: (time: string) => void;
   useCurrentTime?: boolean;
@@ -30,10 +30,20 @@ export interface ThaiDateInputProps {
 }
 
 const SWIPE_THRESHOLD = 55;
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
 function nowHHMM(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function splitHHMM(time: string): { hour: string; minute: string } {
+  const [hour = "00", minute = "00"] = time.split(":");
+  return {
+    hour: hour.padStart(2, "0"),
+    minute: minute.padStart(2, "0"),
+  };
 }
 
 /** Full-width date field styled and labeled entirely in Thai -- the native
@@ -137,6 +147,15 @@ export function ThaiDateInput({
 
   const cells = buildMonthCells(view.year, view.month);
   const buttonLabel = `${formatThaiDate(value)} · ${time}${useCurrentTime ? " (ปัจจุบัน)" : ""}`;
+  const { hour, minute } = splitHHMM(time);
+
+  function setHour(nextHour: string) {
+    setTime(`${nextHour}:${minute}`);
+  }
+
+  function setMinute(nextMinute: string) {
+    setTime(`${hour}:${nextMinute}`);
+  }
 
   return (
     <>
@@ -220,15 +239,42 @@ export function ThaiDateInput({
 
                 <VStack align="stretch" gap={3} mt={4} pt={3} borderTopWidth="1px" borderColor="glass.border">
                   <Field.Root>
-                    <Field.Label fontSize="sm">เวลา</Field.Label>
-                    <Input
-                      type="time"
-                      fontSize="16px"
-                      value={time}
-                      disabled={useCurrentTime}
-                      onChange={(e) => setTime(e.target.value)}
-                      aria-label="เวลา"
-                    />
+                    <Field.Label fontSize="sm">เวลา (24 ชม.)</Field.Label>
+                    <HStack gap={2}>
+                      <NativeSelect.Root flex="1" disabled={useCurrentTime}>
+                        <NativeSelect.Field
+                          fontSize="16px"
+                          value={hour}
+                          aria-label="ชั่วโมง"
+                          onChange={(e) => setHour(e.target.value)}
+                        >
+                          {HOURS.map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                      </NativeSelect.Root>
+                      <Text fontWeight="semibold" color="fg.muted">
+                        :
+                      </Text>
+                      <NativeSelect.Root flex="1" disabled={useCurrentTime}>
+                        <NativeSelect.Field
+                          fontSize="16px"
+                          value={minute}
+                          aria-label="นาที"
+                          onChange={(e) => setMinute(e.target.value)}
+                        >
+                          {MINUTES.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                      </NativeSelect.Root>
+                    </HStack>
                   </Field.Root>
 
                   <Checkbox.Root
