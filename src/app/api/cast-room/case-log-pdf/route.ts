@@ -2,6 +2,12 @@ import { buildCastCaseLogPdfFromShareToken } from "@/modules/cast-room/lib/cast-
 
 export const runtime = "nodejs";
 
+/** RFC 5987 Content-Disposition so Thai filenames work in browsers/WebViews. */
+function contentDisposition(filename: string): string {
+  const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/"/g, "");
+  return `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("token");
   if (!token) {
@@ -19,7 +25,7 @@ export async function GET(request: Request) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${result.filename}"`,
+      "Content-Disposition": contentDisposition(result.filename),
       "Cache-Control": "private, no-store",
     },
   });

@@ -6,7 +6,7 @@ import { PHYSICIANS } from "@/lib/physicians";
 import { requireAdminSession } from "@/lib/require-admin";
 
 import { loadCastVisitsForMonth } from "./cast-case-log-data";
-import { CAST_CASE_LOG_PAY_PER_CASE, CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
+import { CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
 import {
   buildCastCaseLogPdf,
   buildCastCaseLogPdfByPhysicians,
@@ -25,36 +25,21 @@ import { isWithinRecentMonths, THAI_MONTHS } from "./thai-date";
  * Cast-room case-log PDF architecture
  * -----------------------------------
  * 1. UI (`CastCaseLogPdfPage`) — admin picks month + physician, sees case count.
- * 2. Server action — loads visits, builds PDF bytes (or a signed share token).
- * 3. Download — PDF bytes returned as base64 for immediate file save.
- * 4. Send to LINE chat — signed URL (`/api/cast-room/case-log-pdf?token=…`)
- *    shared via `liff.shareTargetPicker` (Flex URI button; no Messaging API
- *    push / binary PDF attachment required).
- * 5. Share route — verifies HMAC token, regenerates PDF on the fly, streams it.
+ * 2. Server action — validates visits and issues a short-lived signed URL.
+ * 3. Download — open `/api/cast-room/case-log-pdf?token=…` (HTTPS). Blob/`a.download`
+ *    fails silently inside LINE WebView; a real URL shows the PDF.
+ * 4. Share route — verifies HMAC token, regenerates PDF on the fly, streams it.
  */
 
-export type ExportCastCaseLogResult =
+export type CastCaseLogPdfLinkResult =
   | {
       ok: true;
-      filename: string;
-      pdfBase64: string;
-      caseCount: number;
-      pageCount: number;
-      monthLabel: string;
-      doctorName: string | null;
-    }
-  | { ok: false; error: string };
-
-export type ShareCastCaseLogResult =
-  | {
-      ok: true;
-      shareUrl: string;
+      pdfUrl: string;
       filename: string;
       caseCount: number;
       pageCount: number;
       monthLabel: string;
-      doctorName: string | null;
-      chatText: string;
+      doctorName: string;
     }
   | { ok: false; error: string };
 
@@ -65,10 +50,6 @@ const DEFAULT_STAFF_META = {
 
 function staffFor(name: string): CastCaseLogPdfStaff {
   return { name, ...DEFAULT_STAFF_META };
-}
-
-function toBase64(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString("base64");
 }
 
 function monthLabel(year: number, month: number): string {
@@ -177,60 +158,20 @@ async function appOrigin(): Promise<string> {
   return "http://localhost:3000";
 }
 
-/** Generate PDF bytes for download (admin only). Requires a selected physician. */
-export async function exportCastCaseLogPdf(
+/**
+ * Create a time-limited HTTPS URL that streams the PDF.
+ * Used for download/view — required because LIFF WebView cannot save blob URLs.
+ */
+export async function createCastCaseLogPdfLink(
   year: number,
   month: number,
   doctorName?: string
-): Promise<ExportCastCaseLogResult> {
+): Promise<CastCaseLogPdfLinkResult> {
   const session = await requireAdminSession();
   if (!session) return { ok: false, error: "ไม่มีสิทธิ์เข้าถึง" };
 
   if (!doctorName) {
     return { ok: false, error: "กรุณาเลือกแพทย์ก่อนดาวน์โหลด" };
-  }
-
-  const invalid = validateMonth(year, month);
-  if (invalid) return { ok: false, error: invalid };
-
-  try {
-    const visits = await loadCastVisitsForMonth(year, month);
-    if (visits.length === 0) {
-      return { ok: false, error: "ไม่มีรายการในเดือนที่เลือก" };
-    }
-    const { selected } = selectVisits(visits, doctorName);
-    if (selected.length === 0) {
-      return { ok: false, error: "ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก" };
-    }
-    const { bytes, caseCount, filename } = await buildPdfBytes(year, month, doctorName, visits);
-    return {
-      ok: true,
-      filename,
-      pdfBase64: toBase64(bytes),
-      caseCount,
-      pageCount: pageCountFor(caseCount),
-      monthLabel: monthLabel(year, month),
-      doctorName,
-    };
-  } catch {
-    return { ok: false, error: "สร้าง PDF ไม่สำเร็จ" };
-  }
-}
-
-/**
- * Create a time-limited share URL so the admin can send the PDF into a LINE chat
- * via LIFF shareTargetPicker (opens the PDF when tapped).
- */
-export async function createCastCaseLogShareLink(
-  year: number,
-  month: number,
-  doctorName?: string
-): Promise<ShareCastCaseLogResult> {
-  const session = await requireAdminSession();
-  if (!session) return { ok: false, error: "ไม่มีสิทธิ์เข้าถึง" };
-
-  if (!doctorName) {
-    return { ok: false, error: "กรุณาเลือกแพทย์ก่อนส่งในแชท" };
   }
 
   const invalid = validateMonth(year, month);
@@ -253,32 +194,20 @@ export async function createCastCaseLogShareLink(
   try {
     token = createCastCaseLogShareToken(year, month, doctorName);
   } catch {
-    return { ok: false, error: "ระบบแชร์ยังไม่พร้อม (AUTH_SECRET)" };
+    return { ok: false, error: "ระบบดาวน์โหลดยังไม่พร้อม (AUTH_SECRET)" };
   }
 
   const origin = await appOrigin();
-  const shareUrl = `${origin}${buildCastCaseLogSharePath(token)}`;
-
-  const chatText = [
-    "📋 บันทึกห้องเฝือก (นอกเวลาราชการ)",
-    `เดือน: ${label}`,
-    `แพทย์: ${doctorName}`,
-    `จำนวน: ${caseCount} รายการ (${pages} หน้า)`,
-    `รวมค่าตอบแทน: ${caseCount * CAST_CASE_LOG_PAY_PER_CASE} บาท`,
-    "",
-    "ดาวน์โหลด PDF:",
-    shareUrl,
-  ].join("\n");
+  const pdfUrl = `${origin}${buildCastCaseLogSharePath(token)}`;
 
   return {
     ok: true,
-    shareUrl,
+    pdfUrl,
     filename,
     caseCount,
     pageCount: pages,
     monthLabel: label,
     doctorName,
-    chatText,
   };
 }
 
