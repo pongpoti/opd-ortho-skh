@@ -6,13 +6,13 @@ import { PHYSICIANS } from "@/lib/physicians";
 import { requireAdminSession } from "@/lib/require-admin";
 
 import { loadCastVisitsForMonth } from "./cast-case-log-data";
-import { CAST_CASE_LOG_ROWS_PER_PAGE } from "./cast-case-log-constants";
 import {
   buildCastCaseLogPdf,
   buildCastCaseLogPdfByPhysicians,
   castCaseLogFilename,
   type CastCaseLogPdfStaff,
 } from "./cast-case-log-pdf";
+import { estimateCastCaseLogPageCount } from "./cast-case-log-layout";
 import {
   buildCastCaseLogSharePath,
   createCastCaseLogShareToken,
@@ -56,9 +56,8 @@ function monthLabel(year: number, month: number): string {
   return `${THAI_MONTHS[month - 1] ?? ""} ${year + 543}`;
 }
 
-function pageCountFor(caseCount: number): number {
-  if (caseCount <= 0) return 1;
-  return Math.ceil(caseCount / CAST_CASE_LOG_ROWS_PER_PAGE);
+function pageCountFor(visits: CastVisitSummary[]): number {
+  return estimateCastCaseLogPageCount(visits);
 }
 
 function validateMonth(year: number, month: number): string | null {
@@ -186,7 +185,7 @@ export async function createCastCaseLogPdfLink(
     return { ok: false, error: "ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก" };
   }
   const caseCount = selected.length;
-  const pages = pageCountFor(caseCount);
+  const pages = pageCountFor(selected);
   const label = monthLabel(year, month);
   const filename = castCaseLogFilename(month, year, doctorName);
 

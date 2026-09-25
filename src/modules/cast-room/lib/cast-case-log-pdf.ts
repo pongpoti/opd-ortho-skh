@@ -9,6 +9,14 @@ import {
   CAST_CASE_LOG_PAY_PER_CASE,
   CAST_CASE_LOG_ROWS_PER_PAGE,
 } from "./cast-case-log-constants";
+import {
+  CAST_CASE_LOG_LAYOUT,
+  formatCastTreatment,
+  measureVisitRowHeight,
+  paginateVisitsByHeight,
+  wrapLines,
+  type WidthFn,
+} from "./cast-case-log-layout";
 import { thaiBahtInWords } from "./thai-baht-words";
 import { THAI_MONTHS } from "./thai-date";
 
@@ -16,10 +24,15 @@ import { THAI_MONTHS } from "./thai-date";
 const PAGE_W = 841.89;
 const PAGE_H = 595.28;
 const MARGIN_TOP = 22;
+/** Empty-row fill target when all visits are single-line (~28pt each). */
 const ROWS_PER_PAGE = CAST_CASE_LOG_ROWS_PER_PAGE;
 const PAY = String(CAST_CASE_LOG_PAY_PER_CASE);
-const HEADER_ROW_H = 28;
-const DATA_ROW_H = 28;
+const HEADER_ROW_H = CAST_CASE_LOG_LAYOUT.HEADER_ROW_H;
+/** Minimum / empty data-row height (single-line). */
+const DATA_ROW_H = CAST_CASE_LOG_LAYOUT.DATA_ROW_H;
+const CELL_FONT_SIZE = CAST_CASE_LOG_LAYOUT.CELL_FONT_SIZE;
+const CELL_LINE_GAP = CAST_CASE_LOG_LAYOUT.CELL_LINE_GAP;
+const FOOTER_SPACE = CAST_CASE_LOG_LAYOUT.FOOTER_SPACE;
 
 const INK = rgb(0, 0, 0);
 
@@ -34,6 +47,7 @@ export type CastCaseLogPdfInput = {
   year: number; // Gregorian
   staff: CastCaseLogPdfStaff;
   visits: CastVisitSummary[];
+  /** Optional override for the top-right label (defaults to `ฉบับที่ {page}`). */
   sequenceNumber?: string;
 };
 
@@ -70,19 +84,9 @@ function formatTimeBangkok(iso: string): string {
   }).format(d);
 }
 
+/** Join cast types for the treatment column, e.g. `Short Leg Slab, Long Arm Slab ×2`. */
 function formatTreatment(visit: CastVisitSummary): string {
-  return visit.casts
-    .map((c) => (c.count > 1 ? `${c.label} ×${c.count}` : c.label))
-    .join(", ");
-}
-
-function chunk<T>(items: T[], size: number): T[][] {
-  if (items.length === 0) return [[]];
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    out.push(items.slice(i, i + size));
-  }
-  return out;
+  return formatCastTreatment(visit);
 }
 
 function drawCentered(
@@ -132,6 +136,42 @@ function drawFitted(
   const tw = font.widthOfTextAtSize(value, drawSize);
   const drawX = align === "center" ? x + Math.max(0, (maxWidth - tw) / 2) : x;
   page.drawText(value, { x: drawX, y, size: drawSize, font, color: INK });
+}
+
+function fontWidthFn(font: PDFFont): WidthFn {
+  return (text, size) => font.widthOfTextAtSize(text, size);
+}
+
+function maxTableBodyHeight(tableTop: number): number {
+  return Math.max(DATA_ROW_H, tableTop - FOOTER_SPACE - HEADER_ROW_H);
+}
+
+function drawWrappedCellInRow(
+  page: PDFPage,
+  text: string,
+  x: number,
+  rowBottom: number,
+  rowHeight: number,
+  maxWidth: number,
+  font: PDFFont
+) {
+  const lines = wrapLines(text, maxWidth, CELL_FONT_SIZE, fontWidthFn(font));
+  if (lines.length === 0) return;
+
+  const blockH =
+    lines.length * CELL_FONT_SIZE + (lines.length - 1) * CELL_LINE_GAP;
+  let y = rowBottom + (rowHeight - blockH) / 2;
+
+  for (let i = lines.length - 1; i >= 0; i--) {
+    page.drawText(lines[i], {
+      x,
+      y,
+      size: CELL_FONT_SIZE,
+      font,
+      color: INK,
+    });
+    y += CELL_FONT_SIZE + CELL_LINE_GAP;
+  }
 }
 
 function drawDottedField(
@@ -184,25 +224,27 @@ function drawHeader(
   page: PDFPage,
   fonts: EmbeddedFonts,
   input: CastCaseLogPdfInput,
-  pageIndex: number,
-  pageCount: number
+  pageIndex: number
 ) {
   const contentLeft = (PAGE_W - TABLE_W) / 2;
   let y = PAGE_H - MARGIN_TOP;
 
-  const seq =
-    input.sequenceNumber ??
-    (pageCount > 1 ? `${pageIndex + 1}/${pageCount}` : "");
-  drawDottedField(
-    page,
-    "ลำดับที่ ",
-    seq || undefined,
-    contentLeft + TABLE_W - 150,
-    y - 12,
-    150,
-    10,
-    fonts
-  );
+  // Rightmost edition label, e.g. "ฉบับที่ 1"
+  const edition =
+    input.sequenceNumber?.trim() ||
+    `ฉบับที่ ${pageIndex + 1}`;
+  const editionSize = 10;
+  const editionText = edition.startsWith("ฉบับที่")
+    ? edition
+    : `ฉบับที่ ${edition}`;
+  const editionW = fonts.regular.widthOfTextAtSize(editionText, editionSize);
+  page.drawText(editionText, {
+    x: contentLeft + TABLE_W - editionW,
+    y: y - 12,
+    size: editionSize,
+    font: fonts.regular,
+    color: INK,
+  });
 
   y -= 30;
   const title =
@@ -263,13 +305,35 @@ function drawTable(
   page: PDFPage,
   fonts: EmbeddedFonts,
   topY: number,
-  rows: Array<CastVisitSummary | null>
+  visits: CastVisitSummary[]
 ) {
   const left = (PAGE_W - TABLE_W) / 2;
-  const tableH = HEADER_ROW_H + DATA_ROW_H * ROWS_PER_PAGE;
+  const widthOf = fontWidthFn(fonts.regular);
+  const maxBody = maxTableBodyHeight(topY);
+
+  const visitHeights = visits.map((v) => measureVisitRowHeight(v, widthOf));
+  let used = visitHeights.reduce((sum, h) => sum + h, 0);
+
+  // Pad leftover body space with empty single-line rows (keeps form look).
+  const emptyHeights: number[] = [];
+  const shortContent =
+    visits.length <= ROWS_PER_PAGE && visitHeights.every((h) => h <= DATA_ROW_H);
+  while (used + DATA_ROW_H <= maxBody) {
+    if (shortContent && visits.length + emptyHeights.length >= ROWS_PER_PAGE) break;
+    emptyHeights.push(DATA_ROW_H);
+    used += DATA_ROW_H;
+  }
+
+  const rowHeights = [...visitHeights, ...emptyHeights];
+  // Always keep at least the classic empty grid when there are no visits.
+  if (rowHeights.length === 0) {
+    for (let i = 0; i < ROWS_PER_PAGE; i++) rowHeights.push(DATA_ROW_H);
+  }
+
+  const bodyH = rowHeights.reduce((sum, h) => sum + h, 0);
+  const tableH = HEADER_ROW_H + bodyH;
   const bottom = topY - tableH;
 
-  // Outer border
   page.drawRectangle({
     x: left,
     y: bottom,
@@ -279,7 +343,6 @@ function drawTable(
     borderWidth: 1,
   });
 
-  // Header bottom line
   page.drawLine({
     start: { x: left, y: topY - HEADER_ROW_H },
     end: { x: left + TABLE_W, y: topY - HEADER_ROW_H },
@@ -287,7 +350,6 @@ function drawTable(
     color: INK,
   });
 
-  // Vertical lines + header labels
   let x = left;
   for (const col of COLS) {
     if (x > left) {
@@ -310,10 +372,10 @@ function drawTable(
     x += col.width;
   }
 
-  // Horizontal row lines + cell values
-  for (let i = 0; i < ROWS_PER_PAGE; i++) {
-    const rowTop = topY - HEADER_ROW_H - i * DATA_ROW_H;
-    const rowBottom = rowTop - DATA_ROW_H;
+  let rowTop = topY - HEADER_ROW_H;
+  for (let i = 0; i < rowHeights.length; i++) {
+    const rowH = rowHeights[i];
+    const rowBottom = rowTop - rowH;
     if (i > 0) {
       page.drawLine({
         start: { x: left, y: rowTop },
@@ -323,36 +385,54 @@ function drawTable(
       });
     }
 
-    const visit = rows[i] ?? null;
-    if (!visit) continue;
+    const visit = visits[i] ?? null;
+    if (visit) {
+      const cells = [
+        formatTimeBangkok(visit.createdAt),
+        visit.hn,
+        visit.patientName,
+        visit.diagnosis,
+        formatTreatment(visit),
+        PAY,
+        "",
+        PAY,
+      ];
 
-    const cells = [
-      formatTimeBangkok(visit.createdAt),
-      visit.hn,
-      visit.patientName,
-      visit.diagnosis,
-      formatTreatment(visit),
-      PAY,
-      "",
-      PAY,
-    ];
+      let cx = left;
+      const textY = rowBottom + (rowH - CELL_FONT_SIZE) / 2;
+      for (let c = 0; c < COLS.length; c++) {
+        const pad = 3;
+        const cellX = cx + pad;
+        const cellW = COLS[c].width - pad * 2;
+        const value = cells[c] ?? "";
 
-    let cx = left;
-    const textY = rowBottom + 9;
-    for (let c = 0; c < COLS.length; c++) {
-      const pad = 3;
-      drawFitted(
-        page,
-        cells[c] ?? "",
-        cx + pad,
-        textY,
-        COLS[c].width - pad * 2,
-        9,
-        fonts.regular,
-        c <= 1 || c >= 5 ? "center" : "left"
-      );
-      cx += COLS[c].width;
+        if (c === 3 || c === 4) {
+          drawWrappedCellInRow(
+            page,
+            value,
+            cellX,
+            rowBottom,
+            rowH,
+            cellW,
+            fonts.regular
+          );
+        } else {
+          drawFitted(
+            page,
+            value,
+            cellX,
+            textY,
+            cellW,
+            CELL_FONT_SIZE,
+            fonts.regular,
+            c <= 1 || c >= 5 ? "center" : "left"
+          );
+        }
+        cx += COLS[c].width;
+      }
     }
+
+    rowTop = rowBottom;
   }
 
   return bottom;
@@ -465,11 +545,14 @@ function drawFooter(
 
 /**
  * Build one A4-landscape case-log PDF for a single physician/month.
- * Extra visits spill onto additional pages (12 rows each).
+ * Row height grows with wrapped diagnosis/cast text (no truncation).
+ * Persons that no longer fit spill onto the next page; each page totals
+ * only its own rows.
  */
 export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const fonts = await loadFonts(pdf);
+  const widthOf = fontWidthFn(fonts.regular);
 
   const sorted = [...input.visits].sort((a, b) => {
     const byDate = a.shiftDate.localeCompare(b.shiftDate);
@@ -477,20 +560,14 @@ export async function buildCastCaseLogPdf(input: CastCaseLogPdfInput): Promise<U
     return a.createdAt.localeCompare(b.createdAt);
   });
 
-  const pages = chunk(sorted, ROWS_PER_PAGE);
-  const grandTotal = sorted.length * CAST_CASE_LOG_PAY_PER_CASE;
+  const pages = paginateVisitsByHeight(sorted, widthOf);
 
   pages.forEach((pageVisits, pageIndex) => {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
-    const tableTop = drawHeader(page, fonts, input, pageIndex, pages.length);
-    const padded: Array<CastVisitSummary | null> = [
-      ...pageVisits,
-      ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
-    ];
-    const tableBottom = drawTable(page, fonts, tableTop, padded);
-    // Grand total only on the last page of this physician's form.
-    const totalOnPage = pageIndex === pages.length - 1 ? grandTotal : null;
-    drawFooter(page, fonts, tableBottom, totalOnPage);
+    const tableTop = drawHeader(page, fonts, input, pageIndex);
+    const tableBottom = drawTable(page, fonts, tableTop, pageVisits);
+    const pageTotal = pageVisits.length * CAST_CASE_LOG_PAY_PER_CASE;
+    drawFooter(page, fonts, tableBottom, pageVisits.length > 0 ? pageTotal : null);
   });
 
   return pdf.save();
@@ -507,6 +584,7 @@ export async function buildCastCaseLogPdfByPhysicians(
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const fonts = await loadFonts(pdf);
+  const widthOf = fontWidthFn(fonts.regular);
   let wrote = false;
 
   for (const group of groups) {
@@ -518,8 +596,7 @@ export async function buildCastCaseLogPdfByPhysicians(
       if (byDate !== 0) return byDate;
       return a.createdAt.localeCompare(b.createdAt);
     });
-    const pages = chunk(sorted, ROWS_PER_PAGE);
-    const grandTotal = sorted.length * CAST_CASE_LOG_PAY_PER_CASE;
+    const pages = paginateVisitsByHeight(sorted, widthOf);
 
     pages.forEach((pageVisits, pageIndex) => {
       const page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -529,14 +606,10 @@ export async function buildCastCaseLogPdfByPhysicians(
         staff: group.staff,
         visits: group.visits,
       };
-      const tableTop = drawHeader(page, fonts, input, pageIndex, pages.length);
-      const padded: Array<CastVisitSummary | null> = [
-        ...pageVisits,
-        ...Array.from({ length: ROWS_PER_PAGE - pageVisits.length }, () => null),
-      ];
-      const tableBottom = drawTable(page, fonts, tableTop, padded);
-      const totalOnPage = pageIndex === pages.length - 1 ? grandTotal : null;
-      drawFooter(page, fonts, tableBottom, totalOnPage);
+      const tableTop = drawHeader(page, fonts, input, pageIndex);
+      const tableBottom = drawTable(page, fonts, tableTop, pageVisits);
+      const pageTotal = pageVisits.length * CAST_CASE_LOG_PAY_PER_CASE;
+      drawFooter(page, fonts, tableBottom, pageVisits.length > 0 ? pageTotal : null);
     });
   }
 
@@ -549,9 +622,8 @@ export async function buildCastCaseLogPdfByPhysicians(
       staff: groups[0]?.staff ?? { name: "", position: "แพทย์", group: "ศัลยกรรมกระดูก" },
       visits: [],
     };
-    const tableTop = drawHeader(page, fonts, input, 0, 1);
-    const padded = Array.from({ length: ROWS_PER_PAGE }, () => null);
-    const tableBottom = drawTable(page, fonts, tableTop, padded);
+    const tableTop = drawHeader(page, fonts, input, 0);
+    const tableBottom = drawTable(page, fonts, tableTop, []);
     drawFooter(page, fonts, tableBottom, null);
   }
 
