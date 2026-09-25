@@ -1,7 +1,20 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Box, Button, Dialog, Grid, HStack, IconButton, Portal, Text, VStack } from "@chakra-ui/react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Dialog,
+  Field,
+  Grid,
+  HStack,
+  IconButton,
+  NativeSelect,
+  Portal,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { buildMonthCells, formatThaiDate, parseISO, thaiMonthYear, toISO, THAI_WD_SHORT } from "../lib/thai-date";
@@ -9,24 +22,87 @@ import { buildMonthCells, formatThaiDate, parseISO, thaiMonthYear, toISO, THAI_W
 export interface ThaiDateInputProps {
   value: string;
   onChange: (value: string) => void;
+  /** `HH:mm` (24-hour) — when omitted, the picker keeps time internally. */
+  time?: string;
+  onTimeChange?: (time: string) => void;
+  useCurrentTime?: boolean;
+  onUseCurrentTimeChange?: (use: boolean) => void;
 }
 
 const SWIPE_THRESHOLD = 55;
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+
+function nowHHMM(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function splitHHMM(time: string): { hour: string; minute: string } {
+  const [hour = "00", minute = "00"] = time.split(":");
+  return {
+    hour: hour.padStart(2, "0"),
+    minute: minute.padStart(2, "0"),
+  };
+}
 
 /** Full-width date field styled and labeled entirely in Thai -- the native
  * <input type="date"> picker can't be reskinned to show Thai month/weekday
  * names (that chrome is OS-drawn, not stylable), so this replaces it with a
  * button that opens a small custom month-grid picker instead. */
-export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
+export function ThaiDateInput({
+  value,
+  onChange,
+  time: timeProp,
+  onTimeChange,
+  useCurrentTime: useCurrentTimeProp,
+  onUseCurrentTimeChange,
+}: ThaiDateInputProps) {
   const selected = parseISO(value);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState({ year: selected.year, month: selected.month });
+  const [draftDate, setDraftDate] = useState(value);
+  const [internalTime, setInternalTime] = useState(timeProp ?? nowHHMM());
+  const [internalUseCurrentTime, setInternalUseCurrentTime] = useState(useCurrentTimeProp ?? true);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
 
+  const time = timeProp ?? internalTime;
+  const useCurrentTime = useCurrentTimeProp ?? internalUseCurrentTime;
+
+  function setTime(next: string) {
+    if (timeProp === undefined) setInternalTime(next);
+    onTimeChange?.(next);
+  }
+
+  function setUseCurrentTime(next: boolean) {
+    if (useCurrentTimeProp === undefined) setInternalUseCurrentTime(next);
+    onUseCurrentTimeChange?.(next);
+    if (next) setTime(nowHHMM());
+  }
+
+  useEffect(() => {
+    if (!open || !useCurrentTime) return;
+    setTime(nowHHMM());
+    const id = window.setInterval(() => {
+      setTime(nowHHMM());
+    }, 15_000);
+    return () => window.clearInterval(id);
+    // Refresh wall-clock while "use current time" is on and the picker is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally tied to open/useCurrentTime only
+  }, [open, useCurrentTime]);
+
   function openPicker() {
     setView({ year: selected.year, month: selected.month });
+    setDraftDate(value);
+    if (useCurrentTime) setTime(nowHHMM());
     setOpen(true);
+  }
+
+  function confirmSelection() {
+    if (useCurrentTime) setTime(nowHHMM());
+    onChange(draftDate);
+    setOpen(false);
   }
 
   function changeMonth(delta: number) {
@@ -70,6 +146,16 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
   }
 
   const cells = buildMonthCells(view.year, view.month);
+  const buttonLabel = `${formatThaiDate(value)} · ${time}${useCurrentTime ? " (ปัจจุบัน)" : ""}`;
+  const { hour, minute } = splitHHMM(time);
+
+  function setHour(nextHour: string) {
+    setTime(`${nextHour}:${minute}`);
+  }
+
+  function setMinute(nextMinute: string) {
+    setTime(`${hour}:${nextMinute}`);
+  }
 
   return (
     <>
@@ -83,7 +169,7 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
         onClick={openPicker}
       >
         <CalendarDays size={18} />
-        {formatThaiDate(value)}
+        {buttonLabel}
       </Button>
 
       <Dialog.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
@@ -131,7 +217,7 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                     }
 
                     const iso = toISO(c.year, c.month, c.day);
-                    const isSelected = iso === value;
+                    const isSelected = iso === draftDate;
                     return (
                       <Box key={iso} minW={0}>
                         <Button
@@ -142,10 +228,7 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                           px={0}
                           variant={isSelected ? "solid" : "ghost"}
                           colorPalette="brand"
-                          onClick={() => {
-                            onChange(iso);
-                            setOpen(false);
-                          }}
+                          onClick={() => setDraftDate(iso)}
                         >
                           {c.day}
                         </Button>
@@ -154,7 +237,63 @@ export function ThaiDateInput({ value, onChange }: ThaiDateInputProps) {
                   })}
                 </Grid>
 
-                <VStack gap={0} mt={3}>
+                <VStack align="stretch" gap={3} mt={4} pt={3} borderTopWidth="1px" borderColor="glass.border">
+                  <Field.Root>
+                    <Field.Label fontSize="sm">เวลา (24 ชม.)</Field.Label>
+                    <HStack gap={2}>
+                      <NativeSelect.Root flex="1" disabled={useCurrentTime}>
+                        <NativeSelect.Field
+                          fontSize="16px"
+                          value={hour}
+                          aria-label="ชั่วโมง"
+                          onChange={(e) => setHour(e.target.value)}
+                        >
+                          {HOURS.map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                      </NativeSelect.Root>
+                      <Text fontWeight="semibold" color="fg.muted">
+                        :
+                      </Text>
+                      <NativeSelect.Root flex="1" disabled={useCurrentTime}>
+                        <NativeSelect.Field
+                          fontSize="16px"
+                          value={minute}
+                          aria-label="นาที"
+                          onChange={(e) => setMinute(e.target.value)}
+                        >
+                          {MINUTES.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </NativeSelect.Field>
+                        <NativeSelect.Indicator />
+                      </NativeSelect.Root>
+                    </HStack>
+                  </Field.Root>
+
+                  <Checkbox.Root
+                    checked={useCurrentTime}
+                    onCheckedChange={(e) => setUseCurrentTime(!!e.checked)}
+                    colorPalette="brand"
+                  >
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Checkbox.Label fontSize="sm">ใช้เวลาปัจจุบัน</Checkbox.Label>
+                  </Checkbox.Root>
+                </VStack>
+
+                <VStack gap={2} mt={3}>
+                  <Button type="button" colorPalette="brand" w="full" onClick={confirmSelection}>
+                    ตกลง
+                  </Button>
                   <Text fontSize="xs" color="fg.muted" textAlign="center">
                     ปัดซ้าย-ขวาเพื่อเปลี่ยนเดือน
                   </Text>
