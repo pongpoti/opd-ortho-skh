@@ -1,5 +1,4 @@
-import chromium from "@sparticuz/chromium";
-import puppeteer, { type Browser } from "puppeteer-core";
+import type { Browser } from "puppeteer-core";
 
 import { buildDutyPosterHtml } from "./duty-print-html";
 
@@ -7,7 +6,20 @@ import { buildDutyPosterHtml } from "./duty-print-html";
 const VIEWPORT = { width: 794, height: 1123 } as const;
 const DEVICE_SCALE_FACTOR = 3;
 
+/**
+ * Lazy-load Chromium only when rendering. Static imports of
+ * `@sparticuz/chromium` can make Vercel rebuilds fail with ENOENT when a
+ * cached binary path no longer exists on the build machine.
+ */
 async function launchBrowser(): Promise<Browser> {
+  const [{ default: chromium }, { default: puppeteer }] = await Promise.all([
+    import("@sparticuz/chromium"),
+    import("puppeteer-core"),
+  ]);
+
+  // Disable WebGL / GPU extras — not needed for static HTML → PNG.
+  chromium.setGraphicsMode(false);
+
   return puppeteer.launch({
     args: chromium.args,
     defaultViewport: {
