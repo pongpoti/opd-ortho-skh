@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
   Box,
   Drawer,
@@ -13,7 +13,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Printer, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -26,6 +26,7 @@ import {
   isDutyMonthDisabled,
 } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
+import { sendDutySchedulePrint } from "../lib/duty-print-actions";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -74,9 +75,26 @@ export function DutyScheduleCalendar() {
   const now = new Date();
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
+  const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  const [isPrinting, startPrint] = useTransition();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const monthDisabled = isDutyMonthDisabled(view.year, view.month);
+
+  function handlePrint() {
+    setPrintMessage(null);
+    startPrint(async () => {
+      const result = await sendDutySchedulePrint(view.year, view.month);
+      if (result.ok) {
+        setPrintMessage({
+          tone: "ok",
+          text: "ส่งตารางเวรไปที่แชท LINE แล้ว — เปิดแชท OA เพื่อดูรูป",
+        });
+      } else {
+        setPrintMessage({ tone: "err", text: result.error });
+      }
+    });
+  }
 
   function changeMonth(delta: number) {
     setView((v) => {
@@ -124,6 +142,16 @@ export function DutyScheduleCalendar() {
           </Text>
         </Heading>
         <HStack gap={2}>
+          <IconButton
+            aria-label="พิมพ์ตารางเวรส่ง LINE"
+            size="sm"
+            variant="outline"
+            onClick={handlePrint}
+            disabled={isPrinting}
+            loading={isPrinting}
+          >
+            <Printer size={16} />
+          </IconButton>
           <IconButton aria-label="เดือนก่อนหน้า" size="sm" variant="outline" onClick={() => changeMonth(-1)}>
             <ChevronLeft size={16} />
           </IconButton>
@@ -132,6 +160,20 @@ export function DutyScheduleCalendar() {
           </IconButton>
         </HStack>
       </Flex>
+
+      {printMessage && (
+        <Text
+          fontSize="sm"
+          textAlign="center"
+          color={printMessage.tone === "ok" ? "brand.fg" : "holiday.fg"}
+          bg={printMessage.tone === "ok" ? "brand.subtle" : "holiday.subtle"}
+          borderRadius="md"
+          px={3}
+          py={2}
+        >
+          {printMessage.text}
+        </Text>
+      )}
 
       <GlassCard
         p={4}

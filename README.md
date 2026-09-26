@@ -49,6 +49,21 @@ can't be exercised in a fully offline/sandboxed environment. Until the env
 vars above are set, the app will still build and deploy, but the login page
 will show a sign-in error.
 
+## LINE Messaging (duty-schedule print)
+
+The duty calendar **print** button pushes an A4 PNG of the OPD table + staff
+calendar to the signed-in user via the Official Account chat. That needs the
+Messaging API token in the **app** runtime (Vercel env), not only as a GitHub
+Actions secret for the rich-menu script:
+
+| Env var | Where | Purpose |
+| --- | --- | --- |
+| `LINE_CHANNEL_ACCESS_TOKEN` | Vercel + `.env.local` | Push image messages to users |
+
+Also required: users must have added the OA as a friend. The Login/LIFF channel
+and Messaging API channel must be linked under the same LINE provider so the
+LIFF `userId` matches the Messaging API recipient.
+
 ## LINE rich menu
 
 A branded single-tap rich menu under `line/rich-menu/` opens the main LIFF
@@ -75,8 +90,8 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 Copy `.env.example` to `.env.local` and fill in `DATABASE_URL`, `AUTH_SECRET`,
-`LINE_CLIENT_ID`, and `NEXT_PUBLIC_LIFF_ID` to run the full app locally,
-including login.
+`LINE_CLIENT_ID`, `NEXT_PUBLIC_LIFF_ID`, and (for print-to-LINE)
+`LINE_CHANNEL_ACCESS_TOKEN` to run the full app locally, including login.
 
 ### Database migrations
 
