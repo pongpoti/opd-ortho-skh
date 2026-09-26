@@ -54,7 +54,19 @@ export async function buildDutySchedulePng(
       deviceScaleFactor: scale,
     });
     await page.setContent(html, { waitUntil: "load" });
-    await page.evaluate(() => document.fonts.ready);
+    // Wait until Thai webfonts (embedded as data URIs) are actually usable.
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      // Force a layout pass that uses the display + body faces.
+      const probe = document.createElement("span");
+      probe.textContent = "กขค";
+      probe.style.fontFamily = "Sarabun, Bai Jamjuree, sans-serif";
+      probe.style.position = "absolute";
+      probe.style.left = "-9999px";
+      document.body.appendChild(probe);
+      void probe.offsetWidth;
+      probe.remove();
+    });
 
     const el = await page.$(".page");
     if (!el) throw new Error("Poster .page element not found");
