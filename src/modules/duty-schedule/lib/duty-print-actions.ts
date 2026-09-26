@@ -1,11 +1,13 @@
 "use server";
 
+import { after } from "next/server";
 import { headers } from "next/headers";
 
 import { auth } from "@/auth";
 import {
   isLineMessagingConfigured,
   pushLineImage,
+  pushLineMessages,
   startLineChatLoading,
 } from "@/lib/line-messaging";
 
@@ -16,7 +18,7 @@ import {
 } from "./duty-print-share";
 
 export type DutyPrintSendResult =
-  | { ok: true; filename: string }
+  | { ok: true; filename: string; openChat: true }
   | { ok: false; error: string };
 
 async function appOrigin(): Promise<string> {
@@ -32,11 +34,15 @@ async function appOrigin(): Promise<string> {
 }
 
 /**
- * Generate a signed A4 PNG URL for the viewed month and push it to the
- * signed-in user via LINE Messaging API (Official Account chat).
+ * Kick off a duty-schedule JPEG push to the signed-in user's LINE chat.
  *
- * Starts LINE's official chat loading animation first so the user sees
- * progress while Chromium renders the high-res poster and LINE fetches it.
+ * LINE's loading animation only appears while the user is viewing the OA chat
+ * (not inside LIFF). We start the loading indicator, return immediately so the
+ * client can close LIFF back to chat, then push the image in `after()`.
+ *
+ * originalContentUrl and previewImageUrl use the same 4× JPEG so LINE's chat
+ * bubble and full-screen view are both high-res (and only one Chromium render
+ * is needed when LINE dedupes the URL).
  */
 export async function sendDutySchedulePrint(
   year: number,
@@ -60,12 +66,6 @@ export async function sendDutySchedulePrint(
   }
 
   const lineUserId = session.user.lineUserId;
-
-  // Show LINE's built-in loading bubbles while the poster renders / is fetched.
-  // Failures here are non-fatal — still attempt to send the image.
-  await startLineChatLoading(lineUserId, 45);
-
-  const token = createDutyPrintShareToken(year, month);
   const origin = await appOrigin();
   if (origin.startsWith("http://") && !origin.includes("localhost")) {
     return {
@@ -74,12 +74,35 @@ export async function sendDutySchedulePrint(
     };
   }
 
-  const originalContentUrl = `${origin}${buildDutyPrintImagePath(token, "original")}`;
-  const previewImageUrl = `${origin}${buildDutyPrintImagePath(token, "preview")}`;
+  // Show LINE's built-in loading bubbles in the OA chat (visible once LIFF closes).
+  await startLineChatLoading(lineUserId, 60);
 
-  const pushed = await pushLineImage(lineUserId, originalContentUrl, previewImageUrl);
+  const token = createDutyPrintShareToken(year, month);
+  // Same high-res JPEG for original + preview (≤ 1 MB @ 4× quality 88).
+  const imageUrl = `${origin}${buildDutyPrintImagePath(token, "original")}`;
+  const filename = dutyPrintFilename(year, month);
 
-  if (!pushed.ok) return { ok: false, error: pushed.error };
+  after(async () => {
+    try {
+      const pushed = await pushLineImage(lineUserId, imageUrl, imageUrl);
+      if (!pushed.ok) {
+        await pushLineMessages(lineUserId, [
+          {
+            type: "text",
+            text: `สร้างตารางเวรไม่สำเร็จ: ${pushed.error}`,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error("duty-schedule deferred print failed", err);
+      await pushLineMessages(lineUserId, [
+        {
+          type: "text",
+          text: "สร้างตารางเวรไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+        },
+      ]);
+    }
+  });
 
-  return { ok: true, filename: dutyPrintFilename(year, month) };
+  return { ok: true, filename, openChat: true };
 }

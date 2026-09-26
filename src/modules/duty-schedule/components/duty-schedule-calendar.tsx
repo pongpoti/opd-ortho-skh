@@ -16,6 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, Printer, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { ensureLiffInit, liff } from "@/lib/liff-client";
 import {
   DUTY_LABELS,
   DUTY_ORDER,
@@ -85,14 +86,27 @@ export function DutyScheduleCalendar() {
     setPrintMessage(null);
     startPrint(async () => {
       const result = await sendDutySchedulePrint(view.year, view.month);
-      if (result.ok) {
-        setPrintMessage({
-          tone: "ok",
-          text: "ส่งตารางเวรไปที่แชท LINE แล้ว — เปิดแชท OA เพื่อดูรูป",
-        });
-      } else {
+      if (!result.ok) {
         setPrintMessage({ tone: "err", text: result.error });
+        return;
       }
+
+      // LINE loading animation only shows on the OA chat screen — close LIFF
+      // so the user lands back in chat while the high-res image is prepared.
+      try {
+        await ensureLiffInit();
+        if (liff.isInClient()) {
+          liff.closeWindow();
+          return;
+        }
+      } catch {
+        // External browser / LIFF unavailable — fall through with on-page hint.
+      }
+
+      setPrintMessage({
+        tone: "ok",
+        text: "กำลังสร้างรูปในแชท LINE — เปิดแชท OA เพื่อดู loading และรูป",
+      });
     });
   }
 

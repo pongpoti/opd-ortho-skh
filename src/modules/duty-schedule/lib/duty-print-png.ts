@@ -2,11 +2,24 @@ import type { Browser } from "puppeteer-core";
 
 import { buildDutyPosterHtml } from "./duty-print-html";
 
-/** A4 page at 96 dpi CSS pixels; 4× scale → ~3176×4492 PNG (high-res for LINE). */
+/** A4 page at 96 dpi CSS pixels; 4× scale → ~3176×4492 (high-res for LINE). */
 const VIEWPORT = { width: 794, height: 1123 } as const;
 const DEVICE_SCALE_FACTOR = 4;
-/** Preview at 1× keeps the chat thumbnail under LINE's 1 MB preview limit. */
-const PREVIEW_SCALE_FACTOR = 1;
+
+/**
+ * LINE image messages need:
+ * - original ≤ 10 MB
+ * - preview ≤ 1 MB
+ * A 4× JPEG at quality 88 is ~0.65 MB — sharp in the chat bubble and when opened,
+ * and small enough to use for BOTH original and preview (one URL, one render).
+ */
+const JPEG_QUALITY = 88;
+
+export type DutyPrintImage = {
+  bytes: Buffer;
+  contentType: "image/jpeg";
+  extension: "jpg";
+};
 
 /**
  * Lazy-load Chromium only when rendering. Static imports of
@@ -32,19 +45,16 @@ async function launchBrowser(): Promise<Browser> {
 }
 
 /**
- * Render the ortho-schedule A4 poster HTML to PNG (Chromium screenshot at 4×
- * for original / 2× for LINE preview).
+ * Render the ortho-schedule A4 poster as a 4× JPEG for LINE Messaging API.
  */
-export async function buildDutySchedulePng(
+export async function buildDutyScheduleImage(
   year: number,
-  month: number,
-  options?: { preview?: boolean }
-): Promise<Buffer> {
+  month: number
+): Promise<DutyPrintImage> {
   if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
     throw new Error("Invalid year/month");
   }
 
-  const scale = options?.preview ? PREVIEW_SCALE_FACTOR : DEVICE_SCALE_FACTOR;
   const { html } = await buildDutyPosterHtml(year, month);
   const browser = await launchBrowser();
 
@@ -53,13 +63,11 @@ export async function buildDutySchedulePng(
     await page.setViewport({
       width: VIEWPORT.width,
       height: VIEWPORT.height,
-      deviceScaleFactor: scale,
+      deviceScaleFactor: DEVICE_SCALE_FACTOR,
     });
     await page.setContent(html, { waitUntil: "load" });
-    // Wait until Thai webfonts (embedded as data URIs) are actually usable.
     await page.evaluate(async () => {
       await document.fonts.ready;
-      // Force a layout pass that uses the display + body faces.
       const probe = document.createElement("span");
       probe.textContent = "กขค";
       probe.style.fontFamily = '"IBM Plex Sans Thai Looped", "Bai Jamjuree", sans-serif';
@@ -73,14 +81,25 @@ export async function buildDutySchedulePng(
     const el = await page.$(".page");
     if (!el) throw new Error("Poster .page element not found");
 
-    const shot = await el.screenshot({ type: "png" });
-    return Buffer.from(shot);
+    const bytes = Buffer.from(
+      await el.screenshot({ type: "jpeg", quality: JPEG_QUALITY })
+    );
+    return { bytes, contentType: "image/jpeg", extension: "jpg" };
   } finally {
     await browser.close();
   }
 }
 
+/** @deprecated Prefer buildDutyScheduleImage. */
+export async function buildDutySchedulePng(
+  year: number,
+  month: number
+): Promise<Buffer> {
+  const image = await buildDutyScheduleImage(year, month);
+  return image.bytes;
+}
+
 export function dutyPrintFilename(year: number, month: number): string {
   const m = String(month + 1).padStart(2, "0");
-  return `ortho-schedule-${year + 543}-${m}.png`;
+  return `ortho-schedule-${year + 543}-${m}.jpg`;
 }
