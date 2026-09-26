@@ -1,6 +1,6 @@
+import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import path from "path";
-import { pathToFileURL } from "url";
 
 import { getDutyDay } from "./duty-data";
 import { OPD_FIXED_SCHEDULE } from "./opd-fixed-schedule";
@@ -23,7 +23,18 @@ const THAI_MONTHS = [
 const WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
 const BE_OFFSET = 543;
 
-const POSTER_DIR = path.join(process.cwd(), "src/modules/duty-schedule/print-poster");
+function resolvePosterDir(): string {
+  const candidates = [
+    path.join(process.cwd(), "src/modules/duty-schedule/print-poster"),
+    path.join(process.cwd(), "print-poster"),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(path.join(dir, "styles.css"))) return dir;
+  }
+  return candidates[0];
+}
+
+const POSTER_DIR = resolvePosterDir();
 
 function escapeHtml(value: string): string {
   return value
@@ -54,12 +65,26 @@ async function loadPosterCss(): Promise<string> {
   const raw = await readFile(path.join(POSTER_DIR, "styles.css"), "utf8");
   const fontsDir = path.join(POSTER_DIR, "fonts");
 
-  // Rewrite relative font URLs to absolute file:// so Chromium can load them
-  // from an about:blank / setContent document.
-  return raw.replace(/url\("fonts\/([^"]+)"\)/g, (_m, file: string) => {
-    const abs = pathToFileURL(path.join(fontsDir, file)).href;
-    return `url("${abs}")`;
-  });
+  // Embed fonts as data URIs. file:// URLs from setContent do not load reliably
+  // in Vercel/Chromium, which made Thai text vanish (only Latin remnants showed).
+  const fontCache = new Map<string, string>();
+  async function dataUriFor(file: string): Promise<string> {
+    const cached = fontCache.get(file);
+    if (cached) return cached;
+    const buf = await readFile(path.join(fontsDir, file));
+    const uri = `url("data:font/ttf;base64,${buf.toString("base64")}")`;
+    fontCache.set(file, uri);
+    return uri;
+  }
+
+  const matches = [...raw.matchAll(/url\("fonts\/([^"]+)"\)/g)];
+  let css = raw;
+  for (const match of matches) {
+    const [full, file] = match;
+    const uri = await dataUriFor(file);
+    css = css.replace(full, uri);
+  }
+  return css;
 }
 
 function buildOpdTableHtml(): string {
