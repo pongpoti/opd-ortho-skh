@@ -1,14 +1,14 @@
 {
   "size": {
     "width": 2500,
-    "height": 843
+    "height": 1686
   },
   "selected": true,
   "name": "OPD Ortho SKH — open LIFF",
   "chatBarText": "เปิดแอป",
   "areas": [
     {
-      "bounds": { "x": 0, "y": 0, "width": 2500, "height": 843 },
+      "bounds": { "x": 0, "y": 0, "width": 2500, "height": 1686 },
       "action": {
         "type": "uri",
         "label": "เปิดแอป",

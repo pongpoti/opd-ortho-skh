@@ -6,8 +6,8 @@ Single full-area rich menu that opens the main LIFF app URL:
 
 ## Files
 
-- `richmenu.jpg` — 2500×843 compact image uploaded to LINE (JPEG under 1 MB)
-- `config.json` — Messaging API rich menu object (one URI area, compact size)
+- `richmenu.jpg` — 2500×1686 full-size image uploaded to LINE (JPEG under 1 MB)
+- `config.json` — Messaging API rich menu object (one URI area, full size)
 - `generate-image.py` — regenerates `richmenu.jpg` from the app theme
 
 ## Regenerate the image
