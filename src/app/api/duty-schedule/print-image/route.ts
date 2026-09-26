@@ -2,6 +2,8 @@ import { buildDutySchedulePng, dutyPrintFilename } from "@/modules/duty-schedule
 import { verifyDutyPrintShareToken } from "@/modules/duty-schedule/lib/duty-print-share";
 
 export const runtime = "nodejs";
+/** Chromium poster render can exceed the default serverless budget. */
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
