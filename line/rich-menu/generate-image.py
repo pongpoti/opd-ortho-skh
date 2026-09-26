@@ -2,7 +2,7 @@
 """Compose the OPD Ortho SKH LINE rich-menu image (2500×1686 JPEG).
 
 Uses an AI-generated atmosphere (`source.jpg`) as the full-bleed background,
-then overlays a crisp bone mark, Sarabun typography, and CTA for mobile
+then overlays a crisp heart+EKG mark, Sarabun typography, and CTA for mobile
 readability. Output must stay under LINE’s 1 MB limit.
 """
 
@@ -37,11 +37,11 @@ def cover_crop(im: Image.Image, tw: int, th: int) -> Image.Image:
 
 
 def overlays_svg() -> str:
-    """Bone mark + CTA pill (labels drawn with Pillow + Sarabun)."""
+    """Heart + EKG mark and CTA pill (labels drawn with Pillow + Sarabun)."""
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">
   <defs>
-    <linearGradient id="boneFill" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="heartFill" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#1f8f86"/>
       <stop offset="100%" stop-color="#167269"/>
     </linearGradient>
@@ -49,21 +49,28 @@ def overlays_svg() -> str:
       <stop offset="0%" stop-color="#1f8f86"/>
       <stop offset="100%" stop-color="#135c55"/>
     </linearGradient>
-    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#0d4a44" flood-opacity="0.30"/>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#0d4a44" flood-opacity="0.28"/>
     </filter>
   </defs>
-  <g transform="translate(1250, 300) scale(1.7)" filter="url(#softShadow)">
-    <rect x="-210" y="-28" width="420" height="56" rx="22" fill="url(#boneFill)"/>
-    <circle cx="-230" cy="-42" r="48" fill="url(#boneFill)"/>
-    <circle cx="-230" cy="42" r="48" fill="url(#boneFill)"/>
-    <rect x="-278" y="-42" width="70" height="84" rx="20" fill="url(#boneFill)"/>
-    <circle cx="230" cy="-42" r="48" fill="url(#boneFill)"/>
-    <circle cx="230" cy="42" r="48" fill="url(#boneFill)"/>
-    <rect x="208" y="-42" width="70" height="84" rx="20" fill="url(#boneFill)"/>
-    <path d="M-150 0 Q-70 -20 0 0 Q70 20 150 0" fill="none" stroke="#ffffff"
-      stroke-width="11" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Heart outline with EKG pulse -->
+  <g transform="translate(1250, 300) scale(2.35)" filter="url(#softShadow)">
+    <path d="M0 42
+      C0 42 -48 8 -48 -18
+      C-48 -38 -32 -50 -16 -50
+      C-4 -50 0 -40 0 -40
+      C0 -40 4 -50 16 -50
+      C32 -50 48 -38 48 -18
+      C48 8 0 42 0 42 Z"
+      fill="none" stroke="url(#heartFill)" stroke-width="10"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    <!-- EKG zigzag through the heart -->
+    <path d="M-34 0 L-18 0 L-10 -18 L2 22 L12 -8 L20 0 L34 0"
+      fill="none" stroke="url(#heartFill)" stroke-width="7"
+      stroke-linejoin="round" stroke-linecap="round"/>
   </g>
+
   <rect x="380" y="1100" width="1740" height="250" rx="125"
     fill="url(#ctaFill)" filter="url(#softShadow)"/>
 </svg>
@@ -96,8 +103,7 @@ def build_atmosphere() -> Image.Image:
     if not SOURCE.exists():
         raise SystemExit(f"Missing AI atmosphere: {SOURCE}")
     base = cover_crop(Image.open(SOURCE), W, H)
-    # Slight center lift so Sarabun titles stay high-contrast on mint wash.
-    bright = ImageEnhance.Brightness(base).enhance(1.06)
+    bright = ImageEnhance.Brightness(base).enhance(1.05)
     mask = Image.new("L", (W, H), 0)
     ImageDraw.Draw(mask).ellipse((360, 160, 2140, 1520), fill=200)
     mask = mask.filter(ImageFilter.GaussianBlur(radius=110))
@@ -121,7 +127,6 @@ def main() -> None:
     title = ImageFont.truetype(str(FONT_BOLD), 176)
     hospital = ImageFont.truetype(str(FONT_BOLD), 92)
     cta = ImageFont.truetype(str(FONT_BOLD), 104)
-    chev = ImageFont.truetype(str(FONT_BOLD), 96)
 
     centered_text(draw, "OPD Orthopedic", 680, title, BRAND)
     centered_text(draw, "Samutsakhon Hospital", 850, hospital, BRAND)
@@ -134,17 +139,6 @@ def main() -> None:
         (255, 255, 255),
         stroke_width=4,
         stroke_fill=(19, 92, 85),
-    )
-
-    bbox = draw.textbbox((0, 0), "เปิดแอป", font=cta)
-    tw = bbox[2] - bbox[0]
-    chev_bbox = draw.textbbox((0, 0), "›", font=chev)
-    ch = chev_bbox[3] - chev_bbox[1]
-    draw.text(
-        ((W + tw) // 2 + 36, 1225 - ch // 2 - chev_bbox[1]),
-        "›",
-        font=chev,
-        fill=(255, 255, 255),
     )
 
     im.save(OUT, format="JPEG", quality=90, optimize=True, progressive=True)

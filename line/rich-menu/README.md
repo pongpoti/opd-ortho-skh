@@ -7,14 +7,14 @@ Single full-area rich menu that opens the main LIFF app URL:
 ## Files
 
 - `richmenu.jpg` — 2500×1686 full-size image uploaded to LINE (JPEG under 1 MB)
-- `source.jpg` — AI-generated teal-glass orthopedic atmosphere (X-ray corners)
+- `source.jpg` — AI-generated teal-glass medical atmosphere
 - `config.json` — Messaging API rich menu object (one URI area, full size)
-- `generate-image.py` — composites `source.jpg` + Sarabun type into `richmenu.jpg`
+- `generate-image.py` — composites `source.jpg` + heart/EKG mark + Sarabun type
 
 ## Design
 
-Full-bleed mint/teal medical atmosphere with faint orthopedic X-rays in the
-corners, a bone mark, **OPD Orthopedic / Samutsakhon Hospital**, and a wide
+Full-bleed mint/teal atmosphere with soft wave lines and medical crosses,
+a heart + EKG mark, **OPD Orthopedic / Samutsakhon Hospital**, and a wide
 **เปิดแอป** CTA. Typography is drawn with Sarabun so Thai stays sharp on
 iPhone-sized chat menus.
 
@@ -26,7 +26,7 @@ python3 line/rich-menu/generate-image.py
 ```
 
 To refresh the atmosphere, replace `source.jpg` with a new AI render
-(≈16:9 or 4:3 teal-glass ortho scene, empty center), then regenerate.
+(≈16:9 teal-glass medical scene, empty center), then regenerate.
 
 ## Deploy
 
