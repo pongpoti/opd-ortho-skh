@@ -15,21 +15,6 @@ export type DutyPrintSendResult =
   | { ok: true; filename: string }
   | { ok: false; error: string };
 
-const THAI_MONTHS = [
-  "มกราคม",
-  "กุมภาพันธ์",
-  "มีนาคม",
-  "เมษายน",
-  "พฤษภาคม",
-  "มิถุนายน",
-  "กรกฎาคม",
-  "สิงหาคม",
-  "กันยายน",
-  "ตุลาคม",
-  "พฤศจิกายน",
-  "ธันวาคม",
-];
-
 async function appOrigin(): Promise<string> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
@@ -78,13 +63,11 @@ export async function sendDutySchedulePrint(
 
   const originalContentUrl = `${origin}${buildDutyPrintImagePath(token, "original")}`;
   const previewImageUrl = `${origin}${buildDutyPrintImagePath(token, "preview")}`;
-  const caption = `ตารางเวรแพทย์ออร์โธปิดิกส์ — ${THAI_MONTHS[month]} ${year + 543}`;
 
   const pushed = await pushLineImage(
     session.user.lineUserId,
     originalContentUrl,
-    previewImageUrl,
-    caption
+    previewImageUrl
   );
 
   if (!pushed.ok) return { ok: false, error: pushed.error };

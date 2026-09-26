@@ -60,7 +60,7 @@ export async function buildDutySchedulePng(
       // Force a layout pass that uses the display + body faces.
       const probe = document.createElement("span");
       probe.textContent = "กขค";
-      probe.style.fontFamily = "Sarabun, Bai Jamjuree, sans-serif";
+      probe.style.fontFamily = '"IBM Plex Sans Thai Looped", "Bai Jamjuree", sans-serif';
       probe.style.position = "absolute";
       probe.style.left = "-9999px";
       document.body.appendChild(probe);
