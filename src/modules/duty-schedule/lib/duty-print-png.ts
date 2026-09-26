@@ -17,9 +17,6 @@ async function launchBrowser(): Promise<Browser> {
     import("puppeteer-core"),
   ]);
 
-  // Disable WebGL / GPU extras — not needed for static HTML → PNG.
-  chromium.graphicsMode = false;
-
   return puppeteer.launch({
     args: chromium.args,
     defaultViewport: {
