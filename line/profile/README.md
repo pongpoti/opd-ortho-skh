@@ -30,8 +30,8 @@ Source: [LINE OA media specification](https://lineforbusiness.com/th/helpcenter/
 
 **Orthopedic brand badge** — solid teal disc (easy to spot in a chat list),
 bold white **long-bone** mark (reads as ortho, not generic hospital), **OPD /
-ORTHO** wordmark in high-contrast type. Soft mint/sky square surround so
-uncropped corners still match the app brand.
+ORTHO / SKH** wordmark (Samut Sakhon Hospital) in high-contrast type. Soft
+mint/sky square surround so uncropped corners still match the app brand.
 
 Why this shape: LINE crops to a circle; a filled teal disc + thick bone
 silhouette stays recognizable down to ~40 px.
@@ -48,5 +48,5 @@ python3 line/profile/generate-image.py
 1. Open [LINE Official Account Manager](https://manager.line.biz/) → your OA
 2. **Settings** → **Profile** → profile photo
 3. Upload `profile.png` or `profile.jpg` (either is under 3 MB)
-4. Adjust crop if prompted — keep the heart + OPD centered
+4. Adjust crop if prompted — keep the bone + OPD / SKH centered
 5. Save (profile photo can be changed once per hour)

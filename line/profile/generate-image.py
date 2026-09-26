@@ -90,7 +90,7 @@ def badge_and_bone_svg() -> str:
   <circle cx="320" cy="320" r="268" fill="none" stroke="#a8e6e0" stroke-opacity="0.35" stroke-width="6"/>
 
   <!-- Orthopedic long-bone mark (horizontal, slightly tilted for style) -->
-  <g transform="translate(320, 268) rotate(-18) scale(1.15)" filter="url(#soft)">
+  <g transform="translate(320, 248) rotate(-18) scale(1.08)" filter="url(#soft)">
     <!-- Shaft -->
     <rect x="-118" y="-22" width="236" height="44" rx="22" fill="url(#bone)"/>
     <!-- Left epiphysis (joint knobs) -->
@@ -152,10 +152,11 @@ def main() -> None:
     draw = ImageDraw.Draw(composed)
 
     # Wordmark inside the teal disc, below the bone — high contrast white
-    center_text(draw, "OPD", 400, load_font(78), WHITE)
-    center_text(draw, "ORTHO", 458, load_font(34), MINT)
-    # Accent dash
-    draw.rounded_rectangle((292, 488, 348, 496), radius=4, fill=MINT)
+    center_text(draw, "OPD", 388, load_font(72), WHITE)
+    center_text(draw, "ORTHO", 440, load_font(30), MINT)
+    center_text(draw, "SKH", 478, load_font(26), MINT)
+    # Accent dash under SKH (Samut Sakhon Hospital)
+    draw.rounded_rectangle((292, 502, 348, 510), radius=4, fill=MINT)
 
     rgb = composed.convert("RGB")
     rgb.save(OUT_PNG, format="PNG", optimize=True)
