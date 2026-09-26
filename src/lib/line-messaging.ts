@@ -4,6 +4,7 @@
  */
 
 const LINE_PUSH_URL = "https://api.line.me/v2/bot/message/push";
+const LINE_LOADING_URL = "https://api.line.me/v2/bot/chat/loading/start";
 
 export type LinePushResult =
   | { ok: true }
@@ -16,6 +17,15 @@ function accessToken(): string | null {
 
 export function isLineMessagingConfigured(): boolean {
   return !!accessToken();
+}
+
+async function parseLineError(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: string };
+    return body.message ? `: ${body.message}` : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function pushLineMessages(
@@ -44,13 +54,7 @@ export async function pushLineMessages(
 
   if (res.ok) return { ok: true };
 
-  let detail = "";
-  try {
-    const body = (await res.json()) as { message?: string };
-    detail = body.message ? `: ${body.message}` : "";
-  } catch {
-    /* ignore */
-  }
+  const detail = await parseLineError(res);
 
   if (res.status === 401 || res.status === 403) {
     return {
@@ -89,4 +93,45 @@ export async function pushLineImage(
     previewImageUrl,
   });
   return pushLineMessages(to, messages);
+}
+
+/**
+ * Show the official LINE chat loading animation while the bot prepares a reply.
+ * @see https://developers.line.biz/en/reference/messaging-api/#display-a-loading-indicator
+ * `loadingSeconds` is clamped to 5–60 in steps of 5 (LINE requirement).
+ */
+export async function startLineChatLoading(
+  chatId: string,
+  loadingSeconds = 40
+): Promise<LinePushResult> {
+  const token = accessToken();
+  if (!token) {
+    return {
+      ok: false,
+      error: "ยังไม่ได้ตั้งค่า LINE_CHANNEL_ACCESS_TOKEN ในเซิร์ฟเวอร์",
+    };
+  }
+  if (!chatId) {
+    return { ok: false, error: "ไม่พบ LINE user id" };
+  }
+
+  const seconds = Math.min(60, Math.max(5, Math.round(loadingSeconds / 5) * 5));
+
+  const res = await fetch(LINE_LOADING_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ chatId, loadingSeconds: seconds }),
+  });
+
+  if (res.ok) return { ok: true };
+
+  const detail = await parseLineError(res);
+  return {
+    ok: false,
+    status: res.status,
+    error: `เริ่ม loading animation ไม่สำเร็จ (${res.status})${detail}`,
+  };
 }

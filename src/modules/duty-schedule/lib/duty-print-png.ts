@@ -2,9 +2,11 @@ import type { Browser } from "puppeteer-core";
 
 import { buildDutyPosterHtml } from "./duty-print-html";
 
-/** Zip export uses deviceScaleFactor 3 on a 794×1123 page → ~2382×3369 PNG. */
+/** A4 page at 96 dpi CSS pixels; 4× scale → ~3176×4492 PNG (high-res for LINE). */
 const VIEWPORT = { width: 794, height: 1123 } as const;
-const DEVICE_SCALE_FACTOR = 3;
+const DEVICE_SCALE_FACTOR = 4;
+/** Preview at 1× keeps the chat thumbnail under LINE's 1 MB preview limit. */
+const PREVIEW_SCALE_FACTOR = 1;
 
 /**
  * Lazy-load Chromium only when rendering. Static imports of
@@ -30,8 +32,8 @@ async function launchBrowser(): Promise<Browser> {
 }
 
 /**
- * Render the ortho-schedule A4 poster HTML to PNG (same pipeline as the zip's
- * Playwright export: screenshot `.page` at 3×).
+ * Render the ortho-schedule A4 poster HTML to PNG (Chromium screenshot at 4×
+ * for original / 2× for LINE preview).
  */
 export async function buildDutySchedulePng(
   year: number,
@@ -42,7 +44,7 @@ export async function buildDutySchedulePng(
     throw new Error("Invalid year/month");
   }
 
-  const scale = options?.preview ? 1 : DEVICE_SCALE_FACTOR;
+  const scale = options?.preview ? PREVIEW_SCALE_FACTOR : DEVICE_SCALE_FACTOR;
   const { html } = await buildDutyPosterHtml(year, month);
   const browser = await launchBrowser();
 
