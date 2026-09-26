@@ -1,16 +1,17 @@
 /* ---------- Fonts (bundled locally, SIL OFL — ใช้ได้แม้ไม่มีอินเทอร์เน็ต) ---------- */
 @font-face { font-family: "Bai Jamjuree"; src: url("fonts/BaiJamjuree-SemiBold.ttf") format("truetype"); font-weight: 600; }
 @font-face { font-family: "Bai Jamjuree"; src: url("fonts/BaiJamjuree-Bold.ttf") format("truetype"); font-weight: 700; }
-/* Sarabun (loopless) — clearer than IBM Plex Thai Looped at small sizes on PNG */
-@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Regular.ttf") format("truetype"); font-weight: 400; }
-@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Bold.ttf") format("truetype"); font-weight: 700; }
+@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-Regular.ttf") format("truetype"); font-weight: 400; }
+@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-Medium.ttf") format("truetype"); font-weight: 500; }
+@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-SemiBold.ttf") format("truetype"); font-weight: 600; }
+@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-Bold.ttf") format("truetype"); font-weight: 700; }
 
 /* ---------- Design tokens ---------- */
 :root {
   --accent: #1C6E7D;          /* หัวตาราง OPD, ชื่อเดือน, ชื่อวันใน OPD */
-  --ink: #102028;             /* ตัวหนังสือหลัก — darker for PNG contrast */
-  --ink-strong: #0A141A;      /* ชื่อแพทย์ */
-  --sep: #6A8794;             /* จุดคั่นชื่อ */
+  --ink: #1A2E3B;             /* ตัวหนังสือหลัก */
+  --ink-strong: #0F1E28;      /* ชื่อแพทย์ในตาราง OPD */
+  --sep: #8FAAB5;             /* จุดคั่นชื่อ */
   --rule: #D6E6EA;            /* เส้นแบ่งแถวตาราง */
   --ground: #E6F1F4;          /* พื้นหลัง */
   --mint: #B4E6DC;
@@ -18,12 +19,12 @@
   --mint-soft: #CFEDE4;
 
   --weekend-fill: rgba(196, 220, 248, 0.78);
-  --weekend-ink: #163A6E;
+  --weekend-ink: #1F4E8C;
   --holiday-fill: rgba(252, 224, 222, 0.85);
-  --holiday-ink: #9B1C14;
+  --holiday-ink: #B42318;
 
-  --font-display: "Bai Jamjuree", "Sarabun", "Noto Sans Thai", sans-serif;
-  --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
+  --font-display: "Bai Jamjuree", "Noto Sans Thai", sans-serif;
+  --font-body: "IBM Plex Sans Thai Looped", "Noto Sans Thai", sans-serif;
 
   --page-w: 794px;   /* A4 ที่ 96 dpi */
   --page-h: 1123px;
@@ -73,14 +74,14 @@ body {
   font-family: var(--font-display);
   font-size: 34px;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .month-label {
   font-family: var(--font-display);
   font-size: 30px;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--accent);
 }
 
@@ -92,7 +93,7 @@ body {
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 /* ---------- OPD table ---------- */
@@ -102,25 +103,25 @@ body {
   border-bottom: 3px solid rgba(20, 64, 84, 0.12);
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.84);
 }
 
 .opd-row {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr) 188px;
-  height: 44px;
+  height: 40px;
   align-items: center;
-  font-size: 18px;
+  font-size: 17px;
   border-bottom: 1px solid var(--rule);
 }
 .opd-row:last-child { border-bottom: 0; }
 .opd-row:nth-child(odd):not(.opd-head) { background: rgba(214, 238, 233, 0.5); }
 
 .opd-head {
-  height: 44px;
+  height: 42px;
   background: var(--accent);
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
   border-bottom: 0;
@@ -139,11 +140,11 @@ body {
 .opd-names {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-weight: 700;
+  gap: 14px;
+  font-weight: 600;
   color: var(--ink-strong);
 }
-.opd-sep { color: var(--sep); font-weight: 700; }
+.opd-sep { color: var(--sep); font-weight: 400; }
 
 /* ---------- Calendar ---------- */
 .calendar {
@@ -157,19 +158,19 @@ body {
 
 .cal-label {
   padding: 2px 9px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink);
 }
 .cal-label.is-weekend { color: var(--weekend-ink); }
 
 .cal-cell {
-  padding: 8px 10px;
+  padding: 7px 9px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.76);
   border: 1px solid rgba(28, 110, 125, 0.20);
   border-bottom: 2px solid rgba(20, 64, 84, 0.20);
 }
@@ -197,22 +198,20 @@ body {
 
 .cal-date {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 .is-weekend .cal-date { color: var(--weekend-ink); }
 .is-holiday .cal-date,
 .cal-tag { color: var(--holiday-ink); }
 
-.cal-tag { font-size: 13px; font-weight: 700; }
+.cal-tag { font-size: 12px; font-weight: 600; }
 
 .cal-name {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 600;
   line-height: 1.35;
-  color: var(--ink-strong);
 }
 
 /* ---------- Print / PDF ---------- */
