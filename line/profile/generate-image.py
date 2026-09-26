@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """Compose the OPD Ortho SKH LINE Official Account profile picture.
 
-LINE OA profile photo spec (LINE for Business media guide):
-  - Size: 640 × 640 px (recommended)
-  - Format: JPG / JPEG / PNG
-  - Max file size: 3 MB
-  - Display: cropped to a circle in chat — keep mark + type in the center safe zone
+LINE OA profile photo spec:
+  - 640 × 640 px, JPG/PNG, ≤ 3 MB
+  - Displayed as a circle — keep mark + type in the center safe zone
 
-Outputs:
-  - profile.png / profile.jpg  — square upload assets
-  - profile-circle-preview.png — circular crop preview (not for upload)
+Design goals: distinctive orthopedic brand, stylish, easy to spot in a
+chat list at ~40 px. Solid teal badge + bold bone mark (not a heart).
 """
 
 from __future__ import annotations
@@ -32,9 +29,13 @@ OUT_JPG = DIR / "profile.jpg"
 OUT_PREVIEW = DIR / "profile-circle-preview.png"
 
 W = H = 640
-BRAND = (22, 114, 105)  # #167269
-ACCENT = (75, 184, 174)  # #4BB8AE
-SAFE_DIAMETER = int(W * 0.82)  # keep content inside ~82% for circular crop
+# Brand teals from the app / rich menu
+TEAL_DEEP = (19, 92, 85)       # #135c55
+TEAL = (22, 114, 105)          # #167269
+TEAL_MID = (31, 143, 134)      # #1f8f86
+MINT = (168, 230, 224)         # #a8e6e0
+SKY = (196, 217, 243)          # #c4d9f3
+WHITE = (255, 255, 255)
 
 
 def load_font(size: int) -> ImageFont.FreeTypeFont:
@@ -44,8 +45,8 @@ def load_font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def gradient_bg() -> Image.Image:
-    """Soft mint center → cool sky edge (radial)."""
+def soft_square_bg() -> Image.Image:
+    """Mint→sky radial square so corners match the brand when not cropped."""
     im = Image.new("RGB", (W, H))
     px = im.load()
     cx = cy = (W - 1) / 2
@@ -55,50 +56,55 @@ def gradient_bg() -> Image.Image:
         for x in range(W):
             dx = (x - cx) / cx
             t = min(1.0, (dx * dx + dy2) ** 0.5)
-            # ease
             t = t * t * (3 - 2 * t)
-            r = int(238 + (176 - 238) * t)
-            g = int(251 + (214 - 251) * t)
-            b = int(250 + (228 - 250) * t)
+            # center mint → edge soft sky
+            r = int(232 + (186 - 232) * t)
+            g = int(246 + (214 - 246) * t)
+            b = int(244 + (228 - 244) * t)
             px[x, y] = (r, g, b)
     return im
 
 
-def heart_overlay() -> Image.Image:
-    """Same heart motif as the rich menu (outline + solid inner)."""
-    # Heart sits in upper half of the safe circle.
-    svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+def badge_and_bone_svg() -> str:
+    """Solid teal disc + stylized long bone (orthopedic mark) + OPD wordmark."""
+    # Safe circle roughly 82% of canvas
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">
   <defs>
-    <linearGradient id="heartFill" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1f8f86"/>
-      <stop offset="100%" stop-color="#167269"/>
+    <radialGradient id="disc" cx="38%" cy="32%" r="72%">
+      <stop offset="0%" stop-color="#2aa89c"/>
+      <stop offset="55%" stop-color="#1f8f86"/>
+      <stop offset="100%" stop-color="#135c55"/>
+    </radialGradient>
+    <linearGradient id="bone" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e6f7f5"/>
     </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0a3d38" flood-opacity="0.28"/>
+    </filter>
   </defs>
-  <g transform="translate(320, 210) scale(2.55)">
-    <path d="M0 42
-      C0 42 -48 8 -48 -18
-      C-48 -38 -32 -50 -16 -50
-      C-4 -50 0 -40 0 -40
-      C0 -40 4 -50 16 -50
-      C32 -50 48 -38 48 -18
-      C48 8 0 42 0 42 Z"
-      fill="none" stroke="url(#heartFill)" stroke-width="9"
-      stroke-linejoin="round" stroke-linecap="round"/>
-    <path d="M0 28
-      C0 28 -32 4 -32 -14
-      C-32 -28 -22 -36 -12 -36
-      C-4 -36 0 -28 0 -28
-      C0 -28 4 -36 12 -36
-      C22 -36 32 -28 32 -14
-      C32 4 0 28 0 28 Z"
-      fill="url(#heartFill)"/>
+
+  <!-- Solid brand disc (reads clearly when LINE crops to a circle) -->
+  <circle cx="320" cy="320" r="268" fill="url(#disc)" filter="url(#soft)"/>
+  <circle cx="320" cy="320" r="268" fill="none" stroke="#a8e6e0" stroke-opacity="0.35" stroke-width="6"/>
+
+  <!-- Orthopedic long-bone mark (horizontal, slightly tilted for style) -->
+  <g transform="translate(320, 268) rotate(-18) scale(1.15)" filter="url(#soft)">
+    <!-- Shaft -->
+    <rect x="-118" y="-22" width="236" height="44" rx="22" fill="url(#bone)"/>
+    <!-- Left epiphysis (joint knobs) -->
+    <circle cx="-118" cy="-18" r="28" fill="url(#bone)"/>
+    <circle cx="-118" cy="18" r="28" fill="url(#bone)"/>
+    <!-- Right epiphysis -->
+    <circle cx="118" cy="-18" r="28" fill="url(#bone)"/>
+    <circle cx="118" cy="18" r="28" fill="url(#bone)"/>
+    <!-- Subtle joint notch for depth -->
+    <ellipse cx="-118" cy="0" rx="10" ry="16" fill="#1f8f86" fill-opacity="0.18"/>
+    <ellipse cx="118" cy="0" rx="10" ry="16" fill="#1f8f86" fill-opacity="0.18"/>
   </g>
 </svg>
 """
-    return Image.open(
-        BytesIO(cairosvg.svg2png(bytestring=svg.encode("utf-8"), output_width=W, output_height=H))
-    ).convert("RGBA")
 
 
 def center_text(
@@ -132,25 +138,26 @@ def circle_preview(rgb: Image.Image) -> Image.Image:
 
 
 def main() -> None:
-    base = gradient_bg().convert("RGBA")
+    base = soft_square_bg().convert("RGBA")
+    mark = Image.open(
+        BytesIO(
+            cairosvg.svg2png(
+                bytestring=badge_and_bone_svg().encode("utf-8"),
+                output_width=W,
+                output_height=H,
+            )
+        )
+    ).convert("RGBA")
+    composed = Image.alpha_composite(base, mark)
+    draw = ImageDraw.Draw(composed)
 
-    # Subtle guide ring at safe-zone edge (soft, not a hard badge border)
-    ring = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    pad = (W - SAFE_DIAMETER) // 2
-    ImageDraw.Draw(ring).ellipse(
-        (pad, pad, pad + SAFE_DIAMETER - 1, pad + SAFE_DIAMETER - 1),
-        outline=(31, 143, 134, 48),
-        width=3,
-    )
-    base = Image.alpha_composite(base, ring)
-    base = Image.alpha_composite(base, heart_overlay())
+    # Wordmark inside the teal disc, below the bone — high contrast white
+    center_text(draw, "OPD", 400, load_font(78), WHITE)
+    center_text(draw, "ORTHO", 458, load_font(34), MINT)
+    # Accent dash
+    draw.rounded_rectangle((292, 488, 348, 496), radius=4, fill=MINT)
 
-    draw = ImageDraw.Draw(base)
-    center_text(draw, "OPD", 360, load_font(92), BRAND)
-    center_text(draw, "ORTHO SKH", 430, load_font(42), BRAND)
-    draw.rounded_rectangle((270, 468, 370, 478), radius=5, fill=ACCENT)
-
-    rgb = base.convert("RGB")
+    rgb = composed.convert("RGB")
     rgb.save(OUT_PNG, format="PNG", optimize=True)
     rgb.save(OUT_JPG, format="JPEG", quality=92, optimize=True, progressive=True)
     circle_preview(rgb).save(OUT_PREVIEW, format="PNG", optimize=True)
@@ -158,9 +165,8 @@ def main() -> None:
     for path in (OUT_PNG, OUT_JPG, OUT_PREVIEW):
         kb = path.stat().st_size / 1024
         print(f"Wrote {path.relative_to(ROOT)} ({W}x{H}, {kb:.1f} KB)")
-        if path.suffix.lower() in {".jpg", ".jpeg", ".png"} and path != OUT_PREVIEW:
-            if path.stat().st_size > 3 * 1024 * 1024:
-                raise SystemExit(f"{path.name} exceeds LINE 3 MB limit")
+        if path != OUT_PREVIEW and path.stat().st_size > 3 * 1024 * 1024:
+            raise SystemExit(f"{path.name} exceeds LINE 3 MB limit")
 
 
 if __name__ == "__main__":

@@ -28,9 +28,13 @@ Source: [LINE OA media specification](https://lineforbusiness.com/th/helpcenter/
 
 ## Design
 
-Matches the rich-menu brand: mint/sky radial ground, teal **heart** mark
-(outline + solid inner), **OPD** / **ORTHO SKH** in Sarabun/Bai Jamjuree Bold,
-short accent bar. Safe for small chat avatars.
+**Orthopedic brand badge** — solid teal disc (easy to spot in a chat list),
+bold white **long-bone** mark (reads as ortho, not generic hospital), **OPD /
+ORTHO** wordmark in high-contrast type. Soft mint/sky square surround so
+uncropped corners still match the app brand.
+
+Why this shape: LINE crops to a circle; a filled teal disc + thick bone
+silhouette stays recognizable down to ~40 px.
 
 ## Regenerate
 
