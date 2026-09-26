@@ -3,7 +3,11 @@
 import { headers } from "next/headers";
 
 import { auth } from "@/auth";
-import { isLineMessagingConfigured, pushLineImage } from "@/lib/line-messaging";
+import {
+  isLineMessagingConfigured,
+  pushLineImage,
+  startLineChatLoading,
+} from "@/lib/line-messaging";
 
 import { dutyPrintFilename } from "./duty-print-png";
 import {
@@ -30,6 +34,9 @@ async function appOrigin(): Promise<string> {
 /**
  * Generate a signed A4 PNG URL for the viewed month and push it to the
  * signed-in user via LINE Messaging API (Official Account chat).
+ *
+ * Starts LINE's official chat loading animation first so the user sees
+ * progress while Chromium renders the high-res poster and LINE fetches it.
  */
 export async function sendDutySchedulePrint(
   year: number,
@@ -52,6 +59,12 @@ export async function sendDutySchedulePrint(
     };
   }
 
+  const lineUserId = session.user.lineUserId;
+
+  // Show LINE's built-in loading bubbles while the poster renders / is fetched.
+  // Failures here are non-fatal — still attempt to send the image.
+  await startLineChatLoading(lineUserId, 45);
+
   const token = createDutyPrintShareToken(year, month);
   const origin = await appOrigin();
   if (origin.startsWith("http://") && !origin.includes("localhost")) {
@@ -64,11 +77,7 @@ export async function sendDutySchedulePrint(
   const originalContentUrl = `${origin}${buildDutyPrintImagePath(token, "original")}`;
   const previewImageUrl = `${origin}${buildDutyPrintImagePath(token, "preview")}`;
 
-  const pushed = await pushLineImage(
-    session.user.lineUserId,
-    originalContentUrl,
-    previewImageUrl
-  );
+  const pushed = await pushLineImage(lineUserId, originalContentUrl, previewImageUrl);
 
   if (!pushed.ok) return { ok: false, error: pushed.error };
 
