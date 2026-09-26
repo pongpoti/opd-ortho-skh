@@ -2,7 +2,7 @@
 """Compose the OPD Ortho SKH LINE rich-menu image (2500×1686 JPEG).
 
 Uses an AI-generated atmosphere (`source.jpg`) as the full-bleed background,
-then overlays a crisp heart+EKG mark, Sarabun typography, and CTA for mobile
+then overlays a crisp heart mark (outline + solid inner), Sarabun typography, and CTA for mobile
 readability. Output must stay under LINE’s 1 MB limit.
 """
 
@@ -37,7 +37,7 @@ def cover_crop(im: Image.Image, tw: int, th: int) -> Image.Image:
 
 
 def overlays_svg() -> str:
-    """Heart + EKG mark and CTA pill (labels drawn with Pillow + Sarabun)."""
+    """Heart mark (outline + solid inner) and CTA pill (labels via Pillow)."""
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">
   <defs>
@@ -54,7 +54,7 @@ def overlays_svg() -> str:
     </filter>
   </defs>
 
-  <!-- Heart outline with EKG pulse -->
+  <!-- Heart outline with solid inner heart -->
   <g transform="translate(1250, 300) scale(2.35)" filter="url(#softShadow)">
     <path d="M0 42
       C0 42 -48 8 -48 -18
@@ -65,10 +65,15 @@ def overlays_svg() -> str:
       C48 8 0 42 0 42 Z"
       fill="none" stroke="url(#heartFill)" stroke-width="10"
       stroke-linejoin="round" stroke-linecap="round"/>
-    <!-- EKG zigzag through the heart -->
-    <path d="M-34 0 L-18 0 L-10 -18 L2 22 L12 -8 L20 0 L34 0"
-      fill="none" stroke="url(#heartFill)" stroke-width="7"
-      stroke-linejoin="round" stroke-linecap="round"/>
+    <!-- Solid inner heart -->
+    <path d="M0 28
+      C0 28 -32 4 -32 -14
+      C-32 -28 -22 -36 -12 -36
+      C-4 -36 0 -28 0 -28
+      C0 -28 4 -36 12 -36
+      C22 -36 32 -28 32 -14
+      C32 4 0 28 0 28 Z"
+      fill="url(#heartFill)"/>
   </g>
 
   <rect x="380" y="1100" width="1740" height="250" rx="125"

@@ -9,14 +9,14 @@ Single full-area rich menu that opens the main LIFF app URL:
 - `richmenu.jpg` — 2500×1686 full-size image uploaded to LINE (JPEG under 1 MB)
 - `source.jpg` — AI-generated teal-glass medical atmosphere
 - `config.json` — Messaging API rich menu object (one URI area, full size)
-- `generate-image.py` — composites `source.jpg` + heart/EKG mark + Sarabun type
+- `generate-image.py` — composites `source.jpg` + heart mark + Sarabun type
 
 ## Design
 
 Full-bleed mint/teal atmosphere with soft wave lines and medical crosses,
-a heart + EKG mark, **OPD Orthopedic / Samutsakhon Hospital**, and a wide
-**เปิดแอป** CTA. Typography is drawn with Sarabun so Thai stays sharp on
-iPhone-sized chat menus.
+a heart mark (outline + solid inner), **OPD Orthopedic / Samutsakhon Hospital**,
+and a wide **เปิดแอป** CTA. Typography is drawn with Sarabun so Thai stays
+sharp on iPhone-sized chat menus.
 
 ## Regenerate the image
 
