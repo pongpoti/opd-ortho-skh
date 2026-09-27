@@ -45,19 +45,15 @@ export function dutyLastInitial(rest: string): string {
 }
 
 /**
- * First names that map to more than one distinct stored identity for `key`
- * in the given month (0-indexed). Same person repeating across days is fine;
- * only different stored strings that share a first name count as a collision.
+ * First names that map to more than one distinct stored identity among the
+ * given raw roster strings. Same person repeating is fine; only different
+ * stored strings that share a first name count as a collision.
  */
-export function ambiguousDutyFirstNames(
-  year: number,
-  month: number,
-  key: DutyKey
+export function ambiguousFirstNamesFromRaw(
+  rawNames: Iterable<string>
 ): ReadonlySet<string> {
   const byFirst = new Map<string, Set<string>>();
-  const days = new Date(year, month + 1, 0).getDate();
-  for (let day = 1; day <= days; day++) {
-    const raw = getDutyDay(year, month, day).entries[key];
+  for (const raw of rawNames) {
     if (!raw || isDutyMarker(raw)) continue;
     const { first } = parseDutyPersonName(raw);
     let identities = byFirst.get(first);
@@ -73,6 +69,24 @@ export function ambiguousDutyFirstNames(
     if (identities.size > 1) ambiguous.add(first);
   }
   return ambiguous;
+}
+
+/**
+ * First names that map to more than one distinct stored identity for `key`
+ * in the given month (0-indexed).
+ */
+export function ambiguousDutyFirstNames(
+  year: number,
+  month: number,
+  key: DutyKey
+): ReadonlySet<string> {
+  const days = new Date(year, month + 1, 0).getDate();
+  const rawNames: string[] = [];
+  for (let day = 1; day <= days; day++) {
+    const raw = getDutyDay(year, month, day).entries[key];
+    if (raw) rawNames.push(raw);
+  }
+  return ambiguousFirstNamesFromRaw(rawNames);
 }
 
 /**
