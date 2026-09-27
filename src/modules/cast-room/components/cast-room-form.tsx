@@ -27,7 +27,7 @@ import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 import { submitCastLog, updateCastLog } from "../lib/cast-actions";
 import { castLabel } from "../lib/cast-types";
 import { resolveDutyDoctorAction } from "../lib/duty-doctor-actions";
-import { formatThaiDate } from "../lib/thai-date";
+import { formatThaiDate, nowHHMM } from "../lib/thai-date";
 import { CastTypePicker } from "./cast-type-picker";
 import { ThaiDateInput } from "./thai-date-input";
 
@@ -54,6 +54,7 @@ function hnHint(value: string): string | null {
 interface ConfirmedEntry {
   visitId: string;
   date: string;
+  time: string | null;
   doctorName: string;
   hn: string;
   name: string;
@@ -113,28 +114,40 @@ export function CastRoomForm() {
     if (!canSubmit || !doctorName) return;
     setSubmitError(null);
 
-    const visitId = editingVisitId ?? crypto.randomUUID();
     const casts = [...castItems].map(([id, count]) => ({ id, count }));
     const payload = {
-      visitId,
       shiftDate: date,
+      // "Use current time" means the time of saving, not of closing the picker.
+      visitTime: useCurrentTime ? nowHHMM() : time || null,
       hn: hn.trim(),
       patientName: name.trim(),
       diagnosis: diagnosis.trim(),
       doctorName,
       casts,
     };
-    const isEditing = Boolean(editingVisitId);
+    const editingId = editingVisitId;
 
     startTransition(async () => {
-      const result = isEditing ? await updateCastLog(payload) : await submitCastLog(payload);
-      if (!result.ok) {
-        setSubmitError(result.error);
-        return;
+      let visitId: string;
+      if (editingId) {
+        const result = await updateCastLog({ ...payload, visitId: editingId });
+        if (!result.ok) {
+          setSubmitError(result.error);
+          return;
+        }
+        visitId = editingId;
+      } else {
+        const result = await submitCastLog(payload);
+        if (!result.ok) {
+          setSubmitError(result.error);
+          return;
+        }
+        visitId = result.visitId;
       }
       setConfirmedEntry({
         visitId,
         date: payload.shiftDate,
+        time: payload.visitTime,
         doctorName,
         hn: payload.hn,
         name: payload.patientName,
@@ -143,6 +156,8 @@ export function CastRoomForm() {
       });
       setDialogOpen(true);
       setEditingVisitId(null);
+      // A hand-picked time belongs to this patient only; don't carry it over.
+      if (!useCurrentTime) setTime("");
       setHn("");
       setName("");
       setDiagnosis("");
@@ -153,6 +168,9 @@ export function CastRoomForm() {
   const handleEdit = () => {
     if (!confirmedEntry) return;
     setDate(confirmedEntry.date);
+    // Edit the time that was saved, not a live clock.
+    setUseCurrentTime(false);
+    setTime(confirmedEntry.time ?? "");
     setHn(confirmedEntry.hn);
     setName(confirmedEntry.name);
     setDiagnosis(confirmedEntry.diagnosis);
@@ -330,7 +348,10 @@ export function CastRoomForm() {
               <Dialog.Body>
                 {confirmedEntry && (
                   <VStack align="stretch" gap={1} bg="bg.muted" p={4} borderRadius="lg" fontSize="sm">
-                    <Text fontWeight="semibold">{formatThaiDate(confirmedEntry.date)}</Text>
+                    <Text fontWeight="semibold">
+                      {formatThaiDate(confirmedEntry.date)}
+                      {confirmedEntry.time ? ` · ${confirmedEntry.time}` : ""}
+                    </Text>
                     <Text color="fg.muted">{confirmedEntry.doctorName}</Text>
                     <HStack>
                       <Text as="span" color="fg.muted">

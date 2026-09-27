@@ -2,6 +2,7 @@ import NextLink from "next/link";
 import { Box, HStack, Link as ChakraLink, Text, VStack } from "@chakra-ui/react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { bangkokToday } from "@/lib/bangkok-date";
 import { THAI_MONTHS } from "@/modules/cast-room/lib/thai-date";
 import {
   ambiguousDutyFirstNamesByKey,
@@ -27,19 +28,6 @@ const THAI_WD_FULL = [
   "วันเสาร์",
 ];
 const BE_OFFSET = 543;
-
-/** Calendar Y/M/D in Asia/Bangkok (hospital local time). */
-export function bangkokToday(): { year: number; month: number; day: number } {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Bangkok",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-  }).formatToParts(new Date());
-  const num = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((p) => p.type === type)?.value);
-  return { year: num("year"), month: num("month") - 1, day: num("day") };
-}
 
 function thaiTodayLabel(year: number, month: number, day: number): string {
   const weekday = new Date(year, month, day).getDay();

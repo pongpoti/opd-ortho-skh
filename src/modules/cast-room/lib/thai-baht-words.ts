@@ -10,6 +10,11 @@ export function thaiBahtInWords(amount: number): string {
 
 const DIGITS = ["", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
 
+/** Remainder after a higher place; a lone trailing one reads เอ็ด (101 → หนึ่งร้อยเอ็ด). */
+function restInWords(rest: number): string {
+  return rest === 1 ? "เอ็ด" : thaiIntegerInWords(rest);
+}
+
 function thaiIntegerInWords(n: number): string {
   if (n === 0) return "";
   if (n < 10) return DIGITS[n];
@@ -24,24 +29,24 @@ function thaiIntegerInWords(n: number): string {
   if (n < 1000) {
     const hundreds = Math.floor(n / 100);
     const rest = n % 100;
-    return `${DIGITS[hundreds]}ร้อย${thaiIntegerInWords(rest)}`;
+    return `${DIGITS[hundreds]}ร้อย${restInWords(rest)}`;
   }
   if (n < 10000) {
     const thousands = Math.floor(n / 1000);
     const rest = n % 1000;
-    return `${DIGITS[thousands]}พัน${thaiIntegerInWords(rest)}`;
+    return `${DIGITS[thousands]}พัน${restInWords(rest)}`;
   }
   if (n < 100000) {
     const tenThousands = Math.floor(n / 10000);
     const rest = n % 10000;
-    return `${thaiIntegerInWords(tenThousands)}หมื่น${thaiIntegerInWords(rest)}`;
+    return `${thaiIntegerInWords(tenThousands)}หมื่น${restInWords(rest)}`;
   }
   if (n < 1000000) {
     const hundredThousands = Math.floor(n / 100000);
     const rest = n % 100000;
-    return `${thaiIntegerInWords(hundredThousands)}แสน${thaiIntegerInWords(rest)}`;
+    return `${thaiIntegerInWords(hundredThousands)}แสน${restInWords(rest)}`;
   }
   const millions = Math.floor(n / 1000000);
   const rest = n % 1000000;
-  return `${thaiIntegerInWords(millions)}ล้าน${thaiIntegerInWords(rest)}`;
+  return `${thaiIntegerInWords(millions)}ล้าน${restInWords(rest)}`;
 }

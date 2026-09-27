@@ -36,6 +36,13 @@
       "when": 1790497209372,
       "tag": "0004_duty_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790502250911,
+      "tag": "0005_cast_logs_visit_time",
+      "breakpoints": true
     }
   ]
 }

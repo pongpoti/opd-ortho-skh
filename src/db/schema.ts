@@ -1,4 +1,4 @@
-import { date, integer, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { date, integer, pgTable, text, time, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
   "users",
@@ -21,6 +21,8 @@ export const castLogs = pgTable("cast_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   visitId: text("visit_id").notNull(),
   shiftDate: date("shift_date").notNull(),
+  /** Wall-clock time picked in the form; null = not picked (PDF shows createdAt). */
+  visitTime: time("visit_time"),
   hn: text("hn").notNull(),
   patientName: text("patient_name").notNull(),
   diagnosis: text("diagnosis"),

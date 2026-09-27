@@ -45,6 +45,11 @@ const THAI_WD_FULL = [
 ];
 const BE_OFFSET = 543;
 const SWIPE_THRESHOLD = 55;
+const NO_OVERRIDES: DutyMonthOverrides = {};
+
+function monthKey(year: number, month: number) {
+  return `${year}-${month}`;
+}
 
 function daysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -86,7 +91,17 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   const now = new Date();
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
-  const [overrides, setOverrides] = useState<DutyMonthOverrides>({});
+  // Overrides are keyed by day-of-month only, so remember which month they
+  // belong to — otherwise last month's edits show on this month's days.
+  const [loadedOverrides, setLoadedOverrides] = useState<{
+    key: string;
+    overrides: DutyMonthOverrides;
+  }>({ key: "", overrides: NO_OVERRIDES });
+  const latestOverridesKey = useRef("");
+  const overrides =
+    loadedOverrides.key === monthKey(view.year, view.month)
+      ? loadedOverrides.overrides
+      : NO_OVERRIDES;
   const [adminFromServer, setAdminFromServer] = useState(false);
   const isAdmin = !!isAdminProp || adminFromServer;
   const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -111,14 +126,20 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   const monthDisabled = isDutyMonthDisabled(view.year, view.month);
 
   const reloadOverrides = useCallback((year: number, month: number) => {
+    const key = monthKey(year, month);
+    latestOverridesKey.current = key;
     startLoadOverrides(async () => {
+      let next = NO_OVERRIDES;
       try {
         const result = await loadDutyMonthOverrides(year, month);
-        if (result.ok) setOverrides(result.overrides);
-        else setOverrides({});
+        if (result.ok) next = result.overrides;
       } catch {
-        setOverrides({});
+        // Fall back to the seed roster.
       }
+      // Swiping months quickly can resolve requests out of order; only the
+      // most recently requested month may land.
+      if (latestOverridesKey.current !== key) return;
+      setLoadedOverrides({ key, overrides: next });
     });
   }, []);
 

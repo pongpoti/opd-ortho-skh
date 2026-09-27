@@ -7,9 +7,9 @@ export async function GET() {
     const [table] = await sql`select to_regclass('public.users') as name`;
     return Response.json({ connected: row.ok === 1, usersTableExists: table.name !== null });
   } catch (error) {
-    return Response.json(
-      { connected: false, error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    );
+    // This route is public (proxy skips /api) — keep driver/connection
+    // details in the server log, not the response.
+    console.error("health/db check failed", error);
+    return Response.json({ connected: false }, { status: 500 });
   }
 }

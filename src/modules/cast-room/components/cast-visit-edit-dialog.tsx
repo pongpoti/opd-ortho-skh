@@ -22,6 +22,7 @@ import { updateCastLog } from "../lib/cast-actions";
 import type { CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { castLabel } from "../lib/cast-types";
 import { resolveDutyDoctorAction } from "../lib/duty-doctor-actions";
+import { nowHHMM } from "../lib/thai-date";
 import { CastTypePicker } from "./cast-type-picker";
 import { ThaiDateInput } from "./thai-date-input";
 
@@ -44,6 +45,8 @@ function CastVisitEditForm({
   onSaved: () => void;
 }) {
   const [date, setDate] = useState(visit.shiftDate);
+  const [time, setTime] = useState(visit.visitTime ?? "");
+  const [useCurrentTime, setUseCurrentTime] = useState(false);
   const [hn, setHn] = useState(visit.hn);
   const [name, setName] = useState(visit.patientName);
   const [diagnosis, setDiagnosis] = useState(visit.diagnosis);
@@ -81,6 +84,7 @@ function CastVisitEditForm({
       const result = await updateCastLog({
         visitId: visit.visitId,
         shiftDate: date,
+        visitTime: useCurrentTime ? nowHHMM() : time || null,
         hn: hn.trim(),
         patientName: name.trim(),
         diagnosis: diagnosis.trim(),
@@ -103,7 +107,14 @@ function CastVisitEditForm({
         <VStack align="stretch" gap={5}>
           <Field.Root>
             <Field.Label>วันที่</Field.Label>
-            <ThaiDateInput value={date} onChange={setDate} />
+            <ThaiDateInput
+              value={date}
+              onChange={setDate}
+              time={time}
+              onTimeChange={setTime}
+              useCurrentTime={useCurrentTime}
+              onUseCurrentTimeChange={setUseCurrentTime}
+            />
           </Field.Root>
 
           {doctorName ? (

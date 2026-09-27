@@ -115,20 +115,19 @@ export function ambiguousDutyFirstNamesByKey(
 }
 
 /**
- * Label for a duty slot. Pass `ambiguousFirsts` from
- * `ambiguousDutyFirstNames` so colliding first names show a paren initial.
- * Empty / unfilled slots display as "-".
+ * Label for a duty slot: the first name, plus a paren initial only when
+ * `ambiguousFirsts` (from `ambiguousDutyFirstNames`) says that first name
+ * collides this month. Empty / unfilled slots display as "-".
  */
 export function formatDutyDisplayName(
   name: string | undefined,
   ambiguousFirsts?: ReadonlySet<string>
 ): string {
   if (name === undefined) return "-";
-  if (isDutyMarker(name) || !ambiguousFirsts?.size) return name;
+  if (isDutyMarker(name)) return name;
 
   const { first, rest } = parseDutyPersonName(name);
-  if (!ambiguousFirsts.has(first)) return first;
-  if (!rest) return first;
+  if (!rest || !ambiguousFirsts?.has(first)) return first;
   return `${first} ${dutyParenInitial(rest)}`;
 }
 
