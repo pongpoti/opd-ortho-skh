@@ -388,7 +388,8 @@ function drawTable(
     const visit = visits[i] ?? null;
     if (visit) {
       const cells = [
-        formatTimeBangkok(visit.createdAt),
+        // Picked visit time; older / unpicked visits fall back to when they were logged.
+        visit.visitTime ?? formatTimeBangkok(visit.createdAt),
         visit.hn,
         visit.patientName,
         visit.diagnosis,

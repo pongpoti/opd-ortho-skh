@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { castLogs } from "@/db/schema";
 import { requireAdminSession } from "@/lib/require-admin";
 
+import { groupCastRows } from "./cast-case-log-data";
+
 export type CastVisitCast = {
   id: string;
   count: number;
@@ -15,6 +17,8 @@ export type CastVisitCast = {
 export type CastVisitSummary = {
   visitId: string;
   shiftDate: string;
+  /** "HH:mm" picked in the form, or null when none was picked. */
+  visitTime: string | null;
   hn: string;
   patientName: string;
   diagnosis: string;
@@ -34,45 +38,6 @@ function monthRange(year: number, month: number) {
   return { start, end };
 }
 
-function groupRows(
-  rows: Array<{
-    visitId: string;
-    shiftDate: string;
-    hn: string;
-    patientName: string;
-    diagnosis: string | null;
-    doctorName: string;
-    castType: string;
-    castLabel: string;
-    count: number;
-    loggedByName: string | null;
-    createdAt: Date;
-  }>
-): CastVisitSummary[] {
-  const byVisit = new Map<string, CastVisitSummary>();
-
-  for (const row of rows) {
-    let visit = byVisit.get(row.visitId);
-    if (!visit) {
-      visit = {
-        visitId: row.visitId,
-        shiftDate: row.shiftDate,
-        hn: row.hn,
-        patientName: row.patientName,
-        diagnosis: row.diagnosis ?? "",
-        doctorName: row.doctorName,
-        loggedByName: row.loggedByName,
-        createdAt: row.createdAt.toISOString(),
-        casts: [],
-      };
-      byVisit.set(row.visitId, visit);
-    }
-    visit.casts.push({ id: row.castType, count: row.count, label: row.castLabel });
-  }
-
-  return [...byVisit.values()];
-}
-
 export async function listCastVisitsForAdmin(year: number, month: number): Promise<ListResult> {
   const session = await requireAdminSession();
   if (!session) {
@@ -90,7 +55,7 @@ export async function listCastVisitsForAdmin(year: number, month: number): Promi
     .where(and(gte(castLogs.shiftDate, start), lte(castLogs.shiftDate, end)))
     .orderBy(desc(castLogs.shiftDate), desc(castLogs.createdAt));
 
-  return { ok: true, visits: groupRows(rows) };
+  return { ok: true, visits: groupCastRows(rows) };
 }
 
 export async function getCastVisitForAdmin(visitId: string): Promise<VisitResult> {
@@ -108,7 +73,7 @@ export async function getCastVisitForAdmin(visitId: string): Promise<VisitResult
     return { ok: false, error: "ไม่พบรายการ" };
   }
 
-  const [visit] = groupRows(rows);
+  const [visit] = groupCastRows(rows);
   return { ok: true, visit };
 }
 

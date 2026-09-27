@@ -17,7 +17,15 @@ import {
 } from "@chakra-ui/react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { buildMonthCells, formatThaiDate, parseISO, thaiMonthYear, toISO, THAI_WD_SHORT } from "../lib/thai-date";
+import {
+  buildMonthCells,
+  formatThaiDate,
+  nowHHMM,
+  parseISO,
+  thaiMonthYear,
+  toISO,
+  THAI_WD_SHORT,
+} from "../lib/thai-date";
 
 export interface ThaiDateInputProps {
   value: string;
@@ -32,11 +40,6 @@ export interface ThaiDateInputProps {
 const SWIPE_THRESHOLD = 55;
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
-
-function nowHHMM(): string {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
 
 function splitHHMM(time: string): { hour: string; minute: string } {
   const match = /^(\d{2}):(\d{2})$/.exec(time);

@@ -50,6 +50,12 @@ export function toISO(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+/** Device wall-clock time as `HH:mm` (24-hour). */
+export function nowHHMM(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 export function formatThaiDate(iso: string): string {
   const { year, month, day } = parseISO(iso);
   return `${day} ${THAI_MONTHS[month]} ${year + BE_OFFSET}`;

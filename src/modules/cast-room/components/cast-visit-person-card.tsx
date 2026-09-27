@@ -215,7 +215,10 @@ export function CastVisitPersonCard({
         </Text>
         <VStack align="stretch" gap={3}>
           <VStack align="start" gap={1}>
-            <Text fontWeight="semibold">{formatThaiDate(visit.shiftDate)}</Text>
+            <Text fontWeight="semibold">
+              {formatThaiDate(visit.shiftDate)}
+              {visit.visitTime ? ` · ${visit.visitTime}` : ""}
+            </Text>
             <Text fontSize="sm" color="fg.muted">
               {visit.doctorName}
             </Text>

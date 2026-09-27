@@ -12,10 +12,12 @@ function monthRange(year: number, month: number) {
   return { start, end };
 }
 
-function groupRows(
+/** Fold per-cast-type rows into one summary per visit, keeping row order. */
+export function groupCastRows(
   rows: Array<{
     visitId: string;
     shiftDate: string;
+    visitTime: string | null;
     hn: string;
     patientName: string;
     diagnosis: string | null;
@@ -35,6 +37,8 @@ function groupRows(
       visit = {
         visitId: row.visitId,
         shiftDate: row.shiftDate,
+        // Postgres returns "HH:MM:SS"; the app works in "HH:mm".
+        visitTime: row.visitTime ? row.visitTime.slice(0, 5) : null,
         hn: row.hn,
         patientName: row.patientName,
         diagnosis: row.diagnosis ?? "",
@@ -63,5 +67,5 @@ export async function loadCastVisitsForMonth(
     .where(and(gte(castLogs.shiftDate, start), lte(castLogs.shiftDate, end)))
     .orderBy(asc(castLogs.shiftDate), asc(castLogs.createdAt));
 
-  return groupRows(rows);
+  return groupCastRows(rows);
 }
