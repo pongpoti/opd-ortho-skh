@@ -52,7 +52,8 @@ export function TodayDuty() {
     <ChakraLink asChild _hover={{ textDecoration: "none" }} display="block" mx="auto" w="full" maxW="md">
       <NextLink href="/duty-schedule">
         <GlassCard
-          p={5}
+          p={0}
+          overflow="hidden"
           transition="transform 0.18s ease, box-shadow 0.18s ease"
           _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
           _active={{ transform: "translateY(0)" }}
@@ -60,20 +61,22 @@ export function TodayDuty() {
           <VStack
             align="stretch"
             gap={1}
-            mb={4}
+            px={5}
+            pt={4}
             pb={3}
+            bg="brand.subtle"
             borderBottomWidth="2px"
             borderColor="brand.muted"
           >
             <Text fontSize="lg" fontWeight="bold" color="brand.fg" letterSpacing="wide">
               เวรวันนี้
             </Text>
-            <Text fontSize="md" fontWeight="medium" color="fg">
+            <Text fontSize="md" fontWeight="semibold" color="brand.fg">
               {thaiTodayLabel(year, month, day)}
             </Text>
           </VStack>
 
-          <VStack align="stretch" gap={0}>
+          <VStack align="stretch" gap={0} px={5} py={2}>
             {HOME_DUTY_KEYS.map((key) => {
               const Icon = DUTY_ICONS[key];
               const name = duty.entries[key];
@@ -85,7 +88,7 @@ export function TodayDuty() {
                   py={3}
                   borderTopWidth="1px"
                   borderColor="glass.border"
-                  _first={{ borderTopWidth: 0, pt: 0 }}
+                  _first={{ borderTopWidth: 0 }}
                 >
                   <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
                     <Icon size={18} />
