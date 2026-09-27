@@ -57,11 +57,18 @@ export function TodayDuty() {
           _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
           _active={{ transform: "translateY(0)" }}
         >
-          <VStack align="stretch" gap={0.5} mb={3}>
-            <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
+          <VStack
+            align="stretch"
+            gap={1}
+            mb={4}
+            pb={3}
+            borderBottomWidth="2px"
+            borderColor="brand.muted"
+          >
+            <Text fontSize="lg" fontWeight="bold" color="brand.fg" letterSpacing="wide">
               เวรวันนี้
             </Text>
-            <Text fontSize="xs" color="fg.muted">
+            <Text fontSize="md" fontWeight="medium" color="fg">
               {thaiTodayLabel(year, month, day)}
             </Text>
           </VStack>
