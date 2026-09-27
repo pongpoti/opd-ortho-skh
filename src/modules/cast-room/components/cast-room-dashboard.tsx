@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { bangkokToday } from "@/lib/bangkok-date";
 import { THAI_MONTHS } from "../lib/thai-date";
 
 import {
@@ -23,9 +24,10 @@ import {
 import { CastVisitEditDialog } from "./cast-visit-edit-dialog";
 import { CastVisitPersonCard } from "./cast-visit-person-card";
 
+/** Same clock as the server page that loaded `initialVisits`. */
 function currentMonthYear() {
-  const now = new Date();
-  return { month: now.getMonth() + 1, year: now.getFullYear() };
+  const today = bangkokToday();
+  return { month: today.month + 1, year: today.year };
 }
 
 function buddhistYearOptions() {
@@ -39,6 +41,8 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
   const [buddhistYear, setBuddhistYear] = useState(String(initial.year + 543));
   const [listDoctorFilter, setListDoctorFilter] = useState("");
   const [visits, setVisits] = useState(initialVisits);
+  /** Month the list currently shows — the selects can differ until "แสดงรายการ". */
+  const [loadedMonth, setLoadedMonth] = useState(initial);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingVisit, setEditingVisit] = useState<CastVisitSummary | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,24 +62,33 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
     );
   }, [visits]);
 
-  const visibleVisits = useMemo(() => {
-    if (!listDoctorFilter) return visits;
-    return visits.filter((v) => v.doctorName === listDoctorFilter);
-  }, [visits, listDoctorFilter]);
+  // A filter left over from another month (or whose last visit was deleted)
+  // would hide every row while the select shows "all" — drop it instead.
+  const doctorFilter = doctorNamesInMonth.includes(listDoctorFilter) ? listDoctorFilter : "";
 
-  const reload = useCallback(() => {
-    if (!monthNum || !yearNum) return;
+  const visibleVisits = useMemo(() => {
+    if (!doctorFilter) return visits;
+    return visits.filter((v) => v.doctorName === doctorFilter);
+  }, [visits, doctorFilter]);
+
+  const load = useCallback((year: number, month: number) => {
+    if (!month || !year) return;
 
     startTransition(async () => {
       setLoadError(null);
-      const result = await listCastVisitsForAdmin(yearNum, monthNum);
+      const result = await listCastVisitsForAdmin(year, month);
       if (!result.ok) {
         setLoadError(result.error);
         return;
       }
       setVisits(result.visits);
+      setLoadedMonth({ year, month });
     });
-  }, [monthNum, yearNum]);
+  }, []);
+
+  const reload = () => load(yearNum, monthNum);
+  /** After edit/delete, refresh the month on screen, not the unapplied select values. */
+  const refreshLoaded = () => load(loadedMonth.year, loadedMonth.month);
 
   const openEdit = (visit: CastVisitSummary) => {
     setSwipedVisitId(null);
@@ -102,7 +115,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
       }
       setDeleteDialogOpen(false);
       setDeletingVisit(null);
-      reload();
+      refreshLoaded();
     });
   };
 
@@ -147,7 +160,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
             <NativeSelect.Root w="full">
               <NativeSelect.Field
                 aria-label="กรองแพทย์ในรายการ"
-                value={listDoctorFilter}
+                value={doctorFilter}
                 onChange={(e) => setListDoctorFilter(e.target.value)}
               >
                 <option value="">ทุกแพทย์ในรายการ</option>
@@ -200,7 +213,7 @@ export function CastRoomDashboard({ initialVisits }: { initialVisits: CastVisitS
         visit={editingVisit}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSaved={reload}
+        onSaved={refreshLoaded}
       />
 
       <Dialog.Root
