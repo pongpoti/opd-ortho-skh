@@ -79,7 +79,7 @@ export function CastRoomTabs({ showDashboard }: { showDashboard: boolean }) {
               >
                 <Icon size={16} aria-hidden />
                 <Text
-                  fontSize="xs"
+                  fontSize="1rem"
                   lineHeight="1.2"
                   textAlign="center"
                   w="full"
