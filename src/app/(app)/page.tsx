@@ -6,7 +6,7 @@ import { TodayDuty } from "@/components/today-duty";
 // Roster is date-dependent; always render for the request's calendar day.
 export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
   return (
     <VStack align="stretch" gap={8} py={{ base: 2, sm: 4 }}>
       <VStack gap={3} align="center" textAlign="center">

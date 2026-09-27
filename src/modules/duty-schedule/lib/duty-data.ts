@@ -74,6 +74,10 @@ export function ambiguousFirstNamesFromRaw(
   return ambiguous;
 }
 
+/** Per-day slot overrides keyed by day-of-month (1–31). */
+export type DutyDayOverrides = Partial<Record<DutyKey, string>>;
+export type DutyMonthOverrides = Record<number, DutyDayOverrides>;
+
 /**
  * First names that map to more than one distinct stored identity for `key`
  * in the given month (0-indexed).
@@ -81,12 +85,13 @@ export function ambiguousFirstNamesFromRaw(
 export function ambiguousDutyFirstNames(
   year: number,
   month: number,
-  key: DutyKey
+  key: DutyKey,
+  monthOverrides?: DutyMonthOverrides
 ): ReadonlySet<string> {
   const days = new Date(year, month + 1, 0).getDate();
   const rawNames: string[] = [];
   for (let day = 1; day <= days; day++) {
-    const raw = getDutyDay(year, month, day).entries[key];
+    const raw = getDutyDay(year, month, day, monthOverrides).entries[key];
     if (raw) rawNames.push(raw);
   }
   return ambiguousFirstNamesFromRaw(rawNames);
@@ -99,11 +104,12 @@ export function ambiguousDutyFirstNames(
 export function ambiguousDutyFirstNamesByKey(
   year: number,
   month: number,
-  keys: readonly DutyKey[] = DUTY_ORDER
+  keys: readonly DutyKey[] = DUTY_ORDER,
+  monthOverrides?: DutyMonthOverrides
 ): Record<DutyKey, ReadonlySet<string>> {
   const out = {} as Record<DutyKey, ReadonlySet<string>>;
   for (const key of keys) {
-    out[key] = ambiguousDutyFirstNames(year, month, key);
+    out[key] = ambiguousDutyFirstNames(year, month, key, monthOverrides);
   }
   return out;
 }
@@ -111,18 +117,38 @@ export function ambiguousDutyFirstNamesByKey(
 /**
  * Label for a duty slot. Pass `ambiguousFirsts` from
  * `ambiguousDutyFirstNames` so colliding first names show a paren initial.
+ * Empty / unfilled slots display as "-".
  */
 export function formatDutyDisplayName(
   name: string | undefined,
   ambiguousFirsts?: ReadonlySet<string>
 ): string {
-  if (name === undefined) return "ยังไม่ระบุ";
+  if (name === undefined) return "-";
   if (isDutyMarker(name) || !ambiguousFirsts?.size) return name;
 
   const { first, rest } = parseDutyPersonName(name);
   if (!ambiguousFirsts.has(first)) return first;
   if (!rest) return first;
   return `${first} ${dutyParenInitial(rest)}`;
+}
+
+/**
+ * Distinct intern (`d2`) names already scheduled in this month (seed ⊕ overrides).
+ * Markers ("-", "งด") are excluded. Used as the edit-sheet roster for intern.
+ */
+export function internNamesForMonth(
+  year: number,
+  month: number,
+  monthOverrides?: DutyMonthOverrides
+): string[] {
+  const days = new Date(year, month + 1, 0).getDate();
+  const names = new Set<string>();
+  for (let day = 1; day <= days; day++) {
+    const raw = getDutyDay(year, month, day, monthOverrides).entries.d2;
+    if (!raw || isDutyMarker(raw)) continue;
+    names.add(raw.trim());
+  }
+  return [...names].sort((a, b) => a.localeCompare(b, "th"));
 }
 
 /**
@@ -288,7 +314,8 @@ const VERIFIED: Record<string, Record<number, RawEntry>> = {
   },
 };
 
-export function getDutyDay(year: number, month: number, day: number): DutyDay {
+/** Seed roster only (verified static table) — no DB overrides. */
+export function getDutyDaySeed(year: number, month: number, day: number): DutyDay {
   const raw = VERIFIED[`${year}-${month}`]?.[day];
   const officialName = getThaiHolidayName(month, day);
 
@@ -302,5 +329,24 @@ export function getDutyDay(year: number, month: number, day: number): DutyDay {
     holiday: isHoliday,
     holidayLabel: isHoliday ? (holidayLabel ?? officialName) : null,
     entries,
+  };
+}
+
+/**
+ * Duty day with optional admin overrides merged over the seed roster.
+ * Override values replace the seed entry for that slot (including "-" / "งด").
+ */
+export function getDutyDay(
+  year: number,
+  month: number,
+  day: number,
+  monthOverrides?: DutyMonthOverrides
+): DutyDay {
+  const seed = getDutyDaySeed(year, month, day);
+  const dayOverrides = monthOverrides?.[day];
+  if (!dayOverrides) return seed;
+  return {
+    ...seed,
+    entries: { ...seed.entries, ...dayOverrides },
   };
 }

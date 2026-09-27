@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Alert,
   Badge,
@@ -26,7 +26,7 @@ import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 
 import { submitCastLog, updateCastLog } from "../lib/cast-actions";
 import { castLabel } from "../lib/cast-types";
-import { resolveDutyDoctor } from "../lib/duty-doctor";
+import { resolveDutyDoctorAction } from "../lib/duty-doctor-actions";
 import { formatThaiDate } from "../lib/thai-date";
 import { CastTypePicker } from "./cast-type-picker";
 import { ThaiDateInput } from "./thai-date-input";
@@ -75,7 +75,18 @@ export function CastRoomForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const doctorName = resolveDutyDoctor(date);
+  const [doctorName, setDoctorName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDoctorName(null);
+    resolveDutyDoctorAction(date).then((name) => {
+      if (!cancelled) setDoctorName(name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
 
   const canSubmit =
     Boolean(

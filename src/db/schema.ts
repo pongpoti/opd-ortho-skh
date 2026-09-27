@@ -32,3 +32,19 @@ export const castLogs = pgTable("cast_logs", {
   loggedByName: text("logged_by_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+/** Admin overrides layered on the verified seed roster in duty-data.ts. */
+export const dutyOverrides = pgTable(
+  "duty_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    shiftDate: date("shift_date").notNull(),
+    dutyKey: text("duty_key").notNull(),
+    personName: text("person_name").notNull(),
+    updatedByLineUserId: text("updated_by_line_user_id"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique("duty_overrides_shift_date_duty_key_unique").on(table.shiftDate, table.dutyKey),
+  ]
+);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Alert,
   Badge,
@@ -21,7 +21,7 @@ import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 import { updateCastLog } from "../lib/cast-actions";
 import type { CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { castLabel } from "../lib/cast-types";
-import { resolveDutyDoctor } from "../lib/duty-doctor";
+import { resolveDutyDoctorAction } from "../lib/duty-doctor-actions";
 import { CastTypePicker } from "./cast-type-picker";
 import { ThaiDateInput } from "./thai-date-input";
 
@@ -50,8 +50,18 @@ function CastVisitEditForm({
   const [castItems, setCastItems] = useState(() => new Map(visit.casts.map((c) => [c.id, c.count])));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [doctorName, setDoctorName] = useState<string | null>(null);
 
-  const doctorName = resolveDutyDoctor(date);
+  useEffect(() => {
+    let cancelled = false;
+    setDoctorName(null);
+    resolveDutyDoctorAction(date).then((name) => {
+      if (!cancelled) setDoctorName(name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
 
   const canSave =
     Boolean(
