@@ -49,7 +49,7 @@ export function TodayDuty() {
   const duty = getDutyDay(year, month, day);
 
   return (
-    <ChakraLink asChild _hover={{ textDecoration: "none" }}>
+    <ChakraLink asChild _hover={{ textDecoration: "none" }} display="block" mx="auto" w="full" maxW="md">
       <NextLink href="/duty-schedule">
         <GlassCard
           p={5}
