@@ -1,15 +1,12 @@
-import { SimpleGrid, Text, VStack } from "@chakra-ui/react";
+import { Text, VStack } from "@chakra-ui/react";
 
-import { auth } from "@/auth";
 import { AnimatedLogo } from "@/components/animated-logo";
-import { ToolLinkCard } from "@/components/tool-link-card";
-import { MODULE_ICONS } from "@/lib/module-icons";
-import { modulesForRole } from "@/lib/module-access";
+import { TodayDuty } from "@/components/today-duty";
 
-export default async function Home() {
-  const session = await auth();
-  const visibleModules = modulesForRole(session?.user?.role);
+// Roster is date-dependent; always render for the request's calendar day.
+export const dynamic = "force-dynamic";
 
+export default function Home() {
   return (
     <VStack align="stretch" gap={8} py={{ base: 2, sm: 4 }}>
       <VStack gap={3} align="center" textAlign="center">
@@ -19,18 +16,7 @@ export default async function Home() {
         </Text>
       </VStack>
 
-      <SimpleGrid columns={{ base: 1, sm: Math.min(3, Math.max(1, visibleModules.length)) }} gap={4}>
-        {visibleModules.map((mod) => (
-          <ToolLinkCard
-            key={mod.slug}
-            href={mod.href}
-            name={mod.name}
-            description={mod.description}
-            Icon={MODULE_ICONS[mod.icon]}
-            accent={`dock.${mod.icon}`}
-          />
-        ))}
-      </SimpleGrid>
+      <TodayDuty />
     </VStack>
   );
 }
