@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import { ambiguousDutyFirstNames, formatDutyDisplayName, getDutyDay } from "./duty-data";
+import { fetchDutyOverridesForMonth } from "./duty-overrides";
 import { OPD_FIXED_SCHEDULE } from "./opd-fixed-schedule";
 
 const THAI_MONTHS = [
@@ -106,10 +107,11 @@ function buildOpdTableHtml(): string {
   return `<div id="opd-table" class="opd-table">${rows}</div>`;
 }
 
-function buildCalendarHtml(year: number, month: number): string {
+async function buildCalendarHtml(year: number, month: number): Promise<string> {
   const n = daysInMonth(year, month);
   const firstCol = mondayFirstCol(year, month);
   const weeks = Math.ceil((firstCol + n) / 7);
+  const overrides = await fetchDutyOverridesForMonth(year, month);
 
   let html = `<div id="calendar" class="calendar" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">`;
 
@@ -118,7 +120,7 @@ function buildCalendarHtml(year: number, month: number): string {
     html += `<div class="${cls}">${d}</div>`;
   });
 
-  const ambiguousStaff = ambiguousDutyFirstNames(year, month, "d1");
+  const ambiguousStaff = ambiguousDutyFirstNames(year, month, "d1", overrides);
 
   for (let i = 0; i < weeks * 7; i++) {
     const date = i - firstCol + 1;
@@ -128,7 +130,7 @@ function buildCalendarHtml(year: number, month: number): string {
     }
 
     const col = i % 7;
-    const duty = getDutyDay(year, month, date);
+    const duty = getDutyDay(year, month, date, overrides);
     const holiday = duty.holiday;
     const rawName = duty.entries.d1;
     const name =
@@ -183,7 +185,7 @@ body { display: block; min-height: 0; }
     </section>
     <section class="section section-calendar">
       <h2 class="section-title">ตารางเวร staff</h2>
-      ${buildCalendarHtml(year, month)}
+      ${await buildCalendarHtml(year, month)}
     </section>
   </main>
 </body>

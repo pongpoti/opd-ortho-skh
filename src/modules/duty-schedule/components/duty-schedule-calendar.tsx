@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   Box,
   Drawer,
@@ -13,7 +13,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, Printer, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Printer, Trash2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInit, liff } from "@/lib/liff-client";
@@ -26,9 +26,14 @@ import {
   getDutyDay,
   isDutyMarker,
   isDutyMonthDisabled,
+  type DutyKey,
+  type DutyMonthOverrides,
 } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
+import { loadDutyMonthOverrides } from "../lib/duty-actions";
 import { sendDutySchedulePrint } from "../lib/duty-print-actions";
+import { DutySlotDeleteDialog } from "./duty-slot-delete-dialog";
+import { DutySlotEditSheet } from "./duty-slot-edit-sheet";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -73,15 +78,47 @@ function buildCells(year: number, month: number): Cell[] {
   return cells;
 }
 
-export function DutyScheduleCalendar() {
+type DutyScheduleCalendarProps = {
+  isAdmin?: boolean;
+};
+
+export function DutyScheduleCalendar({ isAdmin = false }: DutyScheduleCalendarProps) {
   const now = new Date();
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
+  const [overrides, setOverrides] = useState<DutyMonthOverrides>({});
   const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [isPrinting, startPrint] = useTransition();
+  const [, startLoadOverrides] = useTransition();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
+  const [editTarget, setEditTarget] = useState<{
+    year: number;
+    month: number;
+    day: number;
+    dutyKey: DutyKey;
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    year: number;
+    month: number;
+    day: number;
+    dutyKey: DutyKey;
+    personName: string;
+  } | null>(null);
+
   const monthDisabled = isDutyMonthDisabled(view.year, view.month);
+
+  const reloadOverrides = useCallback((year: number, month: number) => {
+    startLoadOverrides(async () => {
+      const result = await loadDutyMonthOverrides(year, month);
+      if (result.ok) setOverrides(result.overrides);
+      else setOverrides({});
+    });
+  }, []);
+
+  useEffect(() => {
+    reloadOverrides(view.year, view.month);
+  }, [view.year, view.month, reloadOverrides]);
 
   function handlePrint() {
     setPrintMessage(null);
@@ -92,8 +129,6 @@ export function DutyScheduleCalendar() {
         return;
       }
 
-      // LINE loading animation only shows on the OA chat screen — close LIFF
-      // so the user lands back in chat while the high-res image is prepared.
       try {
         await ensureLiffInit();
         if (liff.isInClient()) {
@@ -144,11 +179,19 @@ export function DutyScheduleCalendar() {
   }
 
   const cells = buildCells(view.year, view.month);
-  const selectedDuty = selected ? getDutyDay(selected.year, selected.month, selected.day) : null;
-  const selectedWeekday = selected ? new Date(selected.year, selected.month, selected.day).getDay() : 0;
-  const ambiguousByKey = selected
-    ? ambiguousDutyFirstNamesByKey(selected.year, selected.month)
+  const selectedDuty = selected
+    ? getDutyDay(selected.year, selected.month, selected.day, overrides)
     : null;
+  const selectedWeekday = selected
+    ? new Date(selected.year, selected.month, selected.day).getDay()
+    : 0;
+  const ambiguousByKey = selected
+    ? ambiguousDutyFirstNamesByKey(selected.year, selected.month, DUTY_ORDER, overrides)
+    : null;
+
+  function afterMutation() {
+    reloadOverrides(view.year, view.month);
+  }
 
   return (
     <VStack align="stretch" gap={4}>
@@ -211,7 +254,9 @@ export function DutyScheduleCalendar() {
           {cells.map((cell) => {
             const weekday = new Date(cell.year, cell.month, cell.day).getDay();
             const isWeekend = weekday === 0 || weekday === 6;
-            const duty = !cell.outside ? getDutyDay(cell.year, cell.month, cell.day) : null;
+            const duty = !cell.outside
+              ? getDutyDay(cell.year, cell.month, cell.day, overrides)
+              : null;
             const isHoliday = !!duty?.holiday;
             const isToday =
               !cell.outside &&
@@ -335,8 +380,9 @@ export function DutyScheduleCalendar() {
                     const Icon = DUTY_ICONS[key];
                     const name = selectedDuty?.entries[key];
                     const muted = !name || isDutyMarker(name);
+                    const canDelete = isAdmin && !!name && name !== "-";
                     return (
-                      <HStack key={key} gap={3} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
+                      <HStack key={key} gap={2} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
                         <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
                           <Icon size={18} />
                         </Box>
@@ -348,6 +394,44 @@ export function DutyScheduleCalendar() {
                             {formatDutyDisplayName(name, ambiguousByKey?.[key])}
                           </Text>
                         </VStack>
+                        {isAdmin && selected && (
+                          <HStack gap={0} flexShrink={0}>
+                            <IconButton
+                              aria-label={`แก้ไข${DUTY_LABELS[key]}`}
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                setEditTarget({
+                                  year: selected.year,
+                                  month: selected.month,
+                                  day: selected.day,
+                                  dutyKey: key,
+                                })
+                              }
+                            >
+                              <Pencil size={16} />
+                            </IconButton>
+                            {canDelete && (
+                              <IconButton
+                                aria-label={`ลบ${DUTY_LABELS[key]}`}
+                                size="sm"
+                                variant="ghost"
+                                colorPalette="red"
+                                onClick={() =>
+                                  setDeleteTarget({
+                                    year: selected.year,
+                                    month: selected.month,
+                                    day: selected.day,
+                                    dutyKey: key,
+                                    personName: formatDutyDisplayName(name, ambiguousByKey?.[key]),
+                                  })
+                                }
+                              >
+                                <Trash2 size={16} />
+                              </IconButton>
+                            )}
+                          </HStack>
+                        )}
                       </HStack>
                     );
                   })}
@@ -357,6 +441,32 @@ export function DutyScheduleCalendar() {
           </Drawer.Positioner>
         </Portal>
       </Drawer.Root>
+
+      {editTarget && (
+        <DutySlotEditSheet
+          open={!!editTarget}
+          onOpenChange={(open) => { if (!open) setEditTarget(null); }}
+          year={editTarget.year}
+          month={editTarget.month}
+          day={editTarget.day}
+          dutyKey={editTarget.dutyKey}
+          currentName={getDutyDay(editTarget.year, editTarget.month, editTarget.day, overrides).entries[editTarget.dutyKey]}
+          onSaved={afterMutation}
+        />
+      )}
+
+      {deleteTarget && (
+        <DutySlotDeleteDialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+          year={deleteTarget.year}
+          month={deleteTarget.month}
+          day={deleteTarget.day}
+          dutyKey={deleteTarget.dutyKey}
+          personName={deleteTarget.personName}
+          onDeleted={afterMutation}
+        />
+      )}
     </VStack>
   );
 }
