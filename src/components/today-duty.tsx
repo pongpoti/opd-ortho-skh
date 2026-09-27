@@ -59,7 +59,7 @@ export function TodayDuty() {
           _active={{ transform: "translateY(0)" }}
         >
           <VStack
-            align="stretch"
+            align="center"
             gap={0.5}
             px={5}
             pt={3}
@@ -67,11 +67,12 @@ export function TodayDuty() {
             bg="brand.subtle"
             borderBottomWidth="2px"
             borderColor="brand.muted"
+            textAlign="center"
           >
-            <Text fontSize="sm" fontWeight="bold" color="brand.fg" letterSpacing="wide">
+            <Text fontSize="20px" fontWeight="bold" color="brand.fg" letterSpacing="wide">
               เวรวันนี้
             </Text>
-            <Text fontSize="xs" fontWeight="medium" color="brand.fg">
+            <Text fontSize="16px" fontWeight="medium" color="brand.fg">
               {thaiTodayLabel(year, month, day)}
             </Text>
           </VStack>
