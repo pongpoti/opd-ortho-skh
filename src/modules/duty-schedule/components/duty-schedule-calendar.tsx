@@ -247,19 +247,20 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
         <HStack gap={2}>
           <IconButton
             aria-label="พิมพ์ตารางเวรส่ง LINE"
-            size="sm"
-            variant="outline"
+            size="md"
+            variant="solid"
+            colorPalette="brand"
             onClick={handlePrint}
             disabled={isPrinting}
             loading={isPrinting}
           >
-            <Printer size={16} />
+            <Printer size={20} />
           </IconButton>
-          <IconButton aria-label="เดือนก่อนหน้า" size="sm" variant="outline" onClick={() => changeMonth(-1)}>
-            <ChevronLeft size={16} />
+          <IconButton aria-label="เดือนก่อนหน้า" size="md" variant="outline" onClick={() => changeMonth(-1)}>
+            <ChevronLeft size={20} />
           </IconButton>
-          <IconButton aria-label="เดือนถัดไป" size="sm" variant="outline" onClick={() => changeMonth(1)}>
-            <ChevronRight size={16} />
+          <IconButton aria-label="เดือนถัดไป" size="md" variant="outline" onClick={() => changeMonth(1)}>
+            <ChevronRight size={20} />
           </IconButton>
         </HStack>
       </Flex>
@@ -358,16 +359,16 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
       </GlassCard>
 
       {monthDisabled && (
-        <Text fontSize="xs" color="fg.muted" textAlign="center">
+        <Text fontSize="sm" color="fg.muted" textAlign="center">
           เริ่มใช้งานตารางเวรตั้งแต่ตุลาคม 2569
         </Text>
       )}
 
       <VStack gap={0.5}>
-        <Text fontSize="xs" color="fg.muted" textAlign="center">
+        <Text fontSize="sm" color="fg.muted" textAlign="center">
           แตะวันที่เพื่อดูรายละเอียด
         </Text>
-        <Text fontSize="xs" color="fg.muted" textAlign="center">
+        <Text fontSize="sm" color="fg.muted" textAlign="center">
           ปัดซ้าย-ขวาเพื่อเปลี่ยนเดือน
         </Text>
       </VStack>
