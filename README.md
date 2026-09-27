@@ -49,6 +49,20 @@ can't be exercised in a fully offline/sandboxed environment. Until the env
 vars above are set, the app will still build and deploy, but the login page
 will show a sign-in error.
 
+## Telegram alerts (new user registration)
+
+After a successful `/register`, the server can push a short HTML alert to a
+Telegram chat (personal DM or group) via Bot API `sendMessage`.
+
+| Env var | Purpose |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_CHAT_ID` | Destination chat id (user, group, or channel) |
+
+Both must be set or the alert is skipped (registration still succeeds). To
+discover `TELEGRAM_CHAT_ID`: open a chat with the bot (or add it to a group),
+send any message, then call `getUpdates` on the Bot API and read `message.chat.id`.
+
 ## LINE Messaging (duty-schedule print)
 
 The duty calendar **print** button pushes an A4 PNG of the OPD table + staff

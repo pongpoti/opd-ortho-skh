@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { Alert, Heading, Text, VStack } from "@chakra-ui/react";
 
@@ -7,6 +8,10 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { PHYSICIANS } from "@/lib/physicians";
 import { NURSES } from "@/lib/nurses";
+import {
+  isTelegramAlertConfigured,
+  sendNewUserRegistrationAlert,
+} from "@/lib/telegram-messaging";
 import { GlassCard } from "@/components/ui/glass-card";
 
 import { RegisterForm } from "./register-form";
@@ -44,7 +49,9 @@ async function registerAction(formData: FormData) {
   });
   if (existingSelf) redirect("/");
 
-  const position = String(formData.get("position") ?? "");
+  const rawPosition = String(formData.get("position") ?? "");
+  const position =
+    rawPosition === "doctor" || rawPosition === "nurse" ? rawPosition : null;
 
   let firstName = "";
   let lastName = "";
@@ -98,6 +105,28 @@ async function registerAction(formData: FormData) {
       redirect("/register?error=duplicate");
     }
     throw error;
+  }
+
+  // Fire-and-forget so a Telegram outage never blocks the registrant.
+  if (isTelegramAlertConfigured()) {
+    const lineUserId = session.user.lineUserId;
+    const lineDisplayName = session.user.lineDisplayName;
+    after(async () => {
+      try {
+        const sent = await sendNewUserRegistrationAlert({
+          firstName,
+          lastName,
+          position,
+          lineUserId,
+          lineDisplayName,
+        });
+        if (!sent.ok) {
+          console.error("telegram registration alert failed:", sent.error);
+        }
+      } catch (err) {
+        console.error("telegram registration alert threw", err);
+      }
+    });
   }
 
   redirect("/");
