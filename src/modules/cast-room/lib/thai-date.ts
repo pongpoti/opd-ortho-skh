@@ -1,3 +1,5 @@
+import { bangkokToday } from "@/lib/bangkok-date";
+
 export const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
   "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
@@ -64,11 +66,13 @@ export function recentMonthOptions(count = 6): Array<{
   label: string;
   value: string; // "YYYY-MM"
 }> {
-  const now = new Date();
+  // Bangkok, not runtime-local: the server validates exports against this
+  // window and must agree with the month list the client offered.
+  const today = bangkokToday();
   const options: Array<{ year: number; month: number; label: string; value: string }> = [];
   // Start at i=1 → previous month of today.
   for (let i = 1; i <= count; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const d = new Date(today.year, today.month - i, 1);
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     options.push({

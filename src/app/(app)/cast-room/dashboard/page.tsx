@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Flex, Spinner } from "@chakra-ui/react";
 
 import { auth } from "@/auth";
+import { bangkokToday } from "@/lib/bangkok-date";
 import { modulePageTitle } from "@/lib/modules";
 import { CastRoomDashboard } from "@/modules/cast-room/components/cast-room-dashboard";
 import { listCastVisitsForAdmin } from "@/modules/cast-room/lib/cast-dashboard-actions";
@@ -20,8 +21,8 @@ function DashboardFallback() {
 }
 
 async function CastRoomDashboardData() {
-  const now = new Date();
-  const result = await listCastVisitsForAdmin(now.getFullYear(), now.getMonth() + 1);
+  const today = bangkokToday();
+  const result = await listCastVisitsForAdmin(today.year, today.month + 1);
   const initialVisits = result.ok ? result.visits : [];
   return <CastRoomDashboard initialVisits={initialVisits} />;
 }
