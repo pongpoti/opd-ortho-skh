@@ -10,6 +10,7 @@ import {
   getDutyDay,
   isDutyMarker,
   type DutyKey,
+  type DutyMonthOverrides,
 } from "@/modules/duty-schedule/lib/duty-data";
 import { fetchDutyOverridesForMonth } from "@/modules/duty-schedule/lib/duty-overrides";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "@/modules/duty-schedule/lib/duty-icons";
@@ -48,7 +49,12 @@ function thaiTodayLabel(year: number, month: number, day: number): string {
 /** Today's staff + intern roster, linking through to the full duty calendar. */
 export async function TodayDuty() {
   const { year, month, day } = bangkokToday();
-  const overrides = await fetchDutyOverridesForMonth(year, month);
+  let overrides: DutyMonthOverrides = {};
+  try {
+    overrides = await fetchDutyOverridesForMonth(year, month);
+  } catch {
+    overrides = {};
+  }
   const duty = getDutyDay(year, month, day, overrides);
   const ambiguousByKey = ambiguousDutyFirstNamesByKey(year, month, HOME_DUTY_KEYS, overrides);
 
