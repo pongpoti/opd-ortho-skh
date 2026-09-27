@@ -30,7 +30,7 @@ import {
   type DutyMonthOverrides,
 } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
-import { loadDutyMonthOverrides } from "../lib/duty-actions";
+import { loadDutyMonthOverrides, getDutyScheduleAdminFlag } from "../lib/duty-actions";
 import { sendDutySchedulePrint } from "../lib/duty-print-actions";
 import { DutySlotDeleteDialog } from "./duty-slot-delete-dialog";
 import { DutySlotEditSheet } from "./duty-slot-edit-sheet";
@@ -82,11 +82,13 @@ type DutyScheduleCalendarProps = {
   isAdmin?: boolean;
 };
 
-export function DutyScheduleCalendar({ isAdmin = false }: DutyScheduleCalendarProps) {
+export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalendarProps) {
   const now = new Date();
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
   const [overrides, setOverrides] = useState<DutyMonthOverrides>({});
+  const [adminFromServer, setAdminFromServer] = useState(false);
+  const isAdmin = !!isAdminProp || adminFromServer;
   const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [isPrinting, startPrint] = useTransition();
   const [, startLoadOverrides] = useTransition();
@@ -110,15 +112,34 @@ export function DutyScheduleCalendar({ isAdmin = false }: DutyScheduleCalendarPr
 
   const reloadOverrides = useCallback((year: number, month: number) => {
     startLoadOverrides(async () => {
-      const result = await loadDutyMonthOverrides(year, month);
-      if (result.ok) setOverrides(result.overrides);
-      else setOverrides({});
+      try {
+        const result = await loadDutyMonthOverrides(year, month);
+        if (result.ok) setOverrides(result.overrides);
+        else setOverrides({});
+      } catch {
+        setOverrides({});
+      }
     });
   }, []);
 
   useEffect(() => {
     reloadOverrides(view.year, view.month);
   }, [view.year, view.month, reloadOverrides]);
+
+  useEffect(() => {
+    if (isAdminProp) return;
+    let cancelled = false;
+    getDutyScheduleAdminFlag()
+      .then((flag) => {
+        if (!cancelled) setAdminFromServer(flag);
+      })
+      .catch(() => {
+        if (!cancelled) setAdminFromServer(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminProp]);
 
   function handlePrint() {
     setPrintMessage(null);

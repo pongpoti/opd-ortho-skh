@@ -7,7 +7,6 @@ import { requireAdminSession } from "@/lib/require-admin";
 
 import {
   dutyApplies,
-  DUTY_ORDER,
   getDutyDay,
   internNamesForMonth,
   isDutyMarker,
@@ -139,14 +138,19 @@ export async function saveDutySlot(input: {
   if (!personName) return { ok: false, error: "กรุณาเลือกคนเวร" };
 
   if (personName === "งด") {
-    await upsertDutyOverride({
-      year,
-      month,
-      day,
-      dutyKey,
-      personName: "งด",
-      updatedByLineUserId: session.user.lineUserId || null,
-    });
+    try {
+      await upsertDutyOverride({
+        year,
+        month,
+        day,
+        dutyKey,
+        personName: "งด",
+        updatedByLineUserId: session.user.lineUserId || null,
+      });
+    } catch (err) {
+      console.error("saveDutySlot failed", err);
+      return { ok: false, error: "บันทึกไม่สำเร็จ" };
+    }
     return { ok: true };
   }
 
@@ -160,14 +164,19 @@ export async function saveDutySlot(input: {
     return { ok: false, error: "ชื่อไม่ได้อยู่ในรายชื่อเวร" };
   }
 
-  await upsertDutyOverride({
-    year,
-    month,
-    day,
-    dutyKey,
-    personName,
-    updatedByLineUserId: session.user.lineUserId || null,
-  });
+  try {
+    await upsertDutyOverride({
+      year,
+      month,
+      day,
+      dutyKey,
+      personName,
+      updatedByLineUserId: session.user.lineUserId || null,
+    });
+  } catch (err) {
+    console.error("saveDutySlot failed", err);
+    return { ok: false, error: "บันทึกไม่สำเร็จ" };
+  }
   return { ok: true };
 }
 
@@ -190,14 +199,19 @@ export async function deleteDutySlot(input: {
     return { ok: false, error: "เวรนี้ไม่มีในวันนี้" };
   }
 
-  await upsertDutyOverride({
-    year,
-    month,
-    day,
-    dutyKey,
-    personName: "-",
-    updatedByLineUserId: session.user.lineUserId || null,
-  });
+  try {
+    await upsertDutyOverride({
+      year,
+      month,
+      day,
+      dutyKey,
+      personName: "-",
+      updatedByLineUserId: session.user.lineUserId || null,
+    });
+  } catch (err) {
+    console.error("deleteDutySlot failed", err);
+    return { ok: false, error: "ลบไม่สำเร็จ" };
+  }
   return { ok: true };
 }
 
@@ -206,5 +220,3 @@ export async function getDutyScheduleAdminFlag(): Promise<boolean> {
   const session = await requireAdminSession();
   return !!session;
 }
-
-export { DUTY_ORDER };
