@@ -21,9 +21,9 @@ export function isDutyMarker(name: string | undefined): name is "-" | "งด" {
  * Roster name parts. Entries are usually a bare first name ("ภรณี").
  *
  * When two people share a first name in the same month, store a last name
- * (or last-name initial) after a space for every colliding person, e.g.
- * "สมชาย กิตติ" / "สมชาย พิชัย" or "สมชาย ก." / "สมชาย พ.". Display then
- * shows first-only when unique, and "ชื่อ อ." only while that month has a
+ * (or initial) after a space for every colliding person, e.g.
+ * "สมชาย กิตติ" / "สมชาย พิชัย" or "สมชาย (ก)" / "สมชาย (พ)". Display then
+ * shows first-only when unique, and "ชื่อ (อ)" only while that month has a
  * collision — same rule on the home "เวรวันนี้" card and the duty drawer.
  */
 export function parseDutyPersonName(raw: string): { first: string; rest: string | null } {
@@ -35,13 +35,16 @@ export function parseDutyPersonName(raw: string): { first: string; rest: string 
   return { first, rest: rest || null };
 }
 
-/** Thai last-name initial with a trailing period ("กินรี" → "ก.", "ก." → "ก."). */
-export function dutyLastInitial(rest: string): string {
+/**
+ * Concise last-name tag for display: "กินรี" / "ก." / "(ก)" → "(ก)".
+ */
+export function dutyParenInitial(rest: string): string {
   const trimmed = rest.trim();
   if (!trimmed) return trimmed;
-  const chars = [...trimmed];
-  if (chars.length <= 2 && chars[chars.length - 1] === ".") return trimmed;
-  return `${chars[0]}.`;
+  const paren = trimmed.match(/^\((.+)\)$/u);
+  const source = paren ? paren[1].trim() : trimmed.replace(/\.$/u, "");
+  const char = [...source][0];
+  return char ? `(${char})` : trimmed;
 }
 
 /**
@@ -107,7 +110,7 @@ export function ambiguousDutyFirstNamesByKey(
 
 /**
  * Label for a duty slot. Pass `ambiguousFirsts` from
- * `ambiguousDutyFirstNames` so colliding first names show a last initial.
+ * `ambiguousDutyFirstNames` so colliding first names show a paren initial.
  */
 export function formatDutyDisplayName(
   name: string | undefined,
@@ -119,7 +122,7 @@ export function formatDutyDisplayName(
   const { first, rest } = parseDutyPersonName(name);
   if (!ambiguousFirsts.has(first)) return first;
   if (!rest) return first;
-  return `${first} ${dutyLastInitial(rest)}`;
+  return `${first} ${dutyParenInitial(rest)}`;
 }
 
 /**
@@ -169,7 +172,7 @@ type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyK
  * - d1 staff: ตารางออกตรวจ OPD / เวรเสาร์–อาทิตย์ + cast-room doctor column
  * - d2 intern: เวร แพทย์ Intern (พญ.ภรณี / พญ.ธนภรณ์); "-" = absent that day.
  *   Same first name twice in one month → store last name/initial on each
- *   colliding entry (see parseDutyPersonName / formatDutyDisplayName).
+ *   colliding entry; display becomes "ชื่อ (อ)" (see formatDutyDisplayName).
  * - d3 ท่าฉลอม / d4 เกตุม: เวร Ortho ท่าฉลอม เกตุม ("งด" stored when cancelled)
  * - d5 cast-room nurse: เวร พยาบาลห้องเฝือก (day 31 blank in source)
  *
