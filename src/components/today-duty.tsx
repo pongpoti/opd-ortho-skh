@@ -94,7 +94,7 @@ export function TodayDuty() {
                     <Icon size={22} />
                   </Box>
                   <VStack align="start" gap={0.5} flex="1" minW={0}>
-                    <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
+                    <Text fontSize="20px" fontWeight="semibold" color="fg.muted">
                       {DUTY_LABELS[key]}
                     </Text>
                     <Text
