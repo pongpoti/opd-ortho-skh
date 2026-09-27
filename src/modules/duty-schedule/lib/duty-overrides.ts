@@ -32,24 +32,41 @@ export async function fetchDutyOverridesForMonth(
   month: number
 ): Promise<DutyMonthOverrides> {
   const { start, end } = monthRange(year, month);
-  const rows = await db
-    .select({
-      shiftDate: dutyOverrides.shiftDate,
-      dutyKey: dutyOverrides.dutyKey,
-      personName: dutyOverrides.personName,
-    })
-    .from(dutyOverrides)
-    .where(and(gte(dutyOverrides.shiftDate, start), lte(dutyOverrides.shiftDate, end)));
+  let rows: Array<{ shiftDate: string; dutyKey: string; personName: string }>;
+  try {
+    rows = await db
+      .select({
+        shiftDate: dutyOverrides.shiftDate,
+        dutyKey: dutyOverrides.dutyKey,
+        personName: dutyOverrides.personName,
+      })
+      .from(dutyOverrides)
+      .where(and(gte(dutyOverrides.shiftDate, start), lte(dutyOverrides.shiftDate, end)));
+  } catch (err) {
+    // Missing table / DB blip must not take down the calendar or home page.
+    console.error("fetchDutyOverridesForMonth failed", err);
+    return {};
+  }
 
   const out: DutyMonthOverrides = {};
   for (const row of rows) {
     if (!isDutyKey(row.dutyKey)) continue;
-    const day = Number(row.shiftDate.slice(8, 10));
-    if (!Number.isFinite(day)) continue;
+    const day = dayFromShiftDate(row.shiftDate);
+    if (day == null) continue;
     if (!out[day]) out[day] = {};
     out[day][row.dutyKey] = row.personName;
   }
   return out;
+}
+
+function dayFromShiftDate(shiftDate: string | Date): number | null {
+  if (shiftDate instanceof Date) {
+    const day = shiftDate.getUTCDate();
+    return Number.isFinite(day) ? day : null;
+  }
+  const raw = String(shiftDate);
+  const day = Number(raw.slice(8, 10));
+  return Number.isFinite(day) ? day : null;
 }
 
 /** Upsert one slot override (person name, "งด", or "-" for cleared). */

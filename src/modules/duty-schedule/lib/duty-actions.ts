@@ -47,15 +47,20 @@ export async function loadDutyMonthOverrides(
   year: number,
   month: number
 ): Promise<{ ok: true; overrides: DutyMonthOverrides } | { ok: false; error: string }> {
-  const session = await auth();
-  if (!session?.user?.isRegistered) {
-    return { ok: false, error: "กรุณาเข้าสู่ระบบ" };
+  try {
+    const session = await auth();
+    if (!session?.user?.isRegistered) {
+      return { ok: false, error: "กรุณาเข้าสู่ระบบ" };
+    }
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
+      return { ok: false, error: "เดือนไม่ถูกต้อง" };
+    }
+    const overrides = await fetchDutyOverridesForMonth(year, month);
+    return { ok: true, overrides };
+  } catch (err) {
+    console.error("loadDutyMonthOverrides failed", err);
+    return { ok: false, error: "โหลดตารางเวรไม่สำเร็จ" };
   }
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
-    return { ok: false, error: "เดือนไม่ถูกต้อง" };
-  }
-  const overrides = await fetchDutyOverridesForMonth(year, month);
-  return { ok: true, overrides };
 }
 
 /** Roster options for the edit sheet (admin). Intern list is month-scoped. */
