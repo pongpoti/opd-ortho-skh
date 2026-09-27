@@ -86,7 +86,7 @@ export function MobileDock({ modules }: { modules: AppModule[] }) {
                 <Icon size={20} />
               </Circle>
               <Text
-                fontSize="xs"
+                fontSize="1rem"
                 fontWeight={active ? "semibold" : "medium"}
                 transition="color 0.15s ease"
               >
