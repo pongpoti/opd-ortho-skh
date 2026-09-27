@@ -60,18 +60,18 @@ export function TodayDuty() {
         >
           <VStack
             align="stretch"
-            gap={1}
+            gap={0.5}
             px={5}
-            pt={4}
-            pb={3}
+            pt={3}
+            pb={2.5}
             bg="brand.subtle"
             borderBottomWidth="2px"
             borderColor="brand.muted"
           >
-            <Text fontSize="xl" fontWeight="bold" color="brand.fg" letterSpacing="wide">
+            <Text fontSize="sm" fontWeight="bold" color="brand.fg" letterSpacing="wide">
               เวรวันนี้
             </Text>
-            <Text fontSize="lg" fontWeight="semibold" color="brand.fg">
+            <Text fontSize="xs" fontWeight="medium" color="brand.fg">
               {thaiTodayLabel(year, month, day)}
             </Text>
           </VStack>
@@ -85,19 +85,25 @@ export function TodayDuty() {
                 <HStack
                   key={key}
                   gap={3}
-                  py={3}
+                  py={3.5}
                   borderTopWidth="1px"
                   borderColor="glass.border"
                   _first={{ borderTopWidth: 0 }}
                 >
                   <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
-                    <Icon size={18} />
+                    <Icon size={22} />
                   </Box>
-                  <VStack align="start" gap={0} flex="1" minW={0}>
-                    <Text fontSize="xs" fontWeight="semibold" color="fg.muted">
+                  <VStack align="start" gap={0.5} flex="1" minW={0}>
+                    <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
                       {DUTY_LABELS[key]}
                     </Text>
-                    <Text fontSize="md" fontWeight="semibold" color={muted ? "fg.muted" : "fg"}>
+                    <Text
+                      fontSize="2xl"
+                      fontWeight="bold"
+                      lineHeight="short"
+                      color={DUTY_ICON_COLORS[key]}
+                      opacity={muted ? 0.55 : 1}
+                    >
                       {formatDutyDisplayName(name)}
                     </Text>
                   </VStack>
