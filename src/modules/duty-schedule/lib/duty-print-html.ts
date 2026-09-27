@@ -2,7 +2,12 @@ import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import path from "path";
 
-import { ambiguousDutyFirstNames, formatDutyDisplayName, getDutyDay } from "./duty-data";
+import {
+  ambiguousDutyFirstNames,
+  formatDutyDisplayName,
+  getDutyDay,
+  isDutyMarker,
+} from "./duty-data";
 import { fetchDutyOverridesForMonth } from "./duty-overrides";
 import { OPD_FIXED_SCHEDULE } from "./opd-fixed-schedule";
 
@@ -133,8 +138,9 @@ async function buildCalendarHtml(year: number, month: number): Promise<string> {
     const duty = getDutyDay(year, month, date, overrides);
     const holiday = duty.holiday;
     const rawName = duty.entries.d1;
+    // "-" (slot cleared by an admin) and "งด" both mean nobody on duty.
     const name =
-      rawName && rawName !== "งด"
+      rawName && !isDutyMarker(rawName)
         ? formatDutyDisplayName(rawName, ambiguousStaff)
         : "";
 

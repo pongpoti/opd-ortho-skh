@@ -75,7 +75,12 @@ export async function sendDutySchedulePrint(
   }
 
   // Show LINE's built-in loading bubbles in the OA chat (visible once LIFF closes).
-  await startLineChatLoading(lineUserId, 60);
+  // Cosmetic only — a network error here must not fail the print itself.
+  try {
+    await startLineChatLoading(lineUserId, 60);
+  } catch (err) {
+    console.error("duty-schedule print: loading indicator failed", err);
+  }
 
   const token = createDutyPrintShareToken(year, month);
   // Same high-res JPEG for original + preview (≤ 1 MB @ 4× quality 88).
