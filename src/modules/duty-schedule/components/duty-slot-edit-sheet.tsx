@@ -13,11 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { X } from "lucide-react";
 
-import {
-  DUTY_LABELS,
-  formatDutyDisplayName,
-  type DutyKey,
-} from "../lib/duty-data";
+import { DUTY_LABELS, type DutyKey } from "../lib/duty-data";
 import {
   getDutyEditRoster,
   saveDutySlot,
@@ -143,8 +139,9 @@ export function DutySlotEditSheet({
                   <Text fontSize="xs" fontWeight="semibold" color="fg.muted" mb={1}>
                     คนปัจจุบัน
                   </Text>
+                  {/* Full stored name — the admin must tell colliding first names apart here. */}
                   <Text fontSize="md" fontWeight="semibold">
-                    {formatDutyDisplayName(currentName)}
+                    {currentName ?? "-"}
                   </Text>
                 </Box>
 
