@@ -101,7 +101,8 @@ export function TodayDuty() {
                       fontSize="2xl"
                       fontWeight="bold"
                       lineHeight="short"
-                      color={muted ? "fg.muted" : DUTY_ICON_COLORS[key]}
+                      color={DUTY_ICON_COLORS[key]}
+                      opacity={muted ? 0.55 : 1}
                     >
                       {formatDutyDisplayName(name)}
                     </Text>
