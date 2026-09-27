@@ -18,6 +18,7 @@ import { ChevronLeft, ChevronRight, Printer, X } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInit, liff } from "@/lib/liff-client";
 import {
+  ambiguousDutyFirstNamesByKey,
   DUTY_LABELS,
   DUTY_ORDER,
   dutyApplies,
@@ -145,6 +146,9 @@ export function DutyScheduleCalendar() {
   const cells = buildCells(view.year, view.month);
   const selectedDuty = selected ? getDutyDay(selected.year, selected.month, selected.day) : null;
   const selectedWeekday = selected ? new Date(selected.year, selected.month, selected.day).getDay() : 0;
+  const ambiguousByKey = selected
+    ? ambiguousDutyFirstNamesByKey(selected.year, selected.month)
+    : null;
 
   return (
     <VStack align="stretch" gap={4}>
@@ -341,7 +345,7 @@ export function DutyScheduleCalendar() {
                             {DUTY_LABELS[key]}
                           </Text>
                           <Text fontSize="md" fontWeight="semibold" color={muted ? "fg.muted" : "fg"}>
-                            {formatDutyDisplayName(name)}
+                            {formatDutyDisplayName(name, ambiguousByKey?.[key])}
                           </Text>
                         </VStack>
                       </HStack>

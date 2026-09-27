@@ -2,7 +2,7 @@ import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import path from "path";
 
-import { getDutyDay } from "./duty-data";
+import { ambiguousDutyFirstNames, formatDutyDisplayName, getDutyDay } from "./duty-data";
 import { OPD_FIXED_SCHEDULE } from "./opd-fixed-schedule";
 
 const THAI_MONTHS = [
@@ -118,6 +118,8 @@ function buildCalendarHtml(year: number, month: number): string {
     html += `<div class="${cls}">${d}</div>`;
   });
 
+  const ambiguousStaff = ambiguousDutyFirstNames(year, month, "d1");
+
   for (let i = 0; i < weeks * 7; i++) {
     const date = i - firstCol + 1;
     if (date < 1 || date > n) {
@@ -129,7 +131,10 @@ function buildCalendarHtml(year: number, month: number): string {
     const duty = getDutyDay(year, month, date);
     const holiday = duty.holiday;
     const rawName = duty.entries.d1;
-    const name = rawName && rawName !== "งด" ? rawName : "";
+    const name =
+      rawName && rawName !== "งด"
+        ? formatDutyDisplayName(rawName, ambiguousStaff)
+        : "";
 
     const classes = ["cal-cell"];
     if (col >= 5) classes.push("is-weekend");

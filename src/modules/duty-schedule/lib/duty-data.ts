@@ -17,9 +17,112 @@ export function isDutyMarker(name: string | undefined): name is "-" | "งด" {
   return name === "-" || name === "งด";
 }
 
-/** Label shown in the day drawer for a duty slot. */
-export function formatDutyDisplayName(name: string | undefined): string {
-  return name ?? "ยังไม่ระบุ";
+/**
+ * Roster name parts. Entries are usually a bare first name ("ภรณี").
+ *
+ * When two people share a first name in the same month, store a last name
+ * (or initial) after a space for every colliding person, e.g.
+ * "สมชาย กิตติ" / "สมชาย พิชัย" or "สมชาย (ก)" / "สมชาย (พ)". Display then
+ * shows first-only when unique, and "ชื่อ (อ)" only while that month has a
+ * collision — same rule on the home "เวรวันนี้" card and the duty drawer.
+ */
+export function parseDutyPersonName(raw: string): { first: string; rest: string | null } {
+  const trimmed = raw.trim();
+  const space = trimmed.indexOf(" ");
+  if (space < 0) return { first: trimmed, rest: null };
+  const first = trimmed.slice(0, space);
+  const rest = trimmed.slice(space + 1).trim();
+  return { first, rest: rest || null };
+}
+
+/**
+ * Concise last-name tag for display: "กินรี" / "ก." / "(ก)" → "(ก)".
+ */
+export function dutyParenInitial(rest: string): string {
+  const trimmed = rest.trim();
+  if (!trimmed) return trimmed;
+  const paren = trimmed.match(/^\((.+)\)$/u);
+  const source = paren ? paren[1].trim() : trimmed.replace(/\.$/u, "");
+  const char = [...source][0];
+  return char ? `(${char})` : trimmed;
+}
+
+/**
+ * First names that map to more than one distinct stored identity among the
+ * given raw roster strings. Same person repeating is fine; only different
+ * stored strings that share a first name count as a collision.
+ */
+export function ambiguousFirstNamesFromRaw(
+  rawNames: Iterable<string>
+): ReadonlySet<string> {
+  const byFirst = new Map<string, Set<string>>();
+  for (const raw of rawNames) {
+    if (!raw || isDutyMarker(raw)) continue;
+    const { first } = parseDutyPersonName(raw);
+    let identities = byFirst.get(first);
+    if (!identities) {
+      identities = new Set();
+      byFirst.set(first, identities);
+    }
+    identities.add(raw.trim());
+  }
+
+  const ambiguous = new Set<string>();
+  for (const [first, identities] of byFirst) {
+    if (identities.size > 1) ambiguous.add(first);
+  }
+  return ambiguous;
+}
+
+/**
+ * First names that map to more than one distinct stored identity for `key`
+ * in the given month (0-indexed).
+ */
+export function ambiguousDutyFirstNames(
+  year: number,
+  month: number,
+  key: DutyKey
+): ReadonlySet<string> {
+  const days = new Date(year, month + 1, 0).getDate();
+  const rawNames: string[] = [];
+  for (let day = 1; day <= days; day++) {
+    const raw = getDutyDay(year, month, day).entries[key];
+    if (raw) rawNames.push(raw);
+  }
+  return ambiguousFirstNamesFromRaw(rawNames);
+}
+
+/**
+ * Ambiguous first-name sets for every duty key in a month (0-indexed).
+ * Used by the home card and day drawer so colliding names share one rule.
+ */
+export function ambiguousDutyFirstNamesByKey(
+  year: number,
+  month: number,
+  keys: readonly DutyKey[] = DUTY_ORDER
+): Record<DutyKey, ReadonlySet<string>> {
+  const out = {} as Record<DutyKey, ReadonlySet<string>>;
+  for (const key of keys) {
+    out[key] = ambiguousDutyFirstNames(year, month, key);
+  }
+  return out;
+}
+
+/**
+ * Label for a duty slot. Pass `ambiguousFirsts` from
+ * `ambiguousDutyFirstNames` so colliding first names show a paren initial.
+ */
+export function formatDutyDisplayName(
+  name: string | undefined,
+  ambiguousFirsts?: ReadonlySet<string>
+): string {
+  if (name === undefined) return "ยังไม่ระบุ";
+  if (isDutyMarker(name) || !ambiguousFirsts?.size) return name;
+
+  const { first, rest } = parseDutyPersonName(name);
+  if (!ambiguousFirsts.has(first)) return first;
+  if (!rest) return first;
+  return `${first} ${dutyParenInitial(rest)}`;
 }
 
 /**
@@ -67,7 +170,9 @@ type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyK
  *
  * October 2026 (ต.ค. 2569) sources:
  * - d1 staff: ตารางออกตรวจ OPD / เวรเสาร์–อาทิตย์ + cast-room doctor column
- * - d2 intern: เวร แพทย์ Intern (พญ.ภรณี / พญ.ธนภรณ์); "-" = absent that day
+ * - d2 intern: เวร แพทย์ Intern (พญ.ภรณี / พญ.ธนภรณ์); "-" = absent that day.
+ *   Same first name twice in one month → store last name/initial on each
+ *   colliding entry; display becomes "ชื่อ (อ)" (see formatDutyDisplayName).
  * - d3 ท่าฉลอม / d4 เกตุม: เวร Ortho ท่าฉลอม เกตุม ("งด" stored when cancelled)
  * - d5 cast-room nurse: เวร พยาบาลห้องเฝือก (day 31 blank in source)
  *

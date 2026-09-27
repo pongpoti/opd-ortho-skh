@@ -4,6 +4,7 @@ import { Box, HStack, Link as ChakraLink, Text, VStack } from "@chakra-ui/react"
 import { GlassCard } from "@/components/ui/glass-card";
 import { THAI_MONTHS } from "@/modules/cast-room/lib/thai-date";
 import {
+  ambiguousDutyFirstNamesByKey,
   DUTY_LABELS,
   formatDutyDisplayName,
   getDutyDay,
@@ -47,6 +48,7 @@ function thaiTodayLabel(year: number, month: number, day: number): string {
 export function TodayDuty() {
   const { year, month, day } = bangkokToday();
   const duty = getDutyDay(year, month, day);
+  const ambiguousByKey = ambiguousDutyFirstNamesByKey(year, month, HOME_DUTY_KEYS);
 
   return (
     <ChakraLink asChild _hover={{ textDecoration: "none" }} display="block" mx="auto" w="full" maxW="md">
@@ -105,7 +107,7 @@ export function TodayDuty() {
                       color={DUTY_ICON_COLORS[key]}
                       opacity={muted ? 0.55 : 1}
                     >
-                      {formatDutyDisplayName(name)}
+                      {formatDutyDisplayName(name, ambiguousByKey[key])}
                     </Text>
                   </VStack>
                 </HStack>
