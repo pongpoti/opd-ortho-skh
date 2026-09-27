@@ -53,12 +53,13 @@ function formatBangkokTime(date: Date): string {
 
 /**
  * HTML message layout sent to TELEGRAM_CHAT_ID on successful registration.
+ * Name is sent exactly as registered — no title prefix (นพ./พย./etc.) for any role.
  *
  * Example (Telegram HTML parse mode):
  *
  *   🆕 <b>ผู้ใช้ใหม่ลงทะเบียน</b>
  *
- *   <b>ชื่อ</b>: นพ.สมชาย ใจดี
+ *   <b>ชื่อ</b>: สมชาย ใจดี
  *   <b>ตำแหน่ง</b>: แพทย์
  *   <b>LINE</b>: Somchai J
  *   <b>LINE ID</b>: <code>Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code>
@@ -69,11 +70,13 @@ export function formatNewUserRegistrationMessage(
 ): string {
   const when = alert.registeredAt ?? new Date();
   const lineName = alert.lineDisplayName?.trim() || "—";
+  // firstName/lastName only — never prepend นพ./พย. or other title prefixes.
+  const fullName = `${alert.firstName} ${alert.lastName}`.trim();
 
   return [
     "🆕 <b>ผู้ใช้ใหม่ลงทะเบียน</b>",
     "",
-    `<b>ชื่อ</b>: ${escapeHtml(`${alert.firstName} ${alert.lastName}`)}`,
+    `<b>ชื่อ</b>: ${escapeHtml(fullName)}`,
     `<b>ตำแหน่ง</b>: ${escapeHtml(positionLabel(alert.position))}`,
     `<b>LINE</b>: ${escapeHtml(lineName)}`,
     `<b>LINE ID</b>: <code>${escapeHtml(alert.lineUserId)}</code>`,
