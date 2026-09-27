@@ -68,10 +68,10 @@ export function TodayDuty() {
             borderBottomWidth="2px"
             borderColor="brand.muted"
           >
-            <Text fontSize="lg" fontWeight="bold" color="brand.fg" letterSpacing="wide">
+            <Text fontSize="xl" fontWeight="bold" color="brand.fg" letterSpacing="wide">
               เวรวันนี้
             </Text>
-            <Text fontSize="md" fontWeight="semibold" color="brand.fg">
+            <Text fontSize="lg" fontWeight="semibold" color="brand.fg">
               {thaiTodayLabel(year, month, day)}
             </Text>
           </VStack>
