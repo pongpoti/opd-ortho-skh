@@ -139,7 +139,7 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
 
   const existing = await db.query.castLogs.findMany({
     where: eq(castLogs.visitId, input.visitId),
-    columns: { loggedByLineUserId: true, loggedByName: true },
+    columns: { loggedByLineUserId: true, loggedByName: true, createdAt: true },
   });
   if (existing.length === 0) {
     return { ok: false, error: "ไม่พบรายการที่ต้องการแก้ไข" };
@@ -155,12 +155,15 @@ export async function updateCastLog(input: CastLogInput): Promise<ActionResult> 
   }
 
   const preserveLogger = isAdmin && !ownsVisit && existing.length > 0;
+  // Keep the original log time: the case-log PDF prints createdAt as the
+  // visit time and orders rows by it, so an edit must not move either.
+  const createdAt = new Date(Math.min(...existing.map((row) => row.createdAt.getTime())));
   const rows = buildRows(
     input,
     validated,
     preserveLogger ? existing[0].loggedByLineUserId : session.user.lineUserId || null,
     preserveLogger ? existing[0].loggedByName : (session.user.firstName ?? null)
-  );
+  ).map((row) => ({ ...row, createdAt }));
 
   await db.batch([
     db.delete(castLogs).where(eq(castLogs.visitId, input.visitId)),
