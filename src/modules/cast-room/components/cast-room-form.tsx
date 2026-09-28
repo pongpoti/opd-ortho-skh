@@ -198,7 +198,7 @@ export function CastRoomForm() {
           <VStack align="stretch" gap={5}>
             <HStack gap={2}>
               <StepBadge n={1} />
-              <Text fontWeight="medium">วันที่</Text>
+              <Text fontWeight="medium">วันที่ - เวลา</Text>
             </HStack>
             <Field.Root>
               <ThaiDateInput

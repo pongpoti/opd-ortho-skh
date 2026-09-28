@@ -271,7 +271,7 @@ export function ThaiDateInput({
 
                 <VStack align="stretch" gap={3} mt={4} pt={3} borderTopWidth="1px" borderColor="glass.border">
                   <Field.Root>
-                    <Field.Label fontSize="sm" textAlign="center" w="full">
+                    <Field.Label fontSize="sm" justifyContent="center" w="full">
                       เวลา (24 ชม.)
                     </Field.Label>
                     <HStack gap={2} justify="center" maxW="200px" mx="auto" w="full">
