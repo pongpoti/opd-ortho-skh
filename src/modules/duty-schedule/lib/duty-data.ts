@@ -152,12 +152,12 @@ export function internNamesForMonth(
 
 /**
  * First month with active duty data (month is 0-indexed).
- * App launch: October 2026 — earlier months still show on the calendar
+ * App launch: September 2026 — earlier months still show on the calendar
  * when they are the current date, but their days are disabled.
  */
-export const DUTY_CALENDAR_START = { year: 2026, month: 9 } as const;
+export const DUTY_CALENDAR_START = { year: 2026, month: 8 } as const;
 
-/** True for months before the app launch month (e.g. Sep 2026). */
+/** True for months before the app launch month (e.g. Aug 2026). */
 export function isDutyMonthDisabled(year: number, month: number): boolean {
   const start = DUTY_CALENDAR_START;
   return year < start.year || (year === start.year && month < start.month);
@@ -193,6 +193,11 @@ type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyK
  * unfilled until the real roster is supplied — never fabricate placeholder
  * names in this table.
  *
+ * September 2026 (ก.ย. 2569) sources:
+ * - d1 staff: ตารางเวรห้องเฝือก (weekday cast-room doctors + เวรเสาร์–อาทิตย์ 24 ชม.)
+ * - d2 intern: เวร Intern Ortho (พญ.จิทา / พญ.ปุณยวีร์); "-" = absent that day
+ * - d3 / d4 / d5: not in the supplied sheets — left unfilled
+ *
  * October 2026 (ต.ค. 2569) sources:
  * - d1 staff: ตารางออกตรวจ OPD / เวรเสาร์–อาทิตย์ + cast-room doctor column
  * - d2 intern: เวร แพทย์ Intern (พญ.ภรณี / พญ.ธนภรณ์); "-" = absent that day.
@@ -207,6 +212,38 @@ type RawEntry = { holiday?: true; holidayLabel?: string } & Partial<Record<DutyK
  * - d2 / d5: not in the supplied PDFs — left unfilled
  */
 const VERIFIED: Record<string, Record<number, RawEntry>> = {
+  "2026-8": {
+    1: { d1: "ธีรฉัตต์", d2: "-" },
+    2: { d1: "ธนกร", d2: "-" },
+    3: { d1: "เฉลิมพล", d2: "จิทา" },
+    4: { d1: "วันทนันท์", d2: "ปุณยวีร์" },
+    5: { d1: "ธีรฉัตต์", d2: "-" },
+    6: { d1: "ธีรฉัตต์", d2: "-" },
+    7: { d1: "ชวพล", d2: "จิทา" },
+    8: { d1: "ปิติพงศ์", d2: "ปุณยวีร์" },
+    9: { d1: "ชัยวัฒน์", d2: "จิทา" },
+    10: { d1: "วรงค์พร", d2: "-" },
+    11: { d1: "ชวพล", d2: "ปุณยวีร์" },
+    12: { d1: "ชัยวัฒน์", d2: "-" },
+    13: { d1: "ชัยวัฒน์", d2: "-" },
+    14: { d1: "ปองสิทธิ์", d2: "จิทา" },
+    15: { d1: "ปิติพงศ์", d2: "-" },
+    16: { d1: "ธนกร", d2: "ปุณยวีร์" },
+    17: { d1: "เฉลิมพล", d2: "-" },
+    18: { d1: "ชวพล", d2: "ปุณยวีร์" },
+    19: { d1: "ปองสิทธิ์", d2: "จิทา" },
+    20: { d1: "ปองสิทธิ์", d2: "จิทา" },
+    21: { d1: "เทพรักษา", d2: "-" },
+    22: { d1: "ธีรฉัตต์", d2: "-" },
+    23: { d1: "ชัยวัฒน์", d2: "-" },
+    24: { d1: "วรงค์พร", d2: "จิทา" },
+    25: { d1: "วันทนันท์", d2: "-" },
+    26: { d1: "วันทนันท์", d2: "ปุณยวีร์" },
+    27: { d1: "วันทนันท์", d2: "ปุณยวีร์" },
+    28: { d1: "ปองสิทธิ์", d2: "จิทา" },
+    29: { d1: "ปิติพงศ์", d2: "ปุณยวีร์" },
+    30: { d1: "ธนกร", d2: "-" },
+  },
   "2026-9": {
     1: { d1: "เฉลิมพล", d2: "-", d4: "ชัยวัฒน์", d5: "หทัยรัตน์" },
     2: { d1: "ชวพล", d2: "-", d5: "ณัฐวุฒิ" },
