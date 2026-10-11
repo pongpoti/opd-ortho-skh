@@ -3,6 +3,7 @@ import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb } from "pdf-lib";
 import { PHYSICIANS } from "@/lib/physicians";
+import { internFullName } from "@/lib/interns";
 import { validSecondCallMonth } from "./second-call-share";
 
 const MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -47,7 +48,7 @@ export async function buildBlankSecondCallPdf(input: {
     name: `${index === 10 ? "พญ." : "นพ."} ${PHYSICIANS[index]}`, number: i + 1,
   }));
   rows.push({ name: "" }, { name: "" });
-  const interns = [...new Set(input.internNames.map((name) => name.trim()).filter(Boolean))];
+  const interns = [...new Set(input.internNames.map(internFullName).filter(Boolean))];
   // Unknown monthly interns remain blank; do not invent people or surnames.
   if (interns.length) interns.forEach((name, i) => rows.push({ name, number: 16 + i }));
   else rows.push({ name: "" }, { name: "" }, { name: "" });
