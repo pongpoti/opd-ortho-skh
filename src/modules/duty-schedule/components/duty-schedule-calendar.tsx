@@ -246,6 +246,16 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
         </Heading>
         <HStack gap={2}>
           <IconButton
+            aria-label="ตารางเวร second-call"
+            size="md"
+            variant="solid"
+            colorPalette="brand"
+          >
+            <Text as="span" fontSize="md" fontWeight="bold" lineHeight="1">
+              2<Text as="sup" fontSize="10px" ml="1px">nd</Text>
+            </Text>
+          </IconButton>
+          <IconButton
             aria-label="พิมพ์ตารางเวรส่ง LINE"
             size="md"
             variant="solid"
