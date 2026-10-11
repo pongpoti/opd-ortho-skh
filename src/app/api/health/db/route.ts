@@ -5,7 +5,13 @@ export async function GET() {
     const sql = neon(process.env.DATABASE_URL!);
     const [row] = await sql`select 1 as ok`;
     const [table] = await sql`select to_regclass('public.users') as name`;
-    return Response.json({ connected: row.ok === 1, usersTableExists: table.name !== null });
+    const [roster] = await sql`select
+      to_regclass('public.roster_personnel') IS NOT NULL AND
+      to_regclass('public.duty_slots') IS NOT NULL AND
+      to_regclass('public.duty_days') IS NOT NULL AND
+      to_regclass('public.fixed_holidays') IS NOT NULL AND
+      to_regclass('public.opd_weekly_schedule') IS NOT NULL AS ready`;
+    return Response.json({ connected: row.ok === 1, usersTableExists: table.name !== null, rosterTablesReady: roster.ready });
   } catch (error) {
     // This route is public (proxy skips /api) — keep driver/connection
     // details in the server log, not the response.

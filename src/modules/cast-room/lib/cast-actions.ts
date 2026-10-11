@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { castLogs } from "@/db/schema";
 import { canAccessCastRoom } from "@/lib/module-access";
-import { PHYSICIANS } from "@/lib/physicians";
+import { getRosterFullNames } from "@/lib/roster-directory";
 
 import { CAST_TYPES, castLabel } from "./cast-types";
 
@@ -56,7 +56,7 @@ function isValidShiftDate(value: string): boolean {
   return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
-function validate(input: CastLogInput): Validated {
+async function validate(input: CastLogInput): Promise<Validated> {
   if (!isValidShiftDate(input.shiftDate)) {
     return { ok: false, error: "วันที่ไม่ถูกต้อง" };
   }
@@ -76,10 +76,6 @@ function validate(input: CastLogInput): Validated {
   if (!diagnosis) {
     return { ok: false, error: "กรุณากรอกการวินิจฉัย" };
   }
-  if (!PHYSICIANS.includes(input.doctorName as (typeof PHYSICIANS)[number])) {
-    return { ok: false, error: "ไม่พบแพทย์เวรสำหรับวันที่นี้" };
-  }
-
   const casts: CastLogCastInput[] = [];
   for (const c of input.casts) {
     if (!VALID_CAST_IDS.has(c.id)) {
@@ -95,6 +91,16 @@ function validate(input: CastLogInput): Validated {
   }
   if (casts.length === 0) {
     return { ok: false, error: "กรุณาเลือกชนิดเฝือกอย่างน้อย 1 รายการ" };
+  }
+
+  try {
+    const physicianNames = await getRosterFullNames("staff");
+    if (!physicianNames.includes(input.doctorName)) {
+      return { ok: false, error: "ไม่พบแพทย์เวรสำหรับวันที่นี้" };
+    }
+  } catch (error) {
+    console.error("load cast-room physician directory failed", error);
+    return { ok: false, error: "โหลดรายชื่อแพทย์ไม่สำเร็จ กรุณาลองอีกครั้ง" };
   }
 
   return { ok: true, patientName, diagnosis, visitTime, casts };
@@ -134,7 +140,7 @@ export async function submitCastLog(input: CastLogInput): Promise<SubmitResult> 
     return { ok: false, error: "ไม่มีสิทธิ์บันทึกข้อมูลห้องเฝือก" };
   }
 
-  const validated = validate(input);
+  const validated = await validate(input);
   if (!validated.ok) return validated;
 
   const visitId = crypto.randomUUID();
@@ -164,7 +170,7 @@ export async function updateCastLog(input: CastLogUpdateInput): Promise<ActionRe
     return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
   }
 
-  const validated = validate(input);
+  const validated = await validate(input);
   if (!validated.ok) return validated;
 
   const existing = await db.query.castLogs.findMany({

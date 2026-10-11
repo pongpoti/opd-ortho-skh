@@ -19,11 +19,18 @@ independent module under `src/modules/<name>`, rendered through routes in
   patient waiting time from two half-month CSV exports. Fully client-side;
   see `WAITING_TIME_DATAFLOW.md` for the business rules this was ported from.
 
-  The physician staff roster (`STAFF_NAMES` in
-  `src/modules/waiting-time/lib/config.ts`) is intentionally empty — it's
-  personnel data that must be supplied per deployment before results are
-  meaningful. Until then, calculations correctly fail with "the staff group
-  is empty" rather than silently misclassifying everyone as non-staff.
+  The physician staff list is loaded from Neon's `roster_personnel` table
+  at request time and passed to the calculator. An empty staff directory
+  causes an explicit error instead of silently misclassifying patients.
+
+## Roster data
+
+Neon is the source of truth for duty slots, holiday dates, personnel full names
+and aliases, second-call staff order, and the weekly OPD schedule. Calendar
+edits are saved in `duty_slots`; the calendar, today's duty card, and both
+exports read the same database data. The original September–December 2026
+rosters live under `scripts/data/` only as a historical import snapshot.
+See [the migration and import instructions](scripts/ROSTER_IMPORT.md).
 
 ## Auth setup (LINE LIFF)
 

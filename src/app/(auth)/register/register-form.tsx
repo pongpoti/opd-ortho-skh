@@ -3,9 +3,6 @@
 import { useRef, useState } from "react";
 import { Button, Dialog, Field, NativeSelect, Portal, Text, VStack } from "@chakra-ui/react";
 
-import { PHYSICIANS } from "@/lib/physicians";
-import { NURSES } from "@/lib/nurses";
-
 const POSITION_LABEL: Record<string, string> = {
   doctor: "แพทย์",
   nurse: "พยาบาล",
@@ -13,8 +10,12 @@ const POSITION_LABEL: Record<string, string> = {
 
 export function RegisterForm({
   action,
+  physicianNames,
+  nurseNames,
 }: {
   action: (formData: FormData) => Promise<void>;
+  physicianNames: string[];
+  nurseNames: string[];
 }) {
   const [position, setPosition] = useState("");
   const [name, setName] = useState("");
@@ -70,7 +71,7 @@ export function RegisterForm({
                   <option value="" disabled>
                     เลือกชื่อแพทย์
                   </option>
-                  {PHYSICIANS.map((n) => (
+                  {physicianNames.map((n) => (
                     <option key={n} value={n}>
                       {n}
                     </option>
@@ -93,7 +94,7 @@ export function RegisterForm({
                   <option value="" disabled>
                     เลือกชื่อพยาบาล
                   </option>
-                  {NURSES.map((n) => (
+                  {nurseNames.map((n) => (
                     <option key={n} value={n}>
                       {n}
                     </option>

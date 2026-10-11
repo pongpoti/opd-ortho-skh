@@ -13,7 +13,6 @@ import { FileDown } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInit, liff } from "@/lib/liff-client";
-import { PHYSICIANS } from "@/lib/physicians";
 
 import { CAST_CASE_LOG_PAY_PER_CASE } from "../lib/cast-case-log-constants";
 import { createCastCaseLogPdfLink } from "../lib/cast-case-log-export";
@@ -48,9 +47,11 @@ function parseMonthValue(value: string): { year: number; month: number } | null 
 export function CastCaseLogPdfPage({
   initialVisits,
   initialEmptyError = null,
+  physicianNames,
 }: {
   initialVisits: CastVisitSummary[];
   initialEmptyError?: string | null;
+  physicianNames: string[];
 }) {
   const monthOptions = useMemo(() => recentMonthOptions(6), []);
   const [monthValue, setMonthValue] = useState(monthOptions[0]?.value ?? "");
@@ -70,13 +71,13 @@ export function CastCaseLogPdfPage({
 
   const physicianOptions = useMemo(() => {
     const withVisits = new Set(visits.map((v) => v.doctorName).filter(Boolean));
-    const fromRoster = PHYSICIANS.filter((name) => withVisits.has(name));
-    const roster = new Set<string>(PHYSICIANS);
+    const fromRoster = physicianNames.filter((name) => withVisits.has(name));
+    const roster = new Set<string>(physicianNames);
     const extras = [...withVisits]
       .filter((name) => !roster.has(name))
       .sort((a, b) => a.localeCompare(b, "th"));
     return [...fromRoster, ...extras];
-  }, [visits]);
+  }, [visits, physicianNames]);
 
   const doctorVisits = useMemo(() => {
     if (!doctorName) return [];

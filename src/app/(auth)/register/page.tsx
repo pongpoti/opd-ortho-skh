@@ -6,8 +6,7 @@ import { Alert, Heading, Text, VStack } from "@chakra-ui/react";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { PHYSICIANS } from "@/lib/physicians";
-import { NURSES } from "@/lib/nurses";
+import { getRosterFullNames } from "@/lib/roster-directory";
 import {
   isTelegramAlertConfigured,
   sendNewUserRegistrationAlert,
@@ -58,7 +57,8 @@ async function registerAction(formData: FormData) {
 
   if (position === "doctor") {
     const doctorName = String(formData.get("doctorName") ?? "").trim();
-    if (!PHYSICIANS.includes(doctorName as (typeof PHYSICIANS)[number])) {
+    const physicianNames = await getRosterFullNames("staff");
+    if (!physicianNames.includes(doctorName)) {
       redirect("/register?error=1");
     }
     const spaceIndex = doctorName.indexOf(" ");
@@ -66,7 +66,8 @@ async function registerAction(formData: FormData) {
     lastName = doctorName.slice(spaceIndex + 1);
   } else if (position === "nurse") {
     const nurseName = String(formData.get("nurseName") ?? "").trim();
-    if (!NURSES.includes(nurseName as (typeof NURSES)[number])) {
+    const nurseNames = await getRosterFullNames("nurse");
+    if (!nurseNames.includes(nurseName)) {
       redirect("/register?error=1");
     }
     const spaceIndex = nurseName.indexOf(" ");
@@ -146,6 +147,10 @@ export default async function RegisterPage({
   if (session?.user?.isRegistered) redirect("/");
 
   const { error } = await searchParams;
+  const [physicianNames, nurseNames] = await Promise.all([
+    getRosterFullNames("staff"),
+    getRosterFullNames("nurse"),
+  ]);
 
   return (
     <GlassCard p={8} maxW="md" w="full">
@@ -164,7 +169,7 @@ export default async function RegisterPage({
           </Alert.Root>
         )}
 
-        <RegisterForm action={registerAction} />
+        <RegisterForm action={registerAction} physicianNames={physicianNames} nurseNames={nurseNames} />
       </VStack>
     </GlassCard>
   );

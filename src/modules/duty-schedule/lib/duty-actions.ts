@@ -1,33 +1,38 @@
 "use server";
 
 import { auth } from "@/auth";
-import { NURSES } from "@/lib/nurses";
-import { PHYSICIANS } from "@/lib/physicians";
 import { requireAdminSession } from "@/lib/require-admin";
 
 import {
   dutyApplies,
-  getDutyDay,
+  DUTY_ORDER,
   internNamesForMonth,
-  isDutyMarker,
   parseDutyPersonName,
   type DutyKey,
-  type DutyMonthOverrides,
+  type DutyMonthData,
 } from "./duty-data";
 import {
-  fetchDutyOverridesForMonth,
-  isDutyKey,
-  upsertDutyOverride,
-} from "./duty-overrides";
+  fetchDutyMonthData,
+  saveDutySlotRecord,
+} from "./duty-repository";
+import {
+  fetchRosterPersonnel,
+  getRosterFullNames,
+  resolveRosterFullName,
+} from "@/lib/roster-directory";
 
 export type DutyRosterOption = {
-  /** Value stored in the roster / override row. */
+  /** Value stored in the roster row. */
   value: string;
   /** Label shown in the edit sheet. */
   label: string;
 };
 
 type ActionResult = { ok: true } | { ok: false; error: string };
+
+function isDutyKey(value: string): value is DutyKey {
+  return DUTY_ORDER.includes(value as DutyKey);
+}
 
 function firstNameOf(full: string): string {
   return parseDutyPersonName(full).first;
@@ -41,23 +46,23 @@ function validateYmd(year: number, month: number, day: number): boolean {
   return day <= max;
 }
 
-/** Load overrides for the month — any signed-in user (needed for display). */
-export async function loadDutyMonthOverrides(
+/** Load the complete saved month — any registered user (needed for display). */
+export async function loadDutyMonthData(
   year: number,
   month: number
-): Promise<{ ok: true; overrides: DutyMonthOverrides } | { ok: false; error: string }> {
+): Promise<{ ok: true; data: DutyMonthData } | { ok: false; error: string }> {
   try {
     const session = await auth();
     if (!session?.user?.isRegistered) {
       return { ok: false, error: "กรุณาเข้าสู่ระบบ" };
     }
-    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
+    if (!validateYmd(year, month, 1)) {
       return { ok: false, error: "เดือนไม่ถูกต้อง" };
     }
-    const overrides = await fetchDutyOverridesForMonth(year, month);
-    return { ok: true, overrides };
+    const data = await fetchDutyMonthData(year, month);
+    return { ok: true, data };
   } catch (err) {
-    console.error("loadDutyMonthOverrides failed", err);
+    console.error("loadDutyMonthData failed", err);
     return { ok: false, error: "โหลดตารางเวรไม่สำเร็จ" };
   }
 }
@@ -81,38 +86,37 @@ export async function getDutyEditRoster(input: {
     return { ok: false, error: "เวรนี้ไม่มีในวันนี้" };
   }
 
-  if (dutyKey === "d2") {
-    const overrides = await fetchDutyOverridesForMonth(year, month);
-    const names = internNamesForMonth(year, month, overrides);
-    const current = getDutyDay(year, month, day, overrides).entries.d2;
-    if (current && !isDutyMarker(current) && !names.includes(current)) {
-      names.push(current);
-      names.sort((a, b) => a.localeCompare(b, "th"));
+  try {
+    if (dutyKey === "d2") {
+      const [data, personnel] = await Promise.all([
+        fetchDutyMonthData(year, month),
+        fetchRosterPersonnel("intern"),
+      ]);
+      const names = internNamesForMonth(year, month, data);
+      const options = await Promise.all(names.map(async (value) => ({
+        value,
+        label: (await resolveRosterFullName(value, "intern", personnel)) ?? value,
+      })));
+      return { ok: true, options };
+    }
+
+    const fullNames = await getRosterFullNames(dutyKey === "d5" ? "nurse" : "staff");
+    const firstCounts = new Map<string, number>();
+    for (const full of fullNames) {
+      const first = firstNameOf(full);
+      firstCounts.set(first, (firstCounts.get(first) ?? 0) + 1);
     }
     return {
       ok: true,
-      options: names.map((value) => ({ value, label: value })),
-    };
-  }
-
-  if (dutyKey === "d5") {
-    return {
-      ok: true,
-      options: NURSES.map((full) => ({
-        value: firstNameOf(full),
+      options: fullNames.map((full) => ({
+        value: (firstCounts.get(firstNameOf(full)) ?? 0) > 1 ? full : firstNameOf(full),
         label: full,
       })),
     };
+  } catch (err) {
+    console.error("getDutyEditRoster failed", err);
+    return { ok: false, error: "โหลดรายชื่อเวรไม่สำเร็จ กรุณาลองอีกครั้ง" };
   }
-
-  // d1 staff + d3/d4 OPD
-  return {
-    ok: true,
-    options: PHYSICIANS.map((full) => ({
-      value: firstNameOf(full),
-      label: full,
-    })),
-  };
 }
 
 export async function saveDutySlot(input: {
@@ -134,12 +138,15 @@ export async function saveDutySlot(input: {
     return { ok: false, error: "เวรนี้ไม่มีในวันนี้" };
   }
 
+  if (typeof raw !== "string" || raw.length > 200) {
+    return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
+  }
   const personName = raw.trim();
   if (!personName) return { ok: false, error: "กรุณาเลือกคนเวร" };
 
   if (personName === "งด") {
     try {
-      await upsertDutyOverride({
+      await saveDutySlotRecord({
         year,
         month,
         day,
@@ -165,7 +172,7 @@ export async function saveDutySlot(input: {
   }
 
   try {
-    await upsertDutyOverride({
+    await saveDutySlotRecord({
       year,
       month,
       day,
@@ -200,7 +207,7 @@ export async function deleteDutySlot(input: {
   }
 
   try {
-    await upsertDutyOverride({
+    await saveDutySlotRecord({
       year,
       month,
       day,

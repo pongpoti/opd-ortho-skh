@@ -2,7 +2,6 @@ import {
   CLINIC,
   EXCLUDED_DEPARTMENTS,
   REQUIRED_COLUMNS,
-  STAFF_NAMES,
   TIME_WINDOW,
 } from "./config";
 
@@ -189,7 +188,7 @@ export function parseAndValidateFilePart(
   return parsed;
 }
 
-export function isStaff(doctorName: string, staffNames: string[] = STAFF_NAMES): boolean {
+export function isStaff(doctorName: string, staffNames: readonly string[]): boolean {
   const normalizedDoctor = normalizeWhitespace(doctorName);
   return staffNames.some((name) => normalizedDoctor.includes(normalizeWhitespace(name)));
 }
@@ -219,7 +218,7 @@ export function calculateWaitTimes(
   monthKey: string,
   first: { parsed: ParsedFile; range: DateRange },
   second: { parsed: ParsedFile; range: DateRange },
-  staffNames: string[] = STAFF_NAMES
+  staffNames: readonly string[]
 ): CalculationResult {
   if (
     first.parsed.headers.length !== second.parsed.headers.length ||

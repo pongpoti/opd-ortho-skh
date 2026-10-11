@@ -11,9 +11,9 @@ import {
   getDutyDay,
   isDutyMarker,
   type DutyKey,
-  type DutyMonthOverrides,
+  type DutyMonthData,
 } from "@/modules/duty-schedule/lib/duty-data";
-import { fetchDutyOverridesForMonth } from "@/modules/duty-schedule/lib/duty-overrides";
+import { fetchDutyMonthData } from "@/modules/duty-schedule/lib/duty-repository";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "@/modules/duty-schedule/lib/duty-icons";
 
 const HOME_DUTY_KEYS: DutyKey[] = ["d1", "d2"];
@@ -37,14 +37,16 @@ function thaiTodayLabel(year: number, month: number, day: number): string {
 /** Today's staff + intern roster, linking through to the full duty calendar. */
 export async function TodayDuty() {
   const { year, month, day } = bangkokToday();
-  let overrides: DutyMonthOverrides = {};
+  let monthData: DutyMonthData | null = null;
   try {
-    overrides = await fetchDutyOverridesForMonth(year, month);
-  } catch {
-    overrides = {};
+    monthData = await fetchDutyMonthData(year, month);
+  } catch (err) {
+    console.error("TodayDuty failed to load roster", err);
   }
-  const duty = getDutyDay(year, month, day, overrides);
-  const ambiguousByKey = ambiguousDutyFirstNamesByKey(year, month, HOME_DUTY_KEYS, overrides);
+  const duty = monthData ? getDutyDay(year, month, day, monthData) : null;
+  const ambiguousByKey = monthData
+    ? ambiguousDutyFirstNamesByKey(year, month, HOME_DUTY_KEYS, monthData)
+    : null;
 
   return (
     <ChakraLink asChild _hover={{ textDecoration: "none" }} display="block" mx="auto" w="full" maxW="md">
@@ -76,7 +78,12 @@ export async function TodayDuty() {
           </VStack>
 
           <VStack align="stretch" gap={0} px={5} py={2}>
-            {HOME_DUTY_KEYS.map((key) => {
+            {!duty && (
+              <Text role="alert" fontSize="sm" color="holiday.fg" textAlign="center" py={4}>
+                โหลดตารางเวรไม่สำเร็จ แตะเพื่อเปิดตารางเวรและลองอีกครั้ง
+              </Text>
+            )}
+            {duty && HOME_DUTY_KEYS.map((key) => {
               const Icon = DUTY_ICONS[key];
               const name = duty.entries[key];
               const muted = !name || isDutyMarker(name);
@@ -103,7 +110,7 @@ export async function TodayDuty() {
                       color={DUTY_ICON_COLORS[key]}
                       opacity={muted ? 0.55 : 1}
                     >
-                      {formatDutyDisplayName(name, ambiguousByKey[key])}
+                      {formatDutyDisplayName(name, ambiguousByKey?.[key])}
                     </Text>
                   </VStack>
                 </HStack>

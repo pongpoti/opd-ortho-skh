@@ -53,14 +53,24 @@ function CastVisitEditForm({
   const [castItems, setCastItems] = useState(() => new Map(visit.casts.map((c) => [c.id, c.count])));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [doctorName, setDoctorName] = useState<string | null>(null);
+  const [dutyDoctor, setDutyDoctor] = useState<{
+    date: string;
+    name: string | null;
+    error: string | null;
+  } | null>(null);
+  const doctorName = dutyDoctor?.date === date ? dutyDoctor.name : null;
+  const doctorLoadError = dutyDoctor?.date === date ? dutyDoctor.error : null;
+  const visibleError = doctorLoadError ?? error;
 
   useEffect(() => {
     let cancelled = false;
-    setDoctorName(null);
-    resolveDutyDoctorAction(date).then((name) => {
-      if (!cancelled) setDoctorName(name);
-    });
+    resolveDutyDoctorAction(date)
+      .then((name) => {
+        if (!cancelled) setDutyDoctor({ date, name, error: null });
+      })
+      .catch(() => {
+        if (!cancelled) setDutyDoctor({ date, name: null, error: "โหลดแพทย์เวรไม่สำเร็จ กรุณาลองอีกครั้ง" });
+      });
     return () => {
       cancelled = true;
     };
@@ -184,11 +194,11 @@ function CastVisitEditForm({
             </Wrap>
           )}
 
-          {error && (
+          {visibleError && (
             <Alert.Root status="error">
               <Alert.Indicator />
               <Alert.Content>
-                <Alert.Description>{error}</Alert.Description>
+                <Alert.Description>{visibleError}</Alert.Description>
               </Alert.Content>
             </Alert.Root>
           )}

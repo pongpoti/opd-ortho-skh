@@ -56,7 +56,7 @@ function StepBadge({ n }: { n: number }) {
   );
 }
 
-export function OpdWaitTimeCalculator() {
+export function OpdWaitTimeCalculator({ staffNames }: { staffNames: string[] }) {
   const [month, setMonth] = useState<string>("");
   const [buddhistYear, setBuddhistYear] = useState(CURRENT_BUDDHIST_YEAR);
   const [file1, setFile1] = useState<File | null>(null);
@@ -126,7 +126,8 @@ export function OpdWaitTimeCalculator() {
       const calcResult = calculateWaitTimes(
         monthKey,
         { parsed: parsed1, range: firstRange },
-        { parsed: parsed2, range: secondRange }
+        { parsed: parsed2, range: secondRange },
+        staffNames
       );
 
       setResult(calcResult);

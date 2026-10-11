@@ -1,5 +1,3 @@
-import { PHYSICIANS } from "@/lib/physicians";
-
 export const REQUIRED_COLUMNS = [
   "Date",
   "Time",
@@ -14,5 +12,3 @@ export const CLINIC = "ห้องตรวจศัลยกรรมกระ
 export const EXCLUDED_DEPARTMENTS = ["วัดบางปลา", "วัดเกตุม"];
 
 export const TIME_WINDOW = { start: "06:00:00", end: "16:00:00" };
-
-export const STAFF_NAMES: string[] = [...PHYSICIANS];

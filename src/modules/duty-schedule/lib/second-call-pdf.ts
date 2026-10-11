@@ -2,14 +2,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb } from "pdf-lib";
-import { PHYSICIANS } from "@/lib/physicians";
-import { internFullName } from "@/lib/interns";
 import { validSecondCallMonth } from "./second-call-share";
 
 const MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-// Preserve the order in the supplied second-call sheet, independently of the
-// alphabetical roster used by the rest of the app.
-const STAFF_ORDER = [14, 6, 12, 9, 13, 3, 8, 0, 2, 10, 4, 7, 5, 1, 11];
 const PAGE_WIDTH = 841.89;
 const PAGE_HEIGHT = 595.28;
 
@@ -18,6 +13,7 @@ export async function buildBlankSecondCallPdf(input: {
   /** Zero-indexed, like the duty calendar. */
   month: number;
   internNames: string[];
+  staff: Array<{ fullName: string; title: string | null; secondCallOrder: number | null }>;
 }): Promise<Uint8Array> {
   const { year, month } = input;
   if (!validSecondCallMonth(year, month)) throw new Error("Invalid month");
@@ -44,13 +40,14 @@ export async function buildBlankSecondCallPdf(input: {
   centered(`ประจำเดือน ${label}     (  ) ปฏิบัติงานปกติ     ( / ) ปฏิบัติงานนอกเวลาและวันหยุด`, 0, 516, PAGE_WIDTH, 10, true);
 
   type Row = { name: string; number?: number };
-  const rows: Row[] = STAFF_ORDER.map((index, i) => ({
-    name: `${index === 10 ? "พญ." : "นพ."} ${PHYSICIANS[index]}`, number: i + 1,
+  const staff = [...input.staff].sort((a, b) => (a.secondCallOrder ?? Infinity) - (b.secondCallOrder ?? Infinity) || a.fullName.localeCompare(b.fullName, "th"));
+  const rows: Row[] = staff.map((person, i) => ({
+    name: `${person.title ? `${person.title} ` : ""}${person.fullName}`, number: i + 1,
   }));
   rows.push({ name: "" }, { name: "" });
-  const interns = [...new Set(input.internNames.map(internFullName).filter(Boolean))];
+  const interns = [...new Set(input.internNames.map((name) => name.trim()).filter(Boolean))];
   // Unknown monthly interns remain blank; do not invent people or surnames.
-  if (interns.length) interns.forEach((name, i) => rows.push({ name, number: 16 + i }));
+  if (interns.length) interns.forEach((name, i) => rows.push({ name, number: staff.length + 1 + i }));
   else rows.push({ name: "" }, { name: "" }, { name: "" });
   rows.push({ name: "" }, { name: "" });
 

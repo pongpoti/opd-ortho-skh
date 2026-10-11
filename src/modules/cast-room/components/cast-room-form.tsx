@@ -76,14 +76,24 @@ export function CastRoomForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const [doctorName, setDoctorName] = useState<string | null>(null);
+  const [dutyDoctor, setDutyDoctor] = useState<{
+    date: string;
+    name: string | null;
+    error: string | null;
+  } | null>(null);
+  const doctorName = dutyDoctor?.date === date ? dutyDoctor.name : null;
+  const doctorLoadError = dutyDoctor?.date === date ? dutyDoctor.error : null;
+  const visibleError = doctorLoadError ?? submitError;
 
   useEffect(() => {
     let cancelled = false;
-    setDoctorName(null);
-    resolveDutyDoctorAction(date).then((name) => {
-      if (!cancelled) setDoctorName(name);
-    });
+    resolveDutyDoctorAction(date)
+      .then((name) => {
+        if (!cancelled) setDutyDoctor({ date, name, error: null });
+      })
+      .catch(() => {
+        if (!cancelled) setDutyDoctor({ date, name: null, error: "โหลดแพทย์เวรไม่สำเร็จ กรุณาลองอีกครั้ง" });
+      });
     return () => {
       cancelled = true;
     };
@@ -315,11 +325,11 @@ export function CastRoomForm() {
             )}
           </VStack>
 
-          {submitError && (
+          {visibleError && (
             <Alert.Root status="error">
               <Alert.Indicator />
               <Alert.Content>
-                <Alert.Description>{submitError}</Alert.Description>
+                <Alert.Description>{visibleError}</Alert.Description>
               </Alert.Content>
             </Alert.Root>
           )}

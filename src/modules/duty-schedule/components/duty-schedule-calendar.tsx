@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   Box,
+  Button,
   Drawer,
   Flex,
   Grid,
@@ -27,10 +28,10 @@ import {
   isDutyMarker,
   isDutyMonthDisabled,
   type DutyKey,
-  type DutyMonthOverrides,
+  type DutyMonthData,
 } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
-import { loadDutyMonthOverrides, getDutyScheduleAdminFlag } from "../lib/duty-actions";
+import { loadDutyMonthData, getDutyScheduleAdminFlag } from "../lib/duty-actions";
 import { sendDutySchedulePrint } from "../lib/duty-print-actions";
 import { createSecondCallPdfLink } from "../lib/second-call-actions";
 import { DutySlotDeleteDialog } from "./duty-slot-delete-dialog";
@@ -46,7 +47,12 @@ const THAI_WD_FULL = [
 ];
 const BE_OFFSET = 543;
 const SWIPE_THRESHOLD = 55;
-const NO_OVERRIDES: DutyMonthOverrides = {};
+const EMPTY_MONTH: DutyMonthData = {};
+
+type LoadedMonth =
+  | { key: string; status: "loading" }
+  | { key: string; status: "ready"; data: DutyMonthData }
+  | { key: string; status: "error"; error: string };
 
 function monthKey(year: number, month: number) {
   return `${year}-${month}`;
@@ -92,23 +98,21 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   const now = new Date();
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState<{ year: number; month: number; day: number } | null>(null);
-  // Overrides are keyed by day-of-month only, so remember which month they
-  // belong to — otherwise last month's edits show on this month's days.
-  const [loadedOverrides, setLoadedOverrides] = useState<{
-    key: string;
-    overrides: DutyMonthOverrides;
-  }>({ key: "", overrides: NO_OVERRIDES });
-  const latestOverridesKey = useRef("");
-  const overrides =
-    loadedOverrides.key === monthKey(view.year, view.month)
-      ? loadedOverrides.overrides
-      : NO_OVERRIDES;
+  // Day numbers are month-scoped; never display a previous month's response.
+  const [loadedMonth, setLoadedMonth] = useState<LoadedMonth>({ key: "", status: "loading" });
+  const latestLoad = useRef(0);
+  const currentMonthKey = monthKey(view.year, view.month);
+  const monthReady = loadedMonth.key === currentMonthKey && loadedMonth.status === "ready";
+  const monthData = monthReady && loadedMonth.status === "ready" ? loadedMonth.data : EMPTY_MONTH;
+  const loadError = loadedMonth.key === currentMonthKey && loadedMonth.status === "error"
+    ? loadedMonth.error
+    : null;
   const [adminFromServer, setAdminFromServer] = useState(false);
   const isAdmin = !!isAdminProp || adminFromServer;
   const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [isPrinting, startPrint] = useTransition();
   const [isExportingSecondCall, startSecondCallExport] = useTransition();
-  const [, startLoadOverrides] = useTransition();
+  const [, startLoadMonth] = useTransition();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const [editTarget, setEditTarget] = useState<{
@@ -127,27 +131,30 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
 
   const monthDisabled = isDutyMonthDisabled(view.year, view.month);
 
-  const reloadOverrides = useCallback((year: number, month: number) => {
+  const reloadMonthData = useCallback((year: number, month: number) => {
     const key = monthKey(year, month);
-    latestOverridesKey.current = key;
-    startLoadOverrides(async () => {
-      let next = NO_OVERRIDES;
+    const request = ++latestLoad.current;
+    startLoadMonth(async () => {
+      setLoadedMonth({ key, status: "loading" });
       try {
-        const result = await loadDutyMonthOverrides(year, month);
-        if (result.ok) next = result.overrides;
+        const result = await loadDutyMonthData(year, month);
+        // Fast swipes and retries can resolve out of order, including two
+        // requests for the same month. Only the newest request may land.
+        if (latestLoad.current !== request) return;
+        setLoadedMonth(result.ok
+          ? { key, status: "ready", data: result.data }
+          : { key, status: "error", error: result.error });
       } catch {
-        // Fall back to the seed roster.
+        if (latestLoad.current !== request) return;
+        setLoadedMonth({ key, status: "error", error: "โหลดตารางเวรไม่สำเร็จ กรุณาลองอีกครั้ง" });
       }
-      // Swiping months quickly can resolve requests out of order; only the
-      // most recently requested month may land.
-      if (latestOverridesKey.current !== key) return;
-      setLoadedOverrides({ key, overrides: next });
     });
   }, []);
 
   useEffect(() => {
-    reloadOverrides(view.year, view.month);
-  }, [view.year, view.month, reloadOverrides]);
+    reloadMonthData(view.year, view.month);
+    return () => { latestLoad.current += 1; };
+  }, [view.year, view.month, reloadMonthData]);
 
   useEffect(() => {
     if (isAdminProp) return;
@@ -165,6 +172,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   }, [isAdminProp]);
 
   function handlePrint() {
+    if (!monthReady) return;
     setPrintMessage(null);
     startPrint(async () => {
       const result = await sendDutySchedulePrint(view.year, view.month);
@@ -191,6 +199,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   }
 
   function handleSecondCall() {
+    if (!monthReady) return;
     const { year, month } = view;
     setPrintMessage(null);
     startSecondCallExport(async () => {
@@ -218,6 +227,10 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   }
 
   function changeMonth(delta: number) {
+    setSelected(null);
+    setEditTarget(null);
+    setDeleteTarget(null);
+    setPrintMessage(null);
     setView((v) => {
       let month = v.month + delta;
       let year = v.year;
@@ -250,18 +263,18 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   }
 
   const cells = buildCells(view.year, view.month);
-  const selectedDuty = selected
-    ? getDutyDay(selected.year, selected.month, selected.day, overrides)
+  const selectedDuty = selected && monthReady
+    ? getDutyDay(selected.year, selected.month, selected.day, monthData)
     : null;
   const selectedWeekday = selected
     ? new Date(selected.year, selected.month, selected.day).getDay()
     : 0;
-  const ambiguousByKey = selected
-    ? ambiguousDutyFirstNamesByKey(selected.year, selected.month, DUTY_ORDER, overrides)
+  const ambiguousByKey = selected && monthReady
+    ? ambiguousDutyFirstNamesByKey(selected.year, selected.month, DUTY_ORDER, monthData)
     : null;
 
   function afterMutation() {
-    reloadOverrides(view.year, view.month);
+    reloadMonthData(view.year, view.month);
   }
 
   return (
@@ -280,7 +293,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             variant="solid"
             colorPalette="brand"
             onClick={handleSecondCall}
-            disabled={isExportingSecondCall}
+            disabled={isExportingSecondCall || !monthReady || monthDisabled}
             loading={isExportingSecondCall}
           >
             <Text as="span" fontSize="md" fontWeight="bold" lineHeight="1">
@@ -293,7 +306,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             variant="solid"
             colorPalette="brand"
             onClick={handlePrint}
-            disabled={isPrinting}
+            disabled={isPrinting || !monthReady || monthDisabled}
             loading={isPrinting}
           >
             <Printer size={20} />
@@ -306,6 +319,19 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
           </IconButton>
         </HStack>
       </Flex>
+
+      {!monthReady && (
+        <VStack gap={2} role={loadError ? "alert" : "status"}>
+          <Text fontSize="sm" color={loadError ? "holiday.fg" : "fg.muted"} textAlign="center">
+            {loadError ?? "กำลังโหลดตารางเวร…"}
+          </Text>
+          {loadError && (
+            <Button size="sm" variant="outline" onClick={() => reloadMonthData(view.year, view.month)}>
+              ลองอีกครั้ง
+            </Button>
+          )}
+        </VStack>
+      )}
 
       {printMessage && (
         <Text
@@ -339,8 +365,8 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
           {cells.map((cell) => {
             const weekday = new Date(cell.year, cell.month, cell.day).getDay();
             const isWeekend = weekday === 0 || weekday === 6;
-            const duty = !cell.outside
-              ? getDutyDay(cell.year, cell.month, cell.day, overrides)
+            const duty = !cell.outside && monthReady
+              ? getDutyDay(cell.year, cell.month, cell.day, monthData)
               : null;
             const isHoliday = !!duty?.holiday;
             const isToday =
@@ -348,7 +374,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
               cell.year === now.getFullYear() &&
               cell.month === now.getMonth() &&
               cell.day === now.getDate();
-            const dayDisabled = cell.outside || isDutyMonthDisabled(cell.year, cell.month);
+            const dayDisabled = cell.outside || !monthReady || isDutyMonthDisabled(cell.year, cell.month);
 
             return (
               <Box
@@ -402,7 +428,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
 
       {monthDisabled && (
         <Text fontSize="sm" color="fg.muted" textAlign="center">
-          เริ่มใช้งานตารางเวรตั้งแต่ตุลาคม 2569
+          เริ่มใช้งานตารางเวรตั้งแต่กันยายน 2569
         </Text>
       )}
 
@@ -442,6 +468,18 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                 </Drawer.CloseTrigger>
               </Drawer.Header>
               <Drawer.Body overflowY="auto" pb="max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))">
+                {!monthReady && (
+                  <VStack role={loadError ? "alert" : "status"} py={4} gap={3}>
+                    <Text textAlign="center" color={loadError ? "holiday.fg" : "fg.muted"}>
+                      {loadError ?? "กำลังโหลดตารางเวร…"}
+                    </Text>
+                    {loadError && (
+                      <Button size="sm" variant="outline" onClick={() => reloadMonthData(view.year, view.month)}>
+                        ลองอีกครั้ง
+                      </Button>
+                    )}
+                  </VStack>
+                )}
                 {selectedDuty?.holiday && (
                   <Text
                     display="inline-block"
@@ -460,7 +498,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                     {selectedDuty.holidayLabel ?? "วันหยุดพิเศษ — แพทย์คนเดิมครอบคลุมหลายวัน"}
                   </Text>
                 )}
-                <VStack align="stretch" gap={0}>
+                {monthReady && <VStack align="stretch" gap={0}>
                   {DUTY_ORDER.filter((key) => dutyApplies(key, selectedWeekday)).map((key) => {
                     const Icon = DUTY_ICONS[key];
                     const name = selectedDuty?.entries[key];
@@ -520,14 +558,14 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                       </HStack>
                     );
                   })}
-                </VStack>
+                </VStack>}
               </Drawer.Body>
             </Drawer.Content>
           </Drawer.Positioner>
         </Portal>
       </Drawer.Root>
 
-      {editTarget && (
+      {editTarget && monthReady && (
         <DutySlotEditSheet
           open={!!editTarget}
           onOpenChange={(open) => { if (!open) setEditTarget(null); }}
@@ -535,7 +573,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
           month={editTarget.month}
           day={editTarget.day}
           dutyKey={editTarget.dutyKey}
-          currentName={getDutyDay(editTarget.year, editTarget.month, editTarget.day, overrides).entries[editTarget.dutyKey]}
+          currentName={getDutyDay(editTarget.year, editTarget.month, editTarget.day, monthData).entries[editTarget.dutyKey]}
           onSaved={afterMutation}
         />
       )}

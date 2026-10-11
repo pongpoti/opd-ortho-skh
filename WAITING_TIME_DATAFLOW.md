@@ -87,7 +87,7 @@ Applied in this exact order once both files pass validation and the user starts 
 
 Split the sorted, filtered rows into two groups by the `แพทย์` field:
 
-- **Staff** — the doctor's name *contains* (substring match, after whitespace normalization) any name in a hardcoded roster of the department's own attending staff.
+- **Staff** — the doctor's name *contains* (substring match, after whitespace normalization) any name in the department's attending staff list loaded from Neon's `roster_personnel` table.
 - **Non-staff** — everyone else (in this repo's context: rotating residents).
 
 If either group is empty after filtering, the whole calculation is rejected — a result always needs both groups represented.
@@ -107,13 +107,13 @@ For each of three groups — **all valid rows**, **staff only**, **non-staff onl
 
 ## 6. Values to re-supply when porting to a different deployment
 
-These are hardcoded constants in `src/lib/opd-calculator.ts`, not configuration — a port to another clinic/hospital needs its own values:
+Calculation rules are configured in `src/modules/waiting-time/lib/config.ts`. The staff list is supplied by the server from Neon:
 
 | Constant | Current value | Purpose |
 |---|---|---|
 | `CLINIC` | `"ห้องตรวจศัลยกรรมกระดูก"` | Exact-match target for the "seen-at department" filter |
 | `EXCLUDED_DEPARTMENTS` | `["วัดบางปลา", "วัดเกตุม"]` | Substring-match exclusion list for "referring department" |
-| `STAFF_NAMES` | 15 physician names | Roster used to split staff vs. non-staff — not reproduced here since it's a personnel list; read the current list directly from `src/lib/opd-calculator.ts` when porting |
+| `staffNames` argument | Active staff names from Neon | Roster used to split staff vs. non-staff; loaded from `roster_personnel` for each page request |
 | Time window | `06:00:00`–`16:00:00` inclusive | Clinic operating-hours filter |
 | `REQUIRED_COLUMNS` | the 6 columns in §2 | Must match the source system's actual export headers |
 

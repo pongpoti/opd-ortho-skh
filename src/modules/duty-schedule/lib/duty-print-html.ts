@@ -8,8 +8,7 @@ import {
   getDutyDay,
   isDutyMarker,
 } from "./duty-data";
-import { fetchDutyOverridesForMonth } from "./duty-overrides";
-import { OPD_FIXED_SCHEDULE } from "./opd-fixed-schedule";
+import { fetchDutyMonthData, fetchOpdWeeklySchedule } from "./duty-repository";
 
 const THAI_MONTHS = [
   "มกราคม",
@@ -93,13 +92,13 @@ async function loadPosterCss(): Promise<string> {
   return css;
 }
 
-function buildOpdTableHtml(): string {
+async function buildOpdTableHtml(): Promise<string> {
   const morningTime = "09.00 – 12.00 น.";
   const afternoonTime = "13.00 – 16.00 น.";
 
   let rows = `<div class="opd-row opd-head"><div class="opd-cell">วัน</div><div class="opd-cell">${morningTime}</div><div class="opd-cell opd-pm">${afternoonTime}</div></div>`;
 
-  for (const r of OPD_FIXED_SCHEDULE) {
+  for (const r of await fetchOpdWeeklySchedule()) {
     const names = opdMorningNames(r.morning)
       .map((name, i) => {
         const sep = i > 0 ? `<span class="opd-sep">·</span>` : "";
@@ -116,7 +115,7 @@ async function buildCalendarHtml(year: number, month: number): Promise<string> {
   const n = daysInMonth(year, month);
   const firstCol = mondayFirstCol(year, month);
   const weeks = Math.ceil((firstCol + n) / 7);
-  const overrides = await fetchDutyOverridesForMonth(year, month);
+  const overrides = await fetchDutyMonthData(year, month);
 
   let html = `<div id="calendar" class="calendar" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">`;
 
@@ -187,7 +186,7 @@ body { display: block; min-height: 0; }
     </header>
     <section class="section">
       <h2 class="section-title">ตารางออกตรวจ OPD</h2>
-      ${buildOpdTableHtml()}
+      ${await buildOpdTableHtml()}
     </section>
     <section class="section section-calendar">
       <h2 class="section-title">ตารางเวร staff</h2>

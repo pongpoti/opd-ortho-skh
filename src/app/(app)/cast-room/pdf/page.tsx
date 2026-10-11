@@ -4,6 +4,7 @@ import { Flex, Spinner } from "@chakra-ui/react";
 
 import { auth } from "@/auth";
 import { modulePageTitle } from "@/lib/modules";
+import { getRosterFullNames } from "@/lib/roster-directory";
 import { CastCaseLogPdfPage } from "@/modules/cast-room/components/cast-case-log-pdf-page";
 import { listCastVisitsForAdmin } from "@/modules/cast-room/lib/cast-dashboard-actions";
 import { recentMonthOptions } from "@/modules/cast-room/lib/thai-date";
@@ -24,12 +25,15 @@ async function CastCaseLogPdfData() {
   // Default to previous month (first option in the 6-month window) — must
   // match the client's initial selection, which skips its first load.
   const [defaultMonth] = recentMonthOptions(6);
-  const result = await listCastVisitsForAdmin(defaultMonth.year, defaultMonth.month);
+  const [result, physicianNames] = await Promise.all([
+    listCastVisitsForAdmin(defaultMonth.year, defaultMonth.month),
+    getRosterFullNames("staff"),
+  ]);
   const initialVisits = result.ok ? result.visits : [];
   const initialEmptyError =
-    result.ok && initialVisits.length === 0 ? "ไม่มีรายการในเดือนที่เลือก" : null;
+    !result.ok ? result.error : initialVisits.length === 0 ? "ไม่มีรายการในเดือนที่เลือก" : null;
   return (
-    <CastCaseLogPdfPage initialVisits={initialVisits} initialEmptyError={initialEmptyError} />
+    <CastCaseLogPdfPage initialVisits={initialVisits} initialEmptyError={initialEmptyError} physicianNames={physicianNames} />
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 
-import { PHYSICIANS } from "@/lib/physicians";
+import { getRosterFullNames } from "@/lib/roster-directory";
 import { requireAdminSession } from "@/lib/require-admin";
 
 import { loadCastVisitsForMonth } from "./cast-case-log-data";
@@ -80,13 +80,13 @@ function groupByDoctor(visits: CastVisitSummary[]): Map<string, CastVisitSummary
   return map;
 }
 
-function selectVisits(
+async function selectVisits(
   visits: CastVisitSummary[],
   doctorName: string | undefined
-): {
+): Promise<{
   selected: CastVisitSummary[];
   groups: Array<{ staff: CastCaseLogPdfStaff; visits: CastVisitSummary[] }>;
-} {
+}> {
   const byDoctor = groupByDoctor(visits);
 
   if (doctorName) {
@@ -97,7 +97,7 @@ function selectVisits(
     };
   }
 
-  const rosterOrder = [...PHYSICIANS];
+  const rosterOrder = await getRosterFullNames("staff");
   const seen = new Set<string>();
   const groups: Array<{ staff: CastCaseLogPdfStaff; visits: CastVisitSummary[] }> = [];
 
@@ -121,7 +121,7 @@ async function buildPdfBytes(
   doctorName: string | undefined,
   visits: CastVisitSummary[]
 ): Promise<{ bytes: Uint8Array; caseCount: number; filename: string }> {
-  const { selected, groups } = selectVisits(visits, doctorName);
+  const { selected, groups } = await selectVisits(visits, doctorName);
 
   if (doctorName) {
     const bytes = await buildCastCaseLogPdf({
@@ -180,7 +180,7 @@ export async function createCastCaseLogPdfLink(
   if (visits.length === 0) {
     return { ok: false, error: "ไม่มีรายการในเดือนที่เลือก" };
   }
-  const { selected } = selectVisits(visits, doctorName);
+  const { selected } = await selectVisits(visits, doctorName);
   if (selected.length === 0) {
     return { ok: false, error: "ไม่มีรายการของแพทย์นี้ในเดือนที่เลือก" };
   }
