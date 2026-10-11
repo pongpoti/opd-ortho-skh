@@ -399,7 +399,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                   </IconButton>
                 </Drawer.CloseTrigger>
               </Drawer.Header>
-              <Drawer.Body pb="max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))">
+              <Drawer.Body overflowY="auto" pb="max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))">
                 {selectedDuty?.holiday && (
                   <Text
                     display="inline-block"
@@ -425,15 +425,15 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                     const muted = !name || isDutyMarker(name);
                     const canDelete = isAdmin && !!name && name !== "-";
                     return (
-                      <HStack key={key} gap={2} py={3} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
+                      <HStack key={key} gap={3} py={4} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
                         <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
-                          <Icon size={18} />
+                          <Icon size={20} />
                         </Box>
-                        <VStack align="start" gap={2} flex="1" minW={0}>
-                          <Text fontSize="md" fontWeight="semibold" color="fg.muted">
+                        <VStack align="start" gap={2.5} flex="1" minW={0}>
+                          <Text fontSize="md" lineHeight="1.5" fontWeight="medium" color="fg.muted">
                             {DUTY_LABELS[key]}
                           </Text>
-                          <Text fontSize="xl" fontWeight="semibold" color={muted ? "fg.muted" : "fg"}>
+                          <Text fontSize="22px" lineHeight="1.6" fontWeight="semibold" color={muted ? "fg.muted" : "fg"}>
                             {formatDutyDisplayName(name, ambiguousByKey?.[key])}
                           </Text>
                         </VStack>
