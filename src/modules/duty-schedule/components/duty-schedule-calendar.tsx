@@ -429,7 +429,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                         <Box color={DUTY_ICON_COLORS[key]} flexShrink={0}>
                           <Icon size={18} />
                         </Box>
-                        <VStack align="start" gap={0} flex="1" minW={0}>
+                        <VStack align="start" gap={2} flex="1" minW={0}>
                           <Text fontSize="md" fontWeight="semibold" color="fg.muted">
                             {DUTY_LABELS[key]}
                           </Text>
