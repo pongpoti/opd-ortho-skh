@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/migrate-roster.mjs --vercel-production && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate-roster": "node scripts/migrate-roster.mjs --apply"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.37.0",
