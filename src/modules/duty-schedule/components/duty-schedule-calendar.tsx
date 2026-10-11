@@ -430,10 +430,10 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                           <Icon size={18} />
                         </Box>
                         <VStack align="start" gap={0} flex="1" minW={0}>
-                          <Text fontSize="xs" fontWeight="semibold" color="fg.muted">
+                          <Text fontSize="md" fontWeight="semibold" color="fg.muted">
                             {DUTY_LABELS[key]}
                           </Text>
-                          <Text fontSize="md" fontWeight="semibold" color={muted ? "fg.muted" : "fg"}>
+                          <Text fontSize="xl" fontWeight="semibold" color={muted ? "fg.muted" : "fg"}>
                             {formatDutyDisplayName(name, ambiguousByKey?.[key])}
                           </Text>
                         </VStack>
