@@ -16,7 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, Pencil, Printer, Trash2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { ensureLiffInit, liff } from "@/lib/liff-client";
+import { ensureLiffInit, ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
 import {
   ambiguousDutyFirstNamesByKey,
   DUTY_LABELS,
@@ -32,6 +32,7 @@ import {
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 import { loadDutyMonthOverrides, getDutyScheduleAdminFlag } from "../lib/duty-actions";
 import { sendDutySchedulePrint } from "../lib/duty-print-actions";
+import { createSecondCallPdfLink } from "../lib/second-call-actions";
 import { DutySlotDeleteDialog } from "./duty-slot-delete-dialog";
 import { DutySlotEditSheet } from "./duty-slot-edit-sheet";
 
@@ -106,6 +107,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   const isAdmin = !!isAdminProp || adminFromServer;
   const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [isPrinting, startPrint] = useTransition();
+  const [isExportingSecondCall, startSecondCallExport] = useTransition();
   const [, startLoadOverrides] = useTransition();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -188,6 +190,33 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
     });
   }
 
+  function handleSecondCall() {
+    const { year, month } = view;
+    setPrintMessage(null);
+    startSecondCallExport(async () => {
+      try {
+        const result = await createSecondCallPdfLink(year, month);
+        if (!result.ok) {
+          setPrintMessage({ tone: "err", text: result.error });
+          return;
+        }
+        const url = new URL(result.path, window.location.origin).toString();
+        try {
+          await ensureLiffInitWithTimeout();
+          if (liff.isInClient()) {
+            liff.openWindow({ url, external: true });
+            return;
+          }
+        } catch {
+          // Open the signed HTTP download directly in ordinary browsers.
+        }
+        window.location.assign(url);
+      } catch {
+        setPrintMessage({ tone: "err", text: "เปิด PDF ไม่สำเร็จ กรุณาลองอีกครั้ง" });
+      }
+    });
+  }
+
   function changeMonth(delta: number) {
     setView((v) => {
       let month = v.month + delta;
@@ -250,6 +279,9 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             size="md"
             variant="solid"
             colorPalette="brand"
+            onClick={handleSecondCall}
+            disabled={isExportingSecondCall}
+            loading={isExportingSecondCall}
           >
             <Text as="span" fontSize="md" fontWeight="bold" lineHeight="1">
               2<Text as="sup" fontSize="10px" ml="1px">nd</Text>

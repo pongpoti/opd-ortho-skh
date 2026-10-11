@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
   // Ensure poster assets + Chromium binary files are present at runtime.
   outputFileTracingIncludes: {
+    "/api/duty-schedule/second-call-pdf": ["./public/fonts/Sarabun-*.ttf"],
     "/api/duty-schedule/print-image": [
       "./src/modules/duty-schedule/print-poster/**/*",
       "./node_modules/@sparticuz/chromium/**/*",
