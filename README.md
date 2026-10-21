@@ -32,6 +32,13 @@ exports read the same database data. The original September–December 2026
 rosters live under `scripts/data/` only as a historical import snapshot.
 See [the migration and import instructions](scripts/ROSTER_IMPORT.md).
 
+The monthly second-call PDF (the "2nd" button on the duty calendar) fills in
+each staff member's real duty (`d1`) and intern duty (`d2`) as ช/บ/ด
+sub-duties and assigns second-call on top of them. The rules (who is
+excluded, the minimum per person, weekday bans) live in `SECOND_CALL_RULES`
+in `src/modules/duty-schedule/lib/second-call-assign.ts`. Assignments are
+computed from the roster on every export and are not stored.
+
 ## Auth setup (LINE LIFF)
 
 The whole app is gated behind LINE Login via LIFF. To make it actually work:
