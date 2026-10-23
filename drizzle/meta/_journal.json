@@ -50,6 +50,13 @@
       "when": 1791729591247,
       "tag": "0006_canonical_roster",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792747865335,
+      "tag": "0007_second_call_slots",
+      "breakpoints": true
     }
   ]
 }

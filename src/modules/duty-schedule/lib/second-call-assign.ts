@@ -108,22 +108,51 @@ export type SecondCallInput = {
   staff: string[];
   /** Real staff on the last day of the previous month (its Friday for rule 6). */
   previousReal?: string | null;
+  /**
+   * Second-call kept as is, keyed by `slotKey`; `planSecondCall` decides
+   * which saved names qualify. Keys that match no sub-duty are ignored.
+   */
+  fixed?: ReadonlyMap<string, readonly string[]>;
 };
+
+export const slotKey = (slot: { day: number; shift: SubDuty }) => `${slot.day}:${slot.shift}`;
+
+/** The month's sub-duties, eligible people, and the hard rules for one person on one sub-duty. */
+function monthRules(input: SecondCallInput) {
+  const { year, month, days } = input;
+  const slots: SecondCallSlot[] = days.flatMap((info, i) => subDutiesOf(year, month, i + 1, info.holiday)
+    .map((sub) => ({ ...sub, dutyDay: i + 1, real: info.real, secondCall: [] as string[] })));
+  const excluded = new Set<string>(SECOND_CALL_RULES.excluded);
+  const people = [...new Set(input.staff)].filter((name) => !excluded.has(firstName(name)));
+  const realOn = (day: number) => (day >= 1 ? days[day - 1]?.real : input.previousReal) ?? null;
+  const allowed = (p: string, slot: SecondCallSlot) => {
+    if (slot.real === p) return false;
+    const wd = weekday(year, month, slot.day);
+    if (SECOND_CALL_RULES.weekdayBans.some((ban) => ban.shift === slot.shift && ban.weekday === wd && ban.first === firstName(p))) return false;
+    return !(slot.shift === "ช" && wd === 6 && realOn(slot.day - 1) === p);
+  };
+  return { slots, people, allowed };
+}
 
 /**
  * Assign second-call for every sub-duty of the month's real duties.
  * Hard rules: never the doctor's own real sub-duty, the weekday bans, and no
  * Saturday ช for whoever had Friday's real duty. Soft preferences spread
  * each doctor's shifts evenly and avoid running straight into their own duty.
- * Throws when the rules cannot all be met.
+ * Fixed sub-duties count toward each quota and the rest is assigned around
+ * them. Throws when the rules cannot all be met.
  */
 export function assignSecondCall(input: SecondCallInput): { slots: SecondCallSlot[]; counts: Map<string, number> } {
-  const { year, month, days } = input;
-  const slots: SecondCallSlot[] = days.flatMap((info, i) => subDutiesOf(year, month, i + 1, info.holiday)
-    .map((sub) => ({ ...sub, dutyDay: i + 1, real: info.real, secondCall: [] as string[] })));
-  const excluded = new Set<string>(SECOND_CALL_RULES.excluded);
-  const people = [...new Set(input.staff)].filter((name) => !excluded.has(firstName(name)));
+  const { year, month } = input;
+  const { slots, people, allowed } = monthRules(input);
   const counts = new Map(people.map((p) => [p, 0]));
+  const locked = slots.map((slot) => {
+    const saved = input.fixed?.get(slotKey(slot));
+    if (!saved?.length) return false;
+    slot.secondCall = [...new Set(saved)];
+    for (const p of slot.secondCall) if (counts.has(p)) counts.set(p, counts.get(p)! + 1);
+    return true;
+  });
   if (!people.length || !slots.length) return { slots, counts };
 
   const realTimes = new Map<string, Set<number>>();
@@ -132,13 +161,7 @@ export function assignSecondCall(input: SecondCallInput): { slots: SecondCallSlo
   };
   markReal(input.previousReal, time(1, "ด"));
   for (const slot of slots) markReal(slot.real, time(slot.day, slot.shift));
-  const realOn = (day: number) => (day >= 1 ? days[day - 1]?.real : input.previousReal) ?? null;
-  const can = (p: string, slot: SecondCallSlot) => {
-    if (slot.real === p || slot.secondCall.includes(p)) return false;
-    const wd = weekday(year, month, slot.day);
-    if (SECOND_CALL_RULES.weekdayBans.some((ban) => ban.shift === slot.shift && ban.weekday === wd && ban.first === firstName(p))) return false;
-    return !(slot.shift === "ช" && wd === 6 && realOn(slot.day - 1) === p);
-  };
+  const can = (p: string, slot: SecondCallSlot) => !slot.secondCall.includes(p) && allowed(p, slot);
 
   // Quotas: everyone gets the minimum; a month with more sub-duties than that
   // gives the extra to whoever has the fewest real sub-duties.
@@ -149,24 +172,49 @@ export function assignSecondCall(input: SecondCallInput): { slots: SecondCallSlo
     .sort((a, b) => (realTimes.get(a)?.size ?? 0) - (realTimes.get(b)?.size ?? 0) || seed(a) - seed(b))
     .slice(0, total - Math.floor(total / people.length) * people.length)
     .forEach((p) => quota.set(p, quota.get(p)! + 1));
-  // Seats per sub-duty: the extra seats are spread evenly through the month.
-  const seats = slots.map(() => Math.floor(total / slots.length));
-  const extraSeats = total - seats[0] * slots.length;
-  for (let j = 0; j < extraSeats; j++) seats[Math.floor(((j + 0.5) * slots.length) / extraSeats)]++;
-
+  for (const p of people) quota.set(p, Math.max(quota.get(p)!, counts.get(p)!));
+  const open = slots.flatMap((_, s) => (locked[s] ? [] : [s]));
+  const left = (p: string) => quota.get(p)! - counts.get(p)!;
+  const room = (p: string) => open.filter((s) => can(p, slots[s])).length;
+  let seats: number[] = [];
   const remainingFit = (from: number) => fits(
     people,
-    new Map(people.map((p) => [p, quota.get(p)! - counts.get(p)!])),
+    new Map(people.map((p) => [p, left(p)])),
     slots.slice(from).map((slot, k) => ({ open: seats[from + k] - slot.secondCall.length, can: (p: string) => can(p, slot) })),
   );
-  if (!remainingFit(0)) throw new Error("Second-call rules cannot be satisfied for this month");
+  // Only a late roster edit around fixed days can make a full quota
+  // impossible; then the tightest person gives up one unit at a time.
+  const lowered = new Set<string>();
+  for (;;) {
+    // Open sub-duties each need someone: top up whoever carries the least.
+    while (people.reduce((sum, p) => sum + left(p), 0) < open.length) {
+      const p = people.filter((q) => !lowered.has(q) && left(q) < room(q))
+        .sort((a, b) => quota.get(a)! - quota.get(b)! || seed(a) - seed(b))[0];
+      if (!p) throw new Error("Second-call rules cannot be satisfied for this month");
+      quota.set(p, quota.get(p)! + 1);
+    }
+    // Seats per open sub-duty: the extra seats are spread evenly through the month.
+    const seatTotal = people.reduce((sum, p) => sum + left(p), 0);
+    seats = slots.map((slot) => slot.secondCall.length);
+    open.forEach((s) => { seats[s] = Math.floor(seatTotal / open.length); });
+    const extraSeats = open.length ? seatTotal - Math.floor(seatTotal / open.length) * open.length : 0;
+    for (let j = 0; j < extraSeats; j++) seats[open[Math.floor(((j + 0.5) * open.length) / extraSeats)]]++;
+    if (remainingFit(0)) break;
+    const tight = people.filter((p) => left(p) > 0).sort((a, b) => room(a) - left(a) - (room(b) - left(b)) || seed(a) - seed(b))[0];
+    if (!tight) throw new Error("Second-call rules cannot be satisfied for this month");
+    quota.set(tight, quota.get(tight)! - 1);
+    lowered.add(tight);
+  }
 
   const last = new Map<string, number>();
+  const soFar = new Map(people.map((p) => [p, 0]));
+  const took = (p: string, t: number) => { last.set(p, t); if (soFar.has(p)) soFar.set(p, soFar.get(p)! + 1); };
   slots.forEach((slot, s) => {
     const t = time(slot.day, slot.shift);
+    if (locked[s]) slot.secondCall.forEach((p) => took(p, t));
     while (slot.secondCall.length < seats[s]) {
       const score = (p: string) => {
-        const behind = (quota.get(p)! * (s + 1)) / slots.length - counts.get(p)!;
+        const behind = (quota.get(p)! * (s + 1)) / slots.length - soFar.get(p)!;
         const gapDays = last.has(p) ? (t - last.get(p)!) / 3 : 7;
         const nextToOwn = realTimes.get(p)?.has(t - 1) || realTimes.get(p)?.has(t + 1) ? 1 : 0;
         const nextToSecond = last.get(p) === t - 1 ? 1 : 0;
@@ -184,10 +232,39 @@ export function assignSecondCall(input: SecondCallInput): { slots: SecondCallSlo
         return false;
       });
       if (!pick) throw new Error("Second-call rules cannot be satisfied for this month");
-      last.set(pick, t);
+      took(pick, t);
     }
   });
   return { slots, counts };
+}
+
+/**
+ * The month's second-call built on saved assignments. Saved names that still
+ * meet the rules stay put and only missing or broken sub-duties are filled.
+ * If that leaves anyone below the minimum, duty days after `lockedThrough`
+ * are reassigned around the earlier ones, which keep their valid names.
+ */
+export function planSecondCall(input: Omit<SecondCallInput, "fixed"> & {
+  saved: ReadonlyMap<string, readonly string[]>;
+  /** Last duty day of the month that is kept even when reassigning (0 = none). */
+  lockedThrough: number;
+}): { slots: SecondCallSlot[]; counts: Map<string, number> } {
+  const { slots, people, allowed } = monthRules(input);
+  const valid = new Map<string, string[]>();
+  const locked = new Map<string, string[]>();
+  for (const slot of slots) {
+    const names = [...new Set(input.saved.get(slotKey(slot)) ?? [])];
+    if (!names.length || !names.every((p) => people.includes(p) && allowed(p, slot))) continue;
+    valid.set(slotKey(slot), names);
+    if (slot.dutyDay <= input.lockedThrough) locked.set(slotKey(slot), names);
+  }
+  try {
+    const kept = assignSecondCall({ ...input, fixed: valid });
+    if ([...kept.counts.values()].every((n) => n >= SECOND_CALL_RULES.minPerStaff)) return kept;
+  } catch {
+    // Keeping every saved name can be infeasible; reassign the later days.
+  }
+  return assignSecondCall({ ...input, fixed: locked });
 }
 
 /**
