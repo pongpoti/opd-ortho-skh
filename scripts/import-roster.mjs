@@ -112,6 +112,50 @@ WHERE duty_slots.source = 'import' OR duty_slots.updated_at < EXCLUDED.updated_a
   ];
 }
 
+/** Reviewed monthly rosters applied by the deploy hook, each under its own marker. */
+const monthlyImportUrls = [new URL("./data/roster-2026-11.json", import.meta.url)];
+
+export async function readMonthlyRosterImports() {
+  return Promise.all(monthlyImportUrls.map(async (url) => JSON.parse(await readFile(url, "utf8"))));
+}
+
+export function validateMonthlyRosterImport(data) {
+  if (data.version !== 1 || !/^roster-\d{4}-\d{2}-v\d+$/u.test(data.name ?? "")) {
+    throw new Error("Invalid monthly roster import header");
+  }
+  const counts = validateHistoricalRoster({ ...data, personnel: [], fixedHolidays: [], opdSchedule: [] });
+  return { days: counts.days, slots: counts.slots };
+}
+
+/** Adds the month's confirmed dates and slots. Replaces only slots still holding
+ * imported values; admin and legacy edits made in the app are kept.
+ */
+export function buildMonthlyRosterImportStatements(data) {
+  validateMonthlyRosterImport(data);
+  const dayRows = [];
+  const slotRows = [];
+  for (const [key, roster] of Object.entries(data.rosters)) {
+    const [year, month] = key.split("-").map(Number);
+    for (const [day, entries] of Object.entries(roster)) {
+      const date = `${year}-${String(month + 1).padStart(2, "0")}-${day.padStart(2, "0")}`;
+      dayRows.push(`(${textLiteral(date)}, ${entries.holiday ? "TRUE" : "FALSE"}, ${textLiteral(entries.holidayLabel)})`);
+      for (const [dutyKey, name] of Object.entries(entries)) {
+        if (!/^d[1-5]$/u.test(dutyKey)) continue;
+        slotRows.push(`(${textLiteral(date)}, ${textLiteral(dutyKey)}, ${textLiteral(name)}, 'import')`);
+      }
+    }
+  }
+  return [
+    `INSERT INTO duty_days (shift_date, holiday, holiday_label) VALUES\n${dayRows.join(",\n")}\nON CONFLICT (shift_date) DO NOTHING`,
+    `INSERT INTO duty_slots (shift_date, duty_key, person_name, source) VALUES\n${slotRows.join(",\n")}
+ON CONFLICT (shift_date, duty_key) DO UPDATE
+SET person_name = EXCLUDED.person_name,
+    updated_by_line_user_id = NULL,
+    updated_at = now()
+WHERE duty_slots.source = 'import' AND duty_slots.person_name IS DISTINCT FROM EXCLUDED.person_name`,
+  ];
+}
+
 async function main() {
   const { values } = parseArgs({
     options: {
@@ -142,6 +186,9 @@ async function main() {
     console.log("Historical roster imported; saved duty overrides preserved.");
   }
   console.log(JSON.stringify(counts));
+  for (const monthly of await readMonthlyRosterImports()) {
+    console.log(JSON.stringify({ [monthly.name]: validateMonthlyRosterImport(monthly) }));
+  }
   if (!values.apply && !values["write-sql"] && !values["write-json"]) {
     console.log("Validated only. Use --apply with DATABASE_URL to import, or --write-sql <path> to review SQL.");
   }

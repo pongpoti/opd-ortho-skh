@@ -71,3 +71,15 @@ transaction statements with:
 ```sh
 node scripts/import-roster.mjs --write-sql /tmp/roster.sql --write-json /tmp/roster-queries.json
 ```
+
+## Monthly roster imports
+
+A new month's roster can ship as a reviewed file under `scripts/data/`, such as
+`roster-2026-11.json`, listed in `monthlyImportUrls` in `import-roster.mjs`. It
+uses the same `rosters` shape as the historical snapshot (zero-indexed month keys)
+and a unique `name` like `roster-2026-11-v1`. The deploy hook applies each file
+once, inside the same transaction, after the historical seed, and records its
+own marker in `drizzle.__roster_imports`. It inserts missing dates and slots and
+replaces a slot only while it still holds an imported value. Slots edited in the
+app (`admin` or `legacy`) are kept. Editing an applied file fails the build;
+correct a month with a new file and a new `-vN` name instead.
