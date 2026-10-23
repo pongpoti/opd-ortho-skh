@@ -12,10 +12,11 @@ export async function buildSecondCallPdf(input: {
   year: number;
   /** Zero-indexed, like the duty calendar. */
   month: number;
-  internNames: string[];
+  /** This month's interns; `key` matches `cells`, `name` is null until the roster knows them. */
+  interns: Array<{ key: string; name: string | null }>;
   staff: Array<{ fullName: string; title: string | null; secondCallOrder: number | null }>;
   /**
-   * Shift marks per person (staff full name or intern name), one entry per
+   * Shift marks per person (staff full name or intern key), one entry per
    * day column plus the next month's 1st. Omitted: a blank template.
    */
   cells?: Map<string, string[]>;
@@ -50,9 +51,9 @@ export async function buildSecondCallPdf(input: {
     name: `${person.title ? `${person.title} ` : ""}${person.fullName}`, number: i + 1, key: person.fullName,
   }));
   rows.push({ name: "" }, { name: "" });
-  const interns = [...new Set(input.internNames.map((name) => name.trim()).filter(Boolean))];
-  // Unknown monthly interns remain blank; do not invent people or surnames.
-  if (interns.length) interns.forEach((name, i) => rows.push({ name, number: staff.length + 1 + i, key: name }));
+  const interns = [...new Map(input.interns.map((intern) => [intern.key, intern])).values()];
+  // Unknown interns keep their row and marks but no name; never invent people or surnames.
+  if (interns.length) interns.forEach((intern, i) => rows.push({ name: intern.name ?? "", number: staff.length + 1 + i, key: intern.key }));
   else rows.push({ name: "" }, { name: "" }, { name: "" });
   rows.push({ name: "" }, { name: "" });
 

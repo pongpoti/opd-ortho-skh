@@ -41,17 +41,14 @@ export async function GET(request: Request) {
       realDays(before.year, before.month, beforeData, personnel),
     ]);
 
-    // Interns: this month's d2 names (plus the intern whose last-day duty runs
-    // into the 1st), resolved to roster full names when known.
+    // Interns: this month's d2 names. A name shows only once roster_personnel
+    // knows the intern's full name; until then the row keeps its marks unnamed.
     const internRaw = (day: DutyDay | undefined) => {
       const name = day?.entries.d2?.trim();
       return name && !isDutyMarker(name) ? name : null;
     };
-    const carriedIntern = internRaw(prevData[prevDays.length]);
-    const internRaws = internNamesForMonth(year, month, data);
-    const internName = new Map(await Promise.all([...internRaws, ...(carriedIntern ? [carriedIntern] : [])].map(async (raw) =>
-      [raw, await resolveRosterFullName(raw, "intern", personnel) ?? raw] as const)));
-    const internNames = internRaws.map((raw) => internName.get(raw)!);
+    const interns = await Promise.all(internNamesForMonth(year, month, data).map(async (raw) =>
+      ({ key: raw, name: await resolveRosterFullName(raw, "intern", personnel) })));
 
     let cells: Map<string, string[]> | undefined;
     // Months without a staff roster stay a blank template.
@@ -62,13 +59,14 @@ export async function GET(request: Request) {
         : undefined;
       const extra = Object.entries(data).flatMap(([day, info]) => {
         const raw = internRaw(info);
-        return raw ? subDutiesOf(year, month, Number(day), info.holiday).map((sub) => ({ person: internName.get(raw)!, ...sub })) : [];
+        return raw ? subDutiesOf(year, month, Number(day), info.holiday).map((sub) => ({ person: raw, ...sub })) : [];
       });
-      if (carriedIntern) extra.push({ person: internName.get(carriedIntern)!, day: 1, shift: "ด" });
+      const carriedIntern = internRaw(prevData[prevDays.length]);
+      if (carriedIntern) extra.push({ person: carriedIntern, day: 1, shift: "ด" });
       cells = secondCallSheetCells({ days: days.length, slots, carriedIn: carriedIn && { ...carriedIn, day: 1 }, extra });
     }
 
-    const bytes = await buildSecondCallPdf({ year, month, internNames, staff, cells });
+    const bytes = await buildSecondCallPdf({ year, month, interns, staff, cells });
     const filename = `second-call-${year + 543}-${String(month + 1).padStart(2, "0")}.pdf`;
     return new Response(Uint8Array.from(bytes), {
       headers: {
