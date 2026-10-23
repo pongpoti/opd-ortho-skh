@@ -4,7 +4,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { neon } from "@neondatabase/serverless";
-import { buildHistoricalRosterImportStatements, readHistoricalRoster } from "./import-roster.mjs";
+import {
+  buildHistoricalRosterImportStatements,
+  buildMonthlyRosterImportStatements,
+  readHistoricalRoster,
+  readMonthlyRosterImports,
+} from "./import-roster.mjs";
 
 const migrationTag = "0006_canonical_roster";
 const importName = "historical-roster-v1";
@@ -66,6 +71,7 @@ export async function buildRosterMigrationStatements() {
     readFile(new URL("../drizzle/meta/0006_snapshot.json", import.meta.url), "utf8"),
     readHistoricalRoster(),
   ]);
+  const monthlyImports = await readMonthlyRosterImports();
   const journal = JSON.parse(journalText);
   const snapshot = JSON.parse(snapshotText);
   const entry = journal.entries.find((item) => item.tag === migrationTag);
@@ -91,6 +97,22 @@ export async function buildRosterMigrationStatements() {
   IF NOT ${imported} THEN
     ${statement};
   END IF;`));
+  // Each reviewed month applies once under its own marker, after the initial seed.
+  const monthlyImport = monthlyImports.flatMap((data) => {
+    const monthlyHash = createHash("sha256").update(JSON.stringify(data)).digest("hex");
+    const done = `EXISTS (SELECT 1 FROM drizzle.__roster_imports WHERE name = ${literal(data.name)} AND source_hash = ${literal(monthlyHash)})`;
+    return [
+      statementBlock(`
+  IF EXISTS (SELECT 1 FROM drizzle.__roster_imports WHERE name = ${literal(data.name)} AND source_hash <> ${literal(monthlyHash)}) THEN
+    RAISE EXCEPTION ${literal(`Roster migration: ${data.name} source hash changed; review a new import version`)};
+  END IF;`),
+      ...buildMonthlyRosterImportStatements(data).map((statement) => statementBlock(`
+  IF NOT ${done} THEN
+    ${statement};
+  END IF;`)),
+      `INSERT INTO drizzle.__roster_imports (name, source_hash) SELECT ${literal(data.name)}, ${literal(monthlyHash)} WHERE NOT ${done}`,
+    ];
+  });
   const statements = [
     "SET LOCAL search_path TO public",
     "SET LOCAL lock_timeout = '45s'",
@@ -148,6 +170,7 @@ export async function buildRosterMigrationStatements() {
   END IF;`),
     `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) SELECT ${literal(hash)}, ${entry.when} WHERE NOT ${recorded}`,
     `INSERT INTO drizzle.__roster_imports (name, source_hash) SELECT ${literal(importName)}, ${literal(sourceHash)} WHERE NOT ${imported}`,
+    ...monthlyImport,
     `SELECT (SELECT count(*)::integer FROM roster_personnel) AS personnel,
       (SELECT count(*)::integer FROM duty_days) AS dates,
       (SELECT count(*)::integer FROM duty_slots) AS slots`,
