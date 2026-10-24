@@ -1,5 +1,5 @@
 {
-  "id": "783a341a-790c-4085-820e-9ac3508ba361",
+  "id": "70116074-4395-4b6d-bbe9-4212e0391401",
   "prevId": "78cf157a-73a5-41f4-b430-71803798404d",
   "version": "7",
   "dialect": "postgresql",
@@ -488,6 +488,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'auto'"
+        },
+        "updated_by_line_user_id": {
+          "name": "updated_by_line_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "assigned_at": {
           "name": "assigned_at",
           "type": "timestamp",
@@ -519,6 +532,10 @@
         "second_call_slots_person_name_check": {
           "name": "second_call_slots_person_name_check",
           "value": "length(trim(\"second_call_slots\".\"person_name\")) > 0"
+        },
+        "second_call_slots_source_check": {
+          "name": "second_call_slots_source_check",
+          "value": "\"second_call_slots\".\"source\" IN ('auto', 'admin')"
         }
       },
       "isRLSEnabled": false

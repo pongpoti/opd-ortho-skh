@@ -1,4 +1,4 @@
-import { and, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "@/db";
 import { secondCallSlots } from "@/db/schema";
@@ -33,16 +33,21 @@ export async function loadSecondCallMonth(year: number, month: number, personnel
 const missingTable = (error: unknown) => [error, (error as { cause?: unknown })?.cause]
   .some((item) => (item as { code?: unknown })?.code === "42P01");
 
-/** Saved names keyed by `slotKey`; a shift on the next month's 1st is day `days + 1`. */
-export function savedByKey(year: number, month: number, rows: Pick<SavedRow, "shiftDate" | "shift" | "personName">[]) {
+/**
+ * Saved names keyed by `slotKey` (a shift on the next month's 1st is day
+ * `days + 1`), with the sub-duties an admin set kept apart in `pinned`.
+ */
+export function savedByKey(year: number, month: number, rows: Pick<SavedRow, "shiftDate" | "shift" | "personName" | "source">[]) {
   const first = Date.UTC(year, month, 1);
-  const byKey = new Map<string, string[]>();
+  const saved = new Map<string, string[]>();
+  const pinned = new Map<string, string[]>();
   for (const row of rows) {
     const day = Math.round((Date.parse(`${row.shiftDate}T00:00:00Z`) - first) / 86_400_000) + 1;
     const key = slotKey({ day, shift: row.shift as SubDuty });
-    byKey.set(key, [...(byKey.get(key) ?? []), row.personName]);
+    const into = row.source === "admin" ? pinned : saved;
+    into.set(key, [...(into.get(key) ?? []), row.personName]);
   }
-  return byKey;
+  return { saved, pinned };
 }
 
 /** Rows to save for the month's plan. */
@@ -75,8 +80,9 @@ function lockedThrough(year: number, month: number, today: { year: number; month
 }
 
 /**
- * The month's second-call: saved assignments where they still fit the
- * roster, the rest assigned. `slots` is null for a month without a staff roster.
+ * The month's second-call: admin-set sub-duties as set, saved assignments
+ * where they still fit the roster, the rest assigned. `slots` is null for a
+ * month without a staff roster.
  */
 export async function planSecondCallMonth(year: number, month: number, personnel: RosterPerson[], today = bangkokToday()) {
   const prev = previousMonth(year, month);
@@ -85,15 +91,39 @@ export async function planSecondCallMonth(year: number, month: number, personnel
     loadSecondCallMonth(prev.year, prev.month, personnel),
     fetchSavedSecondCall(year, month),
   ]);
-  if (!current.days.some((day) => day.real)) return { ...current, slots: null, saved };
-  const { slots } = planSecondCall({
+  const input = {
     year, month, days: current.days,
     staff: personnel.filter((person) => person.role === "staff").map((person) => person.fullName),
     previousReal: before.days.at(-1)?.real ?? null,
-    saved: savedByKey(year, month, saved),
-    lockedThrough: lockedThrough(year, month, today),
-  });
-  return { ...current, slots, saved };
+  };
+  const byKey = savedByKey(year, month, saved);
+  if (!current.days.some((day) => day.real)) return { ...current, input, slots: null, counts: null, saved, pinned: byKey.pinned };
+  const { slots, counts } = planSecondCall({ ...input, ...byKey, lockedThrough: lockedThrough(year, month, today) });
+  return { ...current, input, slots, counts, saved, pinned: byKey.pinned };
+}
+
+/**
+ * An admin's choice for one sub-duty (no names = back to automatic). The
+ * month is then re-planned around it and saved, so the change shows at once.
+ */
+export async function setSecondCallSubDuty(input: {
+  year: number; month: number;
+  slot: { day: number; shift: SubDuty; dutyDay: number };
+  names: string[];
+  updatedByLineUserId: string | null;
+  personnel: RosterPerson[];
+}) {
+  const { year, month, slot } = input;
+  const shiftDate = isoDate(year, month, slot.day);
+  const clear = db.delete(secondCallSlots).where(and(eq(secondCallSlots.shiftDate, shiftDate), eq(secondCallSlots.shift, slot.shift)));
+  await db.batch(input.names.length
+    ? [clear, db.insert(secondCallSlots).values(input.names.map((personName) => ({
+      dutyDate: isoDate(year, month, slot.dutyDay), shiftDate, shift: slot.shift, personName,
+      source: "admin" as const, updatedByLineUserId: input.updatedByLineUserId,
+    })))]
+    : [clear]);
+  const plan = await planSecondCallMonth(year, month, input.personnel);
+  if (plan.slots) await saveSecondCallMonth(year, month, plan.slots, plan.saved);
 }
 
 /** Write the month's plan, touching only rows that changed. Both steps commit together. */
