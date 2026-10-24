@@ -32,6 +32,21 @@ exports read the same database data. The original September–December 2026
 rosters live under `scripts/data/` only as a historical import snapshot.
 See [the migration and import instructions](scripts/ROSTER_IMPORT.md).
 
+The monthly second-call PDF (the "2nd" button on the duty calendar) fills in
+each staff member's real duty (`d1`) and intern duty (`d2`) as ช/บ/ด
+sub-duties and assigns second-call on top of them. The rules (who is
+excluded, the minimum per person, weekday bans) live in `SECOND_CALL_RULES`
+in `src/modules/duty-schedule/lib/second-call-assign.ts`.
+
+A daily Vercel Cron job (`vercel.json`, 00:05 Bangkok) calls
+`/api/cron/second-call`, which saves this month's and next month's
+assignments in `second_call_slots`. Saved names stay put while they still fit
+the roster; only sub-duties a roster edit breaks are refilled, and if that
+leaves someone short of the minimum, only days after today are reassigned.
+The PDF reads the saved assignments the same way. The route needs a
+`CRON_SECRET` environment variable in Vercel (any long random string); Vercel
+sends it with each cron call and the route refuses requests without it.
+
 ## Auth setup (LINE LIFF)
 
 The whole app is gated behind LINE Login via LIFF. To make it actually work:

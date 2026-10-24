@@ -83,3 +83,12 @@ own marker in `drizzle.__roster_imports`. It inserts missing dates and slots and
 replaces a slot only while it still holds an imported value. Slots edited in the
 app (`admin` or `legacy`) are kept. Editing an applied file fails the build;
 correct a month with a new file and a new `-vN` name instead.
+
+## Second-call table
+
+The same hook applies `0007_second_call_slots.sql`, which only creates the
+`second_call_slots` table for the daily second-call job. It runs after the roster
+steps in the same transaction, skips creation when a compatible table exists,
+validates columns and the unique key, and records the exact SQL hash and journal
+timestamp in `drizzle.__drizzle_migrations`. A recorded entry with a different hash
+or timestamp, or a recorded table that has gone missing, fails the build.
