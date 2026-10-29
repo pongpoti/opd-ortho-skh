@@ -34,15 +34,21 @@ See [the migration and import instructions](scripts/ROSTER_IMPORT.md).
 
 The monthly second-call PDF (the "2nd" button on the duty calendar) fills in
 each staff member's real duty (`d1`) and intern duty (`d2`) as ช/บ/ด
-sub-duties and assigns second-call on top of them. The rules (who is
-excluded, the minimum per person, weekday bans) live in `SECOND_CALL_RULES`
-in `src/modules/duty-schedule/lib/second-call-assign.ts`.
+sub-duties and assigns second-call on top of them, one doctor per sub-duty,
+in turn, the way the paper sheets are made: whoever has waited longest since
+their last second-call goes next, and the turn order carries over from the
+previous month. The rules (who is excluded, weekday bans) live in
+`SECOND_CALL_RULES` in `src/modules/duty-schedule/lib/second-call-assign.ts`.
+The signed paper sheets for September and October 2026 are kept in
+`second-call-sheets.ts`: those months show them as they were, and later months
+carry on from them.
 
 A daily Vercel Cron job (`vercel.json`, 00:05 Bangkok) calls
 `/api/cron/second-call`, which saves this month's and next month's
 assignments in `second_call_slots`. Saved names stay put while they still fit
-the roster; only sub-duties a roster edit breaks are refilled, and if that
-leaves someone short of the minimum, only days after today are reassigned.
+the roster; only sub-duties a roster edit breaks are refilled, and only if
+that leaves doctors more than two second-calls apart are days after today
+given out again.
 The PDF reads the saved assignments the same way. The route needs a
 `CRON_SECRET` environment variable in Vercel (any long random string); Vercel
 sends it with each cron call and the route refuses requests without it.

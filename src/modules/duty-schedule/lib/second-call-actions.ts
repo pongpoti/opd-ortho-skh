@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { fetchRosterPersonnel } from "@/lib/roster-directory";
 import { requireAdminSession } from "@/lib/require-admin";
 import {
-  SECOND_CALL_RULES,
   secondCallRules,
   slotKey,
   SUB_DUTY_ORDER,
@@ -53,7 +52,8 @@ export type SecondCallDayView = {
   subDuties: SecondCallSubDutyView[];
   /** Admin only: who can take second-call, for the edit sheet. */
   staff?: SecondCallStaffOption[];
-  minPerStaff: number;
+  /** Second-calls each doctor gets this month at the least when turns run evenly. */
+  usual: number;
 };
 
 function validDay(year: number, month: number, day: number): boolean {
@@ -83,10 +83,10 @@ export async function loadSecondCallDay(year: number, month: number, day: number
         pinned: plan.pinned.has(slotKey(slot)),
       };
     });
-    const { minPerStaff } = SECOND_CALL_RULES;
-    if (!(await requireAdminSession())) return { ok: true, view: { subDuties, minPerStaff } };
-
     const { people, conflict } = secondCallRules(plan.input);
+    const usual = people.length ? Math.floor(plan.slots.length / people.length) : 0;
+    if (!(await requireAdminSession())) return { ok: true, view: { subDuties, usual } };
+
     const order = new Map(personnel.map((person) => [person.fullName, person.secondCallOrder ?? Infinity]));
     const staff = [...people]
       .sort((a, b) => order.get(a)! - order.get(b)! || a.localeCompare(b, "th"))
@@ -98,7 +98,7 @@ export async function loadSecondCallDay(year: number, month: number, day: number
           return reason ? [[slot.shift, reason]] : [];
         })),
       }));
-    return { ok: true, view: { subDuties, staff, minPerStaff } };
+    return { ok: true, view: { subDuties, staff, usual } };
   } catch (error) {
     console.error("loadSecondCallDay failed", error);
     return { ok: false, error: "โหลด second-call ไม่สำเร็จ" };

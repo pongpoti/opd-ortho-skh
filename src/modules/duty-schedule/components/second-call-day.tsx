@@ -82,7 +82,7 @@ export function SecondCallDaySection({ year, month, day, isAdmin, refreshKey }: 
           day={day}
           subDuty={editing}
           staff={view.staff}
-          minPerStaff={view.minPerStaff}
+          usual={view.usual}
           onSaved={reload}
         />
       )}

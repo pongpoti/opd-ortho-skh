@@ -6,7 +6,10 @@ import { bangkokToday } from "@/lib/bangkok-date";
 import { resolveRosterFullName, type RosterPerson } from "@/lib/roster-directory";
 import type { DutyMonthData } from "./duty-data";
 import { fetchDutyMonthData } from "./duty-repository";
-import { planSecondCall, slotKey, type SecondCallSlot, type SubDuty } from "./second-call-assign";
+import {
+  planSecondCall, secondCallHistory, slotKey, slotTime, type SecondCallSlot, type SubDuty,
+} from "./second-call-assign";
+import { secondCallSheet } from "./second-call-sheets";
 import { validSecondCallMonth } from "./second-call-share";
 
 type SavedRow = typeof secondCallSlots.$inferSelect;
@@ -79,26 +82,70 @@ function lockedThrough(year: number, month: number, today: { year: number; month
   return order < 0 ? daysIn(year, month) : order === 0 ? today.day : 0;
 }
 
+/** How many months back the turn order is followed when nothing is saved. */
+const HISTORY_DEPTH = 4;
+
 /**
- * The month's second-call: admin-set sub-duties as set, saved assignments
- * where they still fit the roster, the rest assigned. `slots` is null for a
- * month without a staff roster.
+ * Where the turn order stands at the start of the month after `prev`, and
+ * `prev`'s days (for rule 6's Friday). A finished month that was saved is
+ * read as saved; otherwise it is planned, up to `depth` months back.
  */
-export async function planSecondCallMonth(year: number, month: number, personnel: RosterPerson[], today = bangkokToday()) {
-  const prev = previousMonth(year, month);
+async function previousTurns(
+  prev: { year: number; month: number },
+  personnel: RosterPerson[],
+  today: { year: number; month: number; day: number },
+  depth: number,
+): Promise<{ days: { holiday: boolean; real: string | null }[]; history?: Map<string, number> }> {
+  const finished = lockedThrough(prev.year, prev.month, today) === daysIn(prev.year, prev.month);
+  const rows = depth > 0 && finished ? await fetchSavedSecondCall(prev.year, prev.month) : [];
+  if (depth > 0 && !rows.length) {
+    const plan = await planSecondCallMonth(prev.year, prev.month, personnel, today, depth - 1);
+    return { days: plan.days, history: plan.slots ? secondCallHistory(plan.slots, plan.days.length) : undefined };
+  }
+  const { days } = await loadSecondCallMonth(prev.year, prev.month, personnel);
+  if (!rows.length) return { days };
+  const history = new Map<string, number>();
+  const { saved, pinned } = savedByKey(prev.year, prev.month, rows);
+  for (const [key, names] of [...saved, ...pinned]) {
+    const [day, shift] = key.split(":");
+    const t = slotTime(Number(day) - days.length, shift as SubDuty);
+    for (const name of names) history.set(name, Math.max(history.get(name) ?? -Infinity, t));
+  }
+  return { days, history };
+}
+
+/**
+ * The month's second-call: admin-set sub-duties as set, a paper sheet's
+ * names where the month has one, saved assignments where they still fit the
+ * roster, and the rest given out in turn, carrying on from the previous
+ * month. `slots` is null for a month without a staff roster; `pinned` holds
+ * only the sub-duties an admin set.
+ */
+export async function planSecondCallMonth(
+  year: number, month: number, personnel: RosterPerson[], today = bangkokToday(), depth = HISTORY_DEPTH,
+) {
+  // Sheet order: it breaks ties when nobody has had a turn yet.
+  const staff = personnel.filter((person) => person.role === "staff")
+    .sort((a, b) => (a.secondCallOrder ?? Infinity) - (b.secondCallOrder ?? Infinity))
+    .map((person) => person.fullName);
+  const sheet = secondCallSheet(year, month, staff);
+  // A month with a paper sheet doesn't need the turn order it started from.
   const [current, before, saved] = await Promise.all([
     loadSecondCallMonth(year, month, personnel),
-    loadSecondCallMonth(prev.year, prev.month, personnel),
+    previousTurns(previousMonth(year, month), personnel, today, sheet ? 0 : depth),
     fetchSavedSecondCall(year, month),
   ]);
   const input = {
-    year, month, days: current.days,
-    staff: personnel.filter((person) => person.role === "staff").map((person) => person.fullName),
+    year, month, days: current.days, staff,
     previousReal: before.days.at(-1)?.real ?? null,
+    history: before.history,
   };
   const byKey = savedByKey(year, month, saved);
   if (!current.days.some((day) => day.real)) return { ...current, input, slots: null, counts: null, saved, pinned: byKey.pinned };
-  const { slots, counts } = planSecondCall({ ...input, ...byKey, lockedThrough: lockedThrough(year, month, today) });
+  const { slots, counts } = planSecondCall({
+    ...input, saved: byKey.saved, pinned: new Map([...(sheet ?? []), ...byKey.pinned]),
+    lockedThrough: lockedThrough(year, month, today),
+  });
   return { ...current, input, slots, counts, saved, pinned: byKey.pinned };
 }
 

@@ -38,12 +38,13 @@ type SecondCallEditSheetProps = {
   day: number;
   subDuty: SecondCallSubDutyView;
   staff: SecondCallStaffOption[];
-  minPerStaff: number;
+  /** Second-calls each doctor gets this month at the least when turns run evenly. */
+  usual: number;
   onSaved: () => void;
 };
 
 export function SecondCallEditSheet({
-  open, onOpenChange, year, month, day, subDuty, staff, minPerStaff, onSaved,
+  open, onOpenChange, year, month, day, subDuty, staff, usual, onSaved,
 }: SecondCallEditSheetProps) {
   // Mounted per edit (the day section unmounts it on close), so props seed state once.
   const [selected, setSelected] = useState<string[]>(subDuty.names);
@@ -161,8 +162,8 @@ export function SecondCallEditSheet({
                             </VStack>
                             <Text
                               fontSize="xs" fontWeight="bold" px={2} py={0.5} borderRadius="full" flexShrink={0}
-                              color={count < minPerStaff ? "holiday.fg" : "fg.muted"}
-                              bg={count < minPerStaff ? "holiday.subtle" : "transparent"}
+                              color={count < usual ? "holiday.fg" : "fg.muted"}
+                              bg={count < usual ? "holiday.subtle" : "transparent"}
                             >
                               {count} ครั้ง
                             </Text>
@@ -174,8 +175,8 @@ export function SecondCallEditSheet({
                 </Box>
 
                 <Text fontSize="xs" color="fg.muted">
-                  ช่วงที่แอดมินกำหนดจะไม่ถูกระบบเปลี่ยน ถ้าการแก้นี้ทำให้ใครได้ไม่ถึง {minPerStaff} ครั้ง
-                  ระบบจะจัดวันหลังจากวันนี้ใหม่ให้เอง
+                  ช่วงที่แอดมินกำหนดจะไม่ถูกระบบเปลี่ยน ถ้าการแก้นี้ทำให้จำนวนครั้งห่างกันเกิน 2
+                  ระบบจะเลื่อนคิวของวันหลังจากวันนี้ให้เอง
                 </Text>
 
                 {saveError && <Text fontSize="sm" color="holiday.fg">{saveError}</Text>}
