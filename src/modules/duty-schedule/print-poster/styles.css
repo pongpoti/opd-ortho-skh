@@ -380,14 +380,15 @@ body {
 .chip.is-muted::before { background: var(--cell-line-strong); }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
+/* หมายเหตุท้ายหน้าชิดขวาล่างทุกหน้า */
 .sheet-foot {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 16px;
   font-size: 18px;
 }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 16px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
 .legend-swatch { width: 5px; height: 18px; border-radius: 3px; background: var(--c); }
 .legend-detail { font-weight: 500; color: var(--sub-ink); }
