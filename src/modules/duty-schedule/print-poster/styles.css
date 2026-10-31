@@ -25,13 +25,6 @@
   --holiday-line: #E3A57E;
   --holiday-ink: #9C3F17;    /* holiday.fg ในแอป เข้มขึ้นให้อ่านชัดบนกระดาษ */
 
-  /* ตาราง OPD โทนเบจ แยกจากช่องวันทำงานสีเขียว */
-  --opd-head: #E6D4B0;
-  --opd-stripe: #F3E8D2;
-  --opd-line: #D2BC90;
-  --opd-rule: #A8834A;
-  --opd-day: #7A5718;                /* พื้นชื่อในปฏิทินหน้า 2–4 */
-
   --font-display: "Sarabun", "Noto Sans Thai", sans-serif;
   --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
 
@@ -111,9 +104,11 @@ body {
 }
 
 /* ---------- OPD table ---------- */
-/* หมายเหตุ: ใช้ขอบล่างสีเข้มแทน box-shadow โดยตั้งใจ (ดู .cursor/rules) */
+/* พื้นขาวไม่มีแถบสลับสี ใช้เส้นและสีหลักแบบเดียวกับหัวหน้าและช่องวันที่
+   หมายเหตุ: ใช้ขอบล่างสีเข้มแทน box-shadow โดยตั้งใจ (ดู .cursor/rules) */
 .opd-table {
-  border: 1.5px solid var(--opd-line);
+  border: 1px solid var(--cell-line);
+  border-bottom: 2px solid var(--cell-line-strong);
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
@@ -125,19 +120,17 @@ body {
   height: 40px;
   align-items: center;
   font-size: 17px;
-  border-bottom: 1px solid var(--opd-line);
+  border-bottom: 1px solid var(--cell-line);
 }
 .opd-row:last-child { border-bottom: 0; }
-.opd-row:nth-child(odd):not(.opd-head) { background: var(--opd-stripe); }
 
 .opd-head {
   height: 42px;
-  background: var(--opd-head);
-  color: var(--ink-strong);
+  color: var(--accent);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  border-bottom: 2px solid var(--opd-rule);
+  border-bottom: 2px solid var(--accent);
 }
 
 .opd-cell { padding: 0 14px; }
@@ -145,10 +138,10 @@ body {
   align-self: stretch;
   display: flex;
   align-items: center;
-  border-left: 1px solid var(--opd-line);
+  border-left: 1px solid var(--cell-line);
 }
 
-.opd-day { align-self: stretch; display: flex; align-items: center; font-weight: 700; color: var(--opd-day); }
+.opd-day { align-self: stretch; display: flex; align-items: center; font-weight: 700; color: var(--accent); }
 .opd-names {
   display: flex;
   align-items: center;
