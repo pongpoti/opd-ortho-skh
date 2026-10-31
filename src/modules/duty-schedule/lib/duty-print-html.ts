@@ -208,7 +208,7 @@ function buildPosterPage(input: DutyPrintInput, monthLabel: string): string {
   </main>`;
 }
 
-type SheetEntry = { name: string; prefix?: string; sub?: string; color: string; muted?: boolean };
+type SheetEntry = { name: string; sub?: string; color: string; muted?: boolean };
 type LegendItem = { label: string; detail?: string; color: string };
 
 /** Display name for one slot, or null when the slot has nobody to print. */
@@ -235,6 +235,8 @@ function buildMonthSheet(opts: {
   input: DutyPrintInput;
   monthLabel: string;
   title: string;
+  /** Extra class on the sheet for page-specific sizing. */
+  variant?: string;
   entriesFor: (day: number, jsWeekday: number) => SheetEntry[];
   legend?: LegendItem[];
   note?: string;
@@ -265,8 +267,7 @@ function buildMonthSheet(opts: {
       .entriesFor(date, new Date(year, month, date).getDay())
       .map((e) => {
         const sub = e.sub ? `<div class="chip-sub">${escapeHtml(e.sub)}</div>` : "";
-        const prefix = e.prefix ? `<span class="chip-prefix">${escapeHtml(e.prefix)}</span>` : "";
-        return `<div class="chip${e.muted ? " is-muted" : ""}" style="--c: ${e.color}"><div class="chip-name">${prefix}${escapeHtml(e.name)}</div>${sub}</div>`;
+        return `<div class="chip${e.muted ? " is-muted" : ""}" style="--c: ${e.color}"><div class="chip-name">${escapeHtml(e.name)}</div>${sub}</div>`;
       })
       .join("");
     grid += `<div class="${classes.join(" ")}"><div class="mcal-top"><div class="mcal-date">${date}</div>${tag}</div><div class="mcal-body">${entries}</div></div>`;
@@ -279,7 +280,7 @@ function buildMonthSheet(opts: {
     })
     .join("");
 
-  return `<section class="sheet">
+  return `<section class="sheet${opts.variant ? ` ${opts.variant}` : ""}">
     <header class="sheet-header">
       <h1>${escapeHtml(opts.title)}</h1>
       ${headerSideHtml(opts.monthLabel)}
@@ -348,6 +349,7 @@ function buildCastRoomSheet(input: DutyPrintInput, monthLabel: string): string {
     input,
     monthLabel,
     title: "เวรห้องเฝือก",
+    variant: "sheet-castroom",
     entriesFor: (day) => {
       const duty = getDutyDay(year, month, day, data);
       const doctor = slotName(duty.entries.d1, doctors);
@@ -355,8 +357,7 @@ function buildCastRoomSheet(input: DutyPrintInput, monthLabel: string): string {
       if (!doctor && !nurse) return [];
       // Nurse is the emphasis: large name first, staff doctor in parentheses below.
       return [{
-        name: nurse ?? "—",
-        prefix: nurse ? "พว." : undefined,
+        name: nurse ? `พว.${nurse}` : "—",
         sub: doctor ? `(${doctor})` : undefined,
         color: (nurse && nurses.colors.get(nurse)) || DUTY_COLORS.d5,
         muted: !nurse || isDutyMarker(nurse),

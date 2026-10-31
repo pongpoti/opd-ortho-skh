@@ -324,7 +324,9 @@ body {
   line-height: 1.3;
   color: var(--ink-strong);
 }
-.chip-prefix { margin-right: 1px; font-size: 14px; font-weight: 600; }
+/* ห้องเฝือก: ชื่อพยาบาลเล็กลงเล็กน้อย เว้นระยะก่อนชื่อแพทย์ */
+.sheet-castroom .chip-name { font-size: 20px; }
+.sheet-castroom .chip-sub { margin-top: 3px; }
 /* สีตัวอักษรเข้มขึ้นจากสีประจำคน ให้อ่านชัดบนกระดาษ */
 .chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: color-mix(in srgb, var(--c) 65%, #000); }
 .chip.is-muted { border-left-color: var(--cell-line-strong); background: none; }
