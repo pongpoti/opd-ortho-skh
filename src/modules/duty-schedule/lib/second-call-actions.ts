@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { fetchRosterPersonnel } from "@/lib/roster-directory";
 import { requireAdminSession } from "@/lib/require-admin";
 import {
+  hasRealDuty,
   secondCallRules,
   slotKey,
   SUB_DUTY_ORDER,
@@ -123,7 +124,8 @@ export async function saveSecondCallSubDuty(input: {
   try {
     const personnel = await fetchRosterPersonnel();
     const { days } = await loadSecondCallMonth(year, month, personnel);
-    if (!days.some((info) => info.real)) return { ok: false, error: "เดือนนี้ยังไม่มีเวร staff" };
+    if (!days.some(hasRealDuty)) return { ok: false, error: "เดือนนี้ยังไม่มีเวร staff" };
+    if (names.length && !hasRealDuty(days[day - 1])) return { ok: false, error: "วันนี้ยังไม่มีเวร staff" };
     const sub = subDutiesOf(year, month, day, days[day - 1].holiday).find((item) => item.shift === shift);
     if (!sub) return { ok: false, error: "ช่วงเวรนี้ไม่มีในวันนี้" };
     const { people } = secondCallRules({

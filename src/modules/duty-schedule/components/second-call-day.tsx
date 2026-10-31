@@ -98,6 +98,13 @@ export function SecondCallDayList({ view, day, isAdmin, onEdit }: {
   isAdmin: boolean;
   onEdit: (shift: SecondCallSubDutyView["shift"]) => void;
 }) {
+  if (!view.subDuties.length) {
+    return (
+      <Text fontSize="sm" color="fg.muted" pl={8} py={2}>
+        ยังไม่มี second-call เพราะวันนี้ยังไม่มีเวร staff
+      </Text>
+    );
+  }
   return (
     <VStack align="stretch" gap={0} pl={8}>
       {view.subDuties.map((sub) => (

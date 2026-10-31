@@ -37,8 +37,10 @@ each staff member's real duty (`d1`) and intern duty (`d2`) as ช/บ/ด
 sub-duties and assigns second-call on top of them, one doctor per sub-duty,
 in turn, the way the paper sheets are made: whoever has waited longest since
 their last second-call goes next, and the turn order carries over from the
-previous month. The rules (who is excluded, weekday bans) live in
-`SECOND_CALL_RULES` in `src/modules/duty-schedule/lib/second-call-assign.ts`.
+previous month. A day gets second-call only once its real duty is entered;
+a day whose `d1` is empty, `-` or `งด` gets none. The rules (who is
+excluded, weekday bans) live in `SECOND_CALL_RULES` in
+`src/modules/duty-schedule/lib/second-call-assign.ts`.
 The signed paper sheets for September and October 2026 are kept in
 `second-call-sheets.ts`: those months show them as they were, and later months
 carry on from them.

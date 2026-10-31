@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     let cells: Map<string, string[]> | undefined;
     // Months without a staff roster stay a blank template.
     if (slots) {
-      const carriedIn = prevSlots?.at(-1);
+      const carriedIn = prevSlots?.find((slot) => slot.day === prevDays.length + 1);
       const extra = Object.entries(data).flatMap(([day, info]) => {
         const raw = internRaw(info);
         return raw ? subDutiesOf(year, month, Number(day), info.holiday).map((sub) => ({ person: raw, ...sub })) : [];

@@ -4,10 +4,11 @@ import { db } from "@/db";
 import { secondCallSlots } from "@/db/schema";
 import { bangkokToday } from "@/lib/bangkok-date";
 import { resolveRosterFullName, type RosterPerson } from "@/lib/roster-directory";
-import type { DutyMonthData } from "./duty-data";
+import { isDutyMarker, type DutyMonthData } from "./duty-data";
 import { fetchDutyMonthData } from "./duty-repository";
 import {
-  planSecondCall, secondCallHistory, slotKey, slotTime, type SecondCallSlot, type SubDuty,
+  hasRealDuty, planSecondCall, secondCallHistory, slotKey, slotTime,
+  type SecondCallDay, type SecondCallSlot, type SubDuty,
 } from "./second-call-assign";
 import { secondCallSheet } from "./second-call-sheets";
 import { validSecondCallMonth } from "./second-call-share";
@@ -25,10 +26,14 @@ const isoDate = (year: number, month: number, day: number) => new Date(Date.UTC(
 /** A month's roster with each day's real staff (d1) resolved to a full name. */
 export async function loadSecondCallMonth(year: number, month: number, personnel: RosterPerson[]) {
   const data: DutyMonthData = validSecondCallMonth(year, month) ? await fetchDutyMonthData(year, month) : {};
-  const days = await Promise.all(Array.from({ length: daysIn(year, month) }, async (_, i) => ({
-    holiday: data[i + 1]?.holiday ?? false,
-    real: await resolveRosterFullName(data[i + 1]?.entries.d1, "staff", personnel),
-  })));
+  const days: SecondCallDay[] = await Promise.all(Array.from({ length: daysIn(year, month) }, async (_, i) => {
+    const d1 = data[i + 1]?.entries.d1?.trim();
+    return {
+      holiday: data[i + 1]?.holiday ?? false,
+      real: await resolveRosterFullName(d1, "staff", personnel),
+      rostered: !!d1 && !isDutyMarker(d1),
+    };
+  }));
   return { data, days };
 }
 
@@ -95,7 +100,7 @@ async function previousTurns(
   personnel: RosterPerson[],
   today: { year: number; month: number; day: number },
   depth: number,
-): Promise<{ days: { holiday: boolean; real: string | null }[]; history?: Map<string, number> }> {
+): Promise<{ days: SecondCallDay[]; history?: Map<string, number> }> {
   const finished = lockedThrough(prev.year, prev.month, today) === daysIn(prev.year, prev.month);
   const rows = depth > 0 && finished ? await fetchSavedSecondCall(prev.year, prev.month) : [];
   if (depth > 0 && !rows.length) {
@@ -118,8 +123,8 @@ async function previousTurns(
  * The month's second-call: admin-set sub-duties as set, a paper sheet's
  * names where the month has one, saved assignments where they still fit the
  * roster, and the rest given out in turn, carrying on from the previous
- * month. `slots` is null for a month without a staff roster; `pinned` holds
- * only the sub-duties an admin set.
+ * month. Days without real duty get none. `slots` is null for a month without
+ * a staff roster; `pinned` holds only the sub-duties an admin set.
  */
 export async function planSecondCallMonth(
   year: number, month: number, personnel: RosterPerson[], today = bangkokToday(), depth = HISTORY_DEPTH,
@@ -141,7 +146,7 @@ export async function planSecondCallMonth(
     history: before.history,
   };
   const byKey = savedByKey(year, month, saved);
-  if (!current.days.some((day) => day.real)) return { ...current, input, slots: null, counts: null, saved, pinned: byKey.pinned };
+  if (!current.days.some(hasRealDuty)) return { ...current, input, slots: null, counts: null, saved, pinned: byKey.pinned };
   const { slots, counts } = planSecondCall({
     ...input, saved: byKey.saved, pinned: new Map([...(sheet ?? []), ...byKey.pinned]),
     lockedThrough: lockedThrough(year, month, today),

@@ -3,11 +3,12 @@
  *
  * Each day's real staff duty (d1) is split into sub-duties: on a working day
  * บ that day and ด of the next day; on a weekend or holiday also ช that day.
- * Every sub-duty gets one second-call doctor, in turn, the way the paper
- * sheets are made: the eligible doctor who has waited longest since their
- * last second-call goes next, and the turn order carries over from the
- * previous month. Pure and deterministic: the same roster and history always
- * produce the same sheet.
+ * A day without real duty has no sub-duties, so it gets no second-call until
+ * its real duty is entered. Every sub-duty gets one second-call doctor, in
+ * turn, the way the paper sheets are made: the eligible doctor who has waited
+ * longest since their last second-call goes next, and the turn order carries
+ * over from the previous month. Pure and deterministic: the same roster and
+ * history always produce the same sheet.
  */
 
 export type SubDuty = "ด" | "ช" | "บ";
@@ -55,12 +56,23 @@ export function subDutiesOf(year: number, month: number, day: number, holiday: b
   return [...(off ? [{ day, shift: "ช" as const }] : []), { day, shift: "บ" }, { day: day + 1, shift: "ด" }];
 }
 
+export type SecondCallDay = {
+  holiday: boolean;
+  /** Full name of the staff on real duty, or null when the directory can't tell who. */
+  real: string | null;
+  /** d1 names someone, even someone the directory doesn't know (defaults to `real` being set). */
+  rostered?: boolean;
+};
+
+/** Second-call needs real duty: a day whose d1 is empty, "-" or "งด" gets none. */
+export const hasRealDuty = (day: SecondCallDay) => day.rostered ?? day.real !== null;
+
 export type SecondCallInput = {
   year: number;
   /** Zero-indexed, like the duty calendar. */
   month: number;
   /** One entry per day of month (index 0 = day 1). */
-  days: { holiday: boolean; real: string | null }[];
+  days: SecondCallDay[];
   /** Full names of active staff in sheet order; excluded first names are dropped here. */
   staff: string[];
   /** Real staff on the last day of the previous month (its Friday for rule 6). */
@@ -71,6 +83,12 @@ export type SecondCallInput = {
    * People missing here are treated as having waited longest.
    */
   history?: ReadonlyMap<string, number>;
+  /**
+   * Sub-duties an admin or a paper sheet set, keyed by `slotKey`. They are
+   * kept even where they break a rule, and on a day without real duty they
+   * are the only sub-duties.
+   */
+  pinned?: ReadonlyMap<string, readonly string[]>;
   /**
    * Second-call kept as is, keyed by `slotKey`; `planSecondCall` decides
    * which saved names qualify. Keys that match no sub-duty are ignored.
@@ -87,6 +105,7 @@ export type SecondCallConflict = "real" | "weekday" | "friday";
 function monthRules(input: Omit<SecondCallInput, "fixed">) {
   const { year, month, days } = input;
   const slots: SecondCallSlot[] = days.flatMap((info, i) => subDutiesOf(year, month, i + 1, info.holiday)
+    .filter((sub) => hasRealDuty(info) || !!input.pinned?.get(slotKey(sub))?.length)
     .map((sub) => ({ ...sub, dutyDay: i + 1, real: info.real, secondCall: [] as string[] })));
   const excluded = new Set<string>(SECOND_CALL_RULES.excluded);
   const people = [...new Set(input.staff)].filter((name) => !excluded.has(firstName(name)));
@@ -153,8 +172,6 @@ const spread = (counts: Map<string, number>) => counts.size ? Math.max(...counts
  */
 export function planSecondCall(input: Omit<SecondCallInput, "fixed"> & {
   saved: ReadonlyMap<string, readonly string[]>;
-  /** Sub-duties an admin set (or the paper sheet), kept even where they break a rule. */
-  pinned?: ReadonlyMap<string, readonly string[]>;
   /** Last duty day of the month that is kept even when reassigning (0 = none). */
   lockedThrough: number;
 }): { slots: SecondCallSlot[]; counts: Map<string, number> } {
