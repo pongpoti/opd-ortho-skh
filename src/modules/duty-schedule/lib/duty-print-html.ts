@@ -29,7 +29,7 @@ const THAI_MONTHS = [
 
 const WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
 const BE_OFFSET = 543;
-const DEPARTMENT = "กลุ่มงานศัลยกรรมกระดูก โรงพยาบาลสมุทรสาคร";
+const DEPARTMENT = "กลุ่มงานออร์โธปิดิกส์ โรงพยาบาลสมุทรสาคร";
 
 /** Light-theme duty colors from `src/theme.ts`, used as print accents. */
 const DUTY_COLORS: Record<DutyKey, string> = {
@@ -186,11 +186,16 @@ function buildPosterCalendarHtml(year: number, month: number, data: DutyMonthDat
   return html;
 }
 
+/** Top-right block on every page: department above the month. */
+function headerSideHtml(monthLabel: string): string {
+  return `<div class="header-side"><div class="department">${escapeHtml(DEPARTMENT)}</div><div class="month-label">${escapeHtml(monthLabel)}</div></div>`;
+}
+
 function buildPosterPage(input: DutyPrintInput, monthLabel: string): string {
   return `<main class="page">
     <header class="page-header">
       <h1>ตารางเวรแพทย์ออร์โธปิดิกส์</h1>
-      <div class="month-label">${escapeHtml(monthLabel)}</div>
+      ${headerSideHtml(monthLabel)}
     </header>
     <section class="section">
       <h2 class="section-title">ตารางออกตรวจ OPD</h2>
@@ -275,11 +280,8 @@ function buildMonthSheet(opts: {
 
   return `<section class="sheet">
     <header class="sheet-header">
-      <div>
-        <div class="sheet-eyebrow">${escapeHtml(DEPARTMENT)}</div>
-        <h1>${escapeHtml(opts.title)}</h1>
-      </div>
-      <div class="month-label">${escapeHtml(opts.monthLabel)}</div>
+      <h1>${escapeHtml(opts.title)}</h1>
+      ${headerSideHtml(opts.monthLabel)}
     </header>
     <div class="mcal" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">${grid}</div>
     ${legend || opts.note ? `<footer class="sheet-foot">
