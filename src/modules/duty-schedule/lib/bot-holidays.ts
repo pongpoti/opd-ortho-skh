@@ -55,7 +55,9 @@ export async function fetchBotHolidays(year: number, token: string): Promise<Bot
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`BOT holidays ${year}: HTTP ${response.status}`);
-  return parseBotHolidays(await response.json(), year);
+  // BOT answers with an empty body for a year it hasn't announced yet.
+  const text = await response.text();
+  return text.trim() ? parseBotHolidays(JSON.parse(text), year) : [];
 }
 
 /**
