@@ -212,17 +212,17 @@ function slotName(raw: string | undefined, ambiguous: ReadonlySet<string>): stri
   return formatDutyDisplayName(raw, ambiguous);
 }
 
-/** Stable color per person: sorted Thai order, so the legend reads A→Z. */
+/** Stable color per person: sorted Thai order, so it does not depend on the first date. */
 function personColors(year: number, month: number, key: DutyKey, data: DutyMonthData) {
   const ambiguous = ambiguousDutyFirstNames(year, month, key, data);
-  const counts = new Map<string, number>();
+  const seen = new Set<string>();
   for (let day = 1; day <= daysInMonth(year, month); day++) {
     const name = slotName(getDutyDay(year, month, day, data).entries[key], ambiguous);
-    if (name && !isDutyMarker(name)) counts.set(name, (counts.get(name) ?? 0) + 1);
+    if (name && !isDutyMarker(name)) seen.add(name);
   }
-  const names = [...counts.keys()].sort((a, b) => a.localeCompare(b, "th"));
+  const names = [...seen].sort((a, b) => a.localeCompare(b, "th"));
   const colors = new Map(names.map((name, i) => [name, PERSON_COLORS[i % PERSON_COLORS.length]]));
-  return { ambiguous, counts, names, colors };
+  return { ambiguous, colors };
 }
 
 /** A landscape month grid with the app's calendar look, on white for printing. */
@@ -231,7 +231,7 @@ function buildMonthSheet(opts: {
   monthLabel: string;
   title: string;
   entriesFor: (day: number, jsWeekday: number) => SheetEntry[];
-  legend: LegendItem[];
+  legend?: LegendItem[];
   note?: string;
 }): string {
   const { year, month, data } = opts.input;
@@ -266,7 +266,7 @@ function buildMonthSheet(opts: {
     grid += `<div class="${classes.join(" ")}"><div class="mcal-top"><div class="mcal-date">${date}</div>${tag}</div><div class="mcal-body">${entries}</div></div>`;
   }
 
-  const legend = opts.legend
+  const legend = (opts.legend ?? [])
     .map((item) => {
       const detail = item.detail ? `<span class="legend-detail">${escapeHtml(item.detail)}</span>` : "";
       return `<span class="legend-item"><span class="legend-swatch" style="--c: ${item.color}"></span>${escapeHtml(item.label)}${detail}</span>`;
@@ -282,10 +282,10 @@ function buildMonthSheet(opts: {
       <div class="month-label">${escapeHtml(opts.monthLabel)}</div>
     </header>
     <div class="mcal" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">${grid}</div>
-    <footer class="sheet-foot">
+    ${legend || opts.note ? `<footer class="sheet-foot">
       <div class="legend">${legend}</div>
       ${opts.note ? `<div class="sheet-note">${escapeHtml(opts.note)}</div>` : ""}
-    </footer>
+    </footer>` : ""}
   </section>`;
 }
 
@@ -334,12 +334,6 @@ function buildInternSheet(input: DutyPrintInput, monthLabel: string): string {
       if (!name) return [];
       return [{ name, color: people.colors.get(name) ?? DUTY_COLORS.d2, muted: isDutyMarker(name) }];
     },
-    legend: people.names.map((name) => ({
-      label: name,
-      detail: `${people.counts.get(name)} เวร`,
-      color: people.colors.get(name) ?? DUTY_COLORS.d2,
-    })),
-    note: "เวร intern ตลอด 24 ชม.",
   });
 }
 
@@ -363,10 +357,6 @@ function buildCastRoomSheet(input: DutyPrintInput, monthLabel: string): string {
         muted: !doctor || isDutyMarker(doctor),
       }];
     },
-    legend: nurses.names.map((name) => ({
-      label: `พว.${name}`,
-      color: nurses.colors.get(name) ?? DUTY_COLORS.d5,
-    })),
     note: "จันทร์–ศุกร์ ปฏิบัติงาน 16.00–24.00 น. · เสาร์ อาทิตย์ วันหยุด ปฏิบัติงาน 08.00–24.00 น.",
   });
 }
