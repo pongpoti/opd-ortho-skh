@@ -3,7 +3,6 @@
 import { requireAdminSession } from "@/lib/require-admin";
 import { fetchRosterPersonnel, type RosterPerson, type RosterRole } from "@/lib/roster-directory";
 
-import { syncBotHolidays } from "./bot-holidays";
 import { DUTY_ORDER, dutyApplies, parseDutyPersonName, type DutyKey, type DutyMonthData } from "./duty-data";
 import { fetchDutyMonthData, saveDutySlotRecords } from "./duty-repository";
 import { validSecondCallMonth } from "./second-call-share";
@@ -106,20 +105,4 @@ export async function savePlannerChanges(input: {
     console.error("savePlannerChanges failed", err);
     return { ok: false, error: "บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง" };
   }
-}
-
-/**
- * Pull the year's holidays from the Bank of Thailand API into `duty_days`
- * now, instead of waiting for the nightly job. Holidays are only added.
- */
-export async function refreshPlannerHolidays(
-  year: number,
-): Promise<{ ok: true; added: number } | { ok: false; error: string }> {
-  if (!await requireAdminSession()) return { ok: false, error: "เฉพาะผู้ดูแลระบบ" };
-  if (!Number.isInteger(year) || year < 2000 || year > 2100) return { ok: false, error: "ปีไม่ถูกต้อง" };
-  const result = await syncBotHolidays([year]);
-  if ("skipped" in result) return { ok: false, error: "ยังไม่ได้ตั้งค่า BOT API" };
-  const [row] = result.results;
-  if (!row || "failed" in row) return { ok: false, error: "ดึงวันหยุดจาก ธปท. ไม่สำเร็จ" };
-  return { ok: true, added: row.added };
 }

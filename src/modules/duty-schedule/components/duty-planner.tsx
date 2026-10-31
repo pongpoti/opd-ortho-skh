@@ -12,7 +12,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { CalendarSync, ChevronLeft, ChevronRight, Monitor, RotateCcw, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Monitor, RotateCcw, Save } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -26,7 +26,6 @@ import {
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 import {
   loadPlannerMonth,
-  refreshPlannerHolidays,
   savePlannerChanges,
   type PlannerOption,
   type PlannerRosters,
@@ -116,10 +115,8 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
   const [loaded, setLoaded] = useState<Loaded>({ key: "", status: "loading" });
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
-  const [holidayNotice, setHolidayNotice] = useState<Notice>(null);
   const textSize = useSyncExternalStore(subscribeTextSize, readTextSize, () => DEFAULT_TEXT_SIZE);
   const [isSaving, startSave] = useTransition();
-  const [isSyncing, startSync] = useTransition();
   const [, startLoad] = useTransition();
   const latestLoad = useRef(0);
 
@@ -157,39 +154,10 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     });
   }, []);
 
-  const syncHolidays = useCallback((year: number, month: number, quiet: boolean) => {
-    startSync(async () => {
-      try {
-        const result = await refreshPlannerHolidays(year);
-        if (!result.ok) {
-          if (!quiet) setHolidayNotice({ tone: "err", text: result.error });
-          return;
-        }
-        if (result.added > 0) reload(year, month);
-        setHolidayNotice({
-          tone: "ok",
-          text: result.added > 0
-            ? `เพิ่มวันหยุดจาก ธปท. ${result.added} วัน`
-            : "วันหยุดตรงกับ ธปท. แล้ว",
-        });
-      } catch {
-        if (!quiet) setHolidayNotice({ tone: "err", text: "ดึงวันหยุดจาก ธปท. ไม่สำเร็จ" });
-      }
-    });
-  }, [reload]);
-
   useEffect(() => {
     reload(view.year, view.month);
     return () => { latestLoad.current += 1; };
   }, [view.year, view.month, reload]);
-
-  // Ask BOT once per year shown, so a holiday announced today is on the plan.
-  const syncedYears = useRef(new Set<number>());
-  useEffect(() => {
-    if (syncedYears.current.has(view.year)) return;
-    syncedYears.current.add(view.year);
-    syncHolidays(view.year, view.month, true);
-  }, [view.year, view.month, syncHolidays]);
 
   // Keep the column headings visible just under the app's sticky header.
   const plannerRef = useRef<HTMLDivElement>(null);
@@ -215,7 +183,6 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     if (dirty && !window.confirm("ยังไม่ได้บันทึกการแก้ไข ต้องการเปลี่ยนเดือนและทิ้งการแก้ไขหรือไม่?")) return;
     setDraft({});
     setNotice(null);
-    setHolidayNotice(null);
     setView((current) => shiftMonth(current, delta));
   }
 
@@ -307,7 +274,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           </HStack>
         </Flex>
 
-        <Flex align="center" justify="space-between" gap={6} mb="1em" wrap="wrap">
+        <Flex align="center" gap={6} mb="1em" wrap="wrap">
           <HStack gap={3}>
             <Text fontSize="0.95em" fontWeight="semibold">ขนาดตัวอักษร</Text>
             <HStack gap={1} role="group" aria-label="ขนาดตัวอักษร">
@@ -326,31 +293,13 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
               ))}
             </HStack>
           </HStack>
-          <HStack gap={3}>
-            {holidayNotice && (
-              <Text fontSize="0.9em" fontWeight="medium" color={holidayNotice.tone === "ok" ? "brand.fg" : "holiday.fg"}>
-                {holidayNotice.text}
-              </Text>
-            )}
-            <Button
-              size="lg"
-              fontSize="0.9em"
-              variant="subtle"
-              colorPalette="brand"
-              onClick={() => syncHolidays(view.year, view.month, false)}
-              loading={isSyncing}
-              loadingText="กำลังดึงวันหยุด…"
-            >
-              <CalendarSync size={22} /> อัปเดตวันหยุดจาก ธปท.
-            </Button>
-          </HStack>
         </Flex>
 
         <Legend />
 
         {!ready && (
           <VStack gap={3} py="2em" role={loadError ? "alert" : "status"}>
-            <Text fontSize="1.1em" color={loadError ? "holiday.fg" : "fg"}>
+            <Text fontSize="1.1em" color={loadError ? "fg.error" : "fg"}>
               {loadError ?? "กำลังโหลดตารางเวร…"}
             </Text>
             {loadError && (
@@ -386,9 +335,8 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                 {Array.from({ length: days }, (_, i) => i + 1).map((day) => {
                   const weekday = new Date(view.year, view.month, day).getDay();
                   const info = ready.data[day];
-                  const holiday = !!info?.holiday;
                   const weekend = weekday === 0 || weekday === 6;
-                  const rowBg = holiday ? "holiday.subtle" : weekend ? "weekend.subtle" : "transparent";
+                  const rowBg = weekend ? "weekend.subtle" : "transparent";
                   return (
                     <Box as="tr" key={day} bg={rowBg} borderTopWidth="2px" borderColor="border">
                       <Box as="td" px="0.75em" py="0.5em" verticalAlign="middle">
@@ -398,19 +346,14 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                             fontSize="1.5em"
                             fontWeight="bold"
                             fontFamily="var(--font-plex-sans)"
-                            color={holiday ? "holiday.fg" : weekend ? "weekend.fg" : "fg"}
+                            color={weekend ? "weekend.fg" : "fg"}
                           >
                             {day}
                           </Text>
-                          <Text as="span" fontWeight="semibold" color={holiday ? "holiday.fg" : weekend ? "weekend.fg" : "fg"}>
+                          <Text as="span" fontWeight="semibold" color={weekend ? "weekend.fg" : "fg"}>
                             {THAI_WD_FULL[weekday]}
                           </Text>
                         </HStack>
-                        {holiday && (
-                          <Text fontSize="0.8em" fontWeight="semibold" color="holiday.fg" lineHeight="1.4" lineClamp={2} title={info?.holidayLabel ?? undefined}>
-                            {info?.holidayLabel ?? "วันหยุด"}
-                          </Text>
-                        )}
                       </Box>
                       {DUTY_ORDER.map((key) => {
                         if (!dutyApplies(key, weekday)) {
@@ -484,7 +427,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           boxShadow="0 -6px 24px rgba(15, 23, 32, 0.12)"
         >
           <Flex mx="auto" w="min(1440px, calc(100vw - 64px))" align="center" gap={4} py={3}>
-            <Text fontSize="1.05em" fontWeight="semibold" color={notice?.tone === "err" ? "holiday.fg" : dirty ? "brand.fg" : "fg"} role="status">
+            <Text fontSize="1.05em" fontWeight="semibold" color={notice?.tone === "err" ? "fg.error" : dirty ? "brand.fg" : "fg"} role="status">
               {notice?.text ?? (dirty ? `มีการแก้ไข ${changes.length} ช่อง ยังไม่ได้บันทึก` : "ไม่มีการแก้ไข")}
             </Text>
             <HStack ml="auto" gap={3}>
@@ -524,7 +467,6 @@ function HeaderCell({ children }: { children: React.ReactNode }) {
 function Legend() {
   const swatches = [
     { bg: "weekend.subtle", fg: "weekend.fg", label: "เสาร์-อาทิตย์" },
-    { bg: "holiday.subtle", fg: "holiday.fg", label: "วันหยุดราชการ (ธปท.)" },
     { bg: "brand.subtle", fg: "brand.fg", label: "ช่องที่แก้ไข ยังไม่บันทึก" },
   ];
   return (
