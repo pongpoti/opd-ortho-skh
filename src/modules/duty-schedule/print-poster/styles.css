@@ -211,10 +211,10 @@ body {
   page: landscape;
   width: 297mm;
   height: 210mm;
-  padding: 28px 36px 26px;
+  padding: 30px 36px 24px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   overflow: hidden;
   color: var(--ink);
   font-family: var(--font-body);
@@ -228,16 +228,16 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 10px;
+  padding-bottom: 14px;
   border-bottom: 2px solid var(--accent);
 }
-.sheet-eyebrow { font-size: 13px; font-weight: 500; color: #5B7380; }
+.sheet-eyebrow { margin-bottom: 8px; font-size: 15px; font-weight: 500; line-height: 1.4; color: #5B7380; }
 .sheet-header h1 {
   margin: 0;
   font-family: var(--font-display);
   font-size: 30px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.4;
 }
 
 .mcal {
