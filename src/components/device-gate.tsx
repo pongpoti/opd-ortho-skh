@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Button, Flex, Heading, Text, VStack, Spinner } from "@chakra-ui/react";
 import { Smartphone } from "lucide-react";
 
@@ -9,7 +10,17 @@ import { ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
 
 type GateStatus = "checking" | "blocked" | "allowed" | "retry";
 
+/** The desktop planner runs in an ordinary browser with web LINE Login. */
+function isBrowserRoute(pathname: string | null): boolean {
+  return pathname === "/planner" || !!pathname?.startsWith("/planner/");
+}
+
 export function DeviceGate({ children }: { children: ReactNode }) {
+  if (isBrowserRoute(usePathname())) return <>{children}</>;
+  return <LiffGate>{children}</LiffGate>;
+}
+
+function LiffGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<GateStatus>("checking");
   const [attempt, setAttempt] = useState(0);
 

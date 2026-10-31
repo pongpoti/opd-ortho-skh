@@ -27,7 +27,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
        * real document scroll hands keyboard-avoidance to the browser
        * engine itself, which always knows exactly where the keyboard is.
        */}
-      <Box position="sticky" top={0} zIndex={15}>
+      <Box position="sticky" top={0} zIndex={15} data-app-header="">
         <Box
           bg="glass.bg"
           borderBottomWidth="1px"

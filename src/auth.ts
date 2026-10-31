@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import LINE from "next-auth/providers/line";
 import { eq } from "drizzle-orm";
 
 import { db } from "./db";
@@ -63,6 +64,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (typeof idToken !== "string") return null;
         return verifyLiffIdToken(idToken);
       },
+    }),
+    // Web LINE Login for the desktop planner (/planner), outside the LINE app.
+    // Same LINE Login channel as the LIFF app; needs LINE_CLIENT_SECRET and the
+    // callback URL /api/auth/callback/line registered on the channel.
+    LINE({
+      clientId: process.env.LINE_CLIENT_ID,
+      clientSecret: process.env.LINE_CLIENT_SECRET,
+      authorization: { params: { scope: "openid profile" } },
     }),
   ],
   callbacks: {

@@ -9,6 +9,11 @@ export default auth((req) => {
   const isRegistered = req.auth?.user?.isRegistered ?? false;
   const role = req.auth?.user?.role;
 
+  // The desktop planner signs in with web LINE Login and checks admin itself.
+  if (pathname === "/planner" || pathname.startsWith("/planner/")) {
+    return NextResponse.next();
+  }
+
   if (!isAuthed && pathname !== "/login") {
     return NextResponse.redirect(new URL("/login", req.url));
   }
@@ -31,6 +36,10 @@ export default auth((req) => {
     ) {
       return NextResponse.redirect(new URL("/cast-room", req.url));
     }
+  }
+
+  if (isAuthed && isRegistered && pathname.startsWith("/duty-schedule/planner") && role !== "admin") {
+    return NextResponse.redirect(new URL("/duty-schedule", req.url));
   }
 
   return NextResponse.next();
