@@ -310,7 +310,7 @@ body {
   color: var(--ink-strong);
 }
 /* สีตัวอักษรเข้มขึ้นจากสีประจำคน ให้อ่านชัดบนกระดาษ */
-.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: color-mix(in srgb, var(--c) 72%, #000); }
+.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: color-mix(in srgb, var(--c) 65%, #000); }
 .chip.is-muted { border-left-color: var(--cell-line-strong); background: none; }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
