@@ -49,7 +49,7 @@ export async function buildDutySchedulePdf(year: number, month: number): Promise
       await document.fonts.ready;
       const probe = document.createElement("span");
       probe.textContent = "กขค";
-      probe.style.fontFamily = '"IBM Plex Sans Thai Looped", "Bai Jamjuree", sans-serif';
+      probe.style.fontFamily = '"Sarabun", sans-serif';
       probe.style.position = "absolute";
       probe.style.left = "-9999px";
       document.body.appendChild(probe);

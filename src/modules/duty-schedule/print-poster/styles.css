@@ -1,10 +1,8 @@
 /* ---------- Fonts (bundled locally, SIL OFL — ใช้ได้แม้ไม่มีอินเทอร์เน็ต) ---------- */
-@font-face { font-family: "Bai Jamjuree"; src: url("fonts/BaiJamjuree-SemiBold.ttf") format("truetype"); font-weight: 600; }
-@font-face { font-family: "Bai Jamjuree"; src: url("fonts/BaiJamjuree-Bold.ttf") format("truetype"); font-weight: 700; }
-@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-Regular.ttf") format("truetype"); font-weight: 400; }
-@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-Medium.ttf") format("truetype"); font-weight: 500; }
-@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-SemiBold.ttf") format("truetype"); font-weight: 600; }
-@font-face { font-family: "IBM Plex Sans Thai Looped"; src: url("fonts/IBMPlexSansThaiLooped-Bold.ttf") format("truetype"); font-weight: 700; }
+@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Regular.ttf") format("truetype"); font-weight: 400; }
+@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Medium.ttf") format("truetype"); font-weight: 500; }
+@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-SemiBold.ttf") format("truetype"); font-weight: 600; }
+@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Bold.ttf") format("truetype"); font-weight: 700; }
 
 /* ---------- Design tokens ---------- */
 :root {
@@ -17,16 +15,18 @@
   --cell-line: #C9DCE1;       /* กรอบช่องวันที่ */
   --cell-line-strong: #A9C4CB;
 
-  /* พื้นขาวทั้งหมด: สีอ่อนมากเพื่อไม่เปลืองหมึกเวลาพิมพ์จริง */
-  --weekend-fill: #F2F6FC;
+  /* พื้นหน้ากระดาษขาว: ช่องวันที่ใช้สีอ่อนเพื่อไม่เปลืองหมึกเวลาพิมพ์จริง */
+  --workday-fill: #E5F3F0;
+  --workday-line: #A9D3CB;
+  --weekend-fill: #EAF0FB;
   --weekend-line: #B9CDEA;
   --weekend-ink: #1F4E8C;
-  --holiday-fill: #FDF2EF;
+  --holiday-fill: #FCEAE6;
   --holiday-line: #EDBFB6;
   --holiday-ink: #B42318;
 
-  --font-display: "Bai Jamjuree", "Noto Sans Thai", sans-serif;
-  --font-body: "IBM Plex Sans Thai Looped", "Noto Sans Thai", sans-serif;
+  --font-display: "Sarabun", "Noto Sans Thai", sans-serif;
+  --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
 
   --page-w: 794px;   /* A4 ที่ 96 dpi */
   --page-h: 1123px;
@@ -167,9 +167,9 @@ body {
   flex-direction: column;
   justify-content: space-between;
   border-radius: 10px;
-  background: #fff;
-  border: 1px solid var(--cell-line);
-  border-bottom: 2px solid var(--cell-line-strong);
+  background: var(--workday-fill);
+  border: 1px solid var(--workday-line);
+  border-bottom-width: 2px;
 }
 
 .cal-cell.is-weekend {
