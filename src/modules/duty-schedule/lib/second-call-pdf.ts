@@ -8,12 +8,18 @@ const MONTHS = ["มกราคม", "กุมภาพันธ์", "มี�
 const PAGE_WIDTH = 841.89;
 const PAGE_HEIGHT = 595.28;
 
-export async function buildBlankSecondCallPdf(input: {
+export async function buildSecondCallPdf(input: {
   year: number;
   /** Zero-indexed, like the duty calendar. */
   month: number;
-  internNames: string[];
+  /** This month's interns; `key` matches `cells`, `name` is null until the roster knows them. */
+  interns: Array<{ key: string; name: string | null }>;
   staff: Array<{ fullName: string; title: string | null; secondCallOrder: number | null }>;
+  /**
+   * Shift marks per person (staff full name or intern key), one entry per
+   * day column plus the next month's 1st. Omitted: a blank template.
+   */
+  cells?: Map<string, string[]>;
 }): Promise<Uint8Array> {
   const { year, month } = input;
   if (!validSecondCallMonth(year, month)) throw new Error("Invalid month");
@@ -39,15 +45,15 @@ export async function buildBlankSecondCallPdf(input: {
   centered("แนบท้ายคำสั่งที่ .................... ลงวันที่ ....................", 0, 535, PAGE_WIDTH, 10);
   centered(`ประจำเดือน ${label}     (  ) ปฏิบัติงานปกติ     ( / ) ปฏิบัติงานนอกเวลาและวันหยุด`, 0, 516, PAGE_WIDTH, 10, true);
 
-  type Row = { name: string; number?: number };
+  type Row = { name: string; number?: number; key?: string };
   const staff = [...input.staff].sort((a, b) => (a.secondCallOrder ?? Infinity) - (b.secondCallOrder ?? Infinity) || a.fullName.localeCompare(b.fullName, "th"));
   const rows: Row[] = staff.map((person, i) => ({
-    name: `${person.title ? `${person.title} ` : ""}${person.fullName}`, number: i + 1,
+    name: `${person.title ? `${person.title} ` : ""}${person.fullName}`, number: i + 1, key: person.fullName,
   }));
   rows.push({ name: "" }, { name: "" });
-  const interns = [...new Set(input.internNames.map((name) => name.trim()).filter(Boolean))];
-  // Unknown monthly interns remain blank; do not invent people or surnames.
-  if (interns.length) interns.forEach((name, i) => rows.push({ name, number: staff.length + 1 + i }));
+  const interns = [...new Map(input.interns.map((intern) => [intern.key, intern])).values()];
+  // Unknown interns keep their row and marks but no name; never invent people or surnames.
+  if (interns.length) interns.forEach((intern, i) => rows.push({ name: intern.name ?? "", number: staff.length + 1 + i, key: intern.key }));
   else rows.push({ name: "" }, { name: "" }, { name: "" });
   rows.push({ name: "" }, { name: "" });
 
@@ -77,7 +83,11 @@ export async function buildBlankSecondCallPdf(input: {
     const nameSize = Math.min(size, (widths[1] - 7) / regular.widthOfTextAtSize(row.name, 1));
     page.drawText(row.name, { x: boundaries[1] + 3.5, y, font: regular, size: nameSize });
     centered("แพทย์", boundaries[2], y, widths[2], size);
-    // Deliberately leave all shift cells empty in this initial template export.
+    if (!input.cells || !row.key) return;
+    const marks = input.cells.get(row.key) ?? [];
+    for (let column = 0; column <= days; column++) {
+      centered(marks[column] || "-", boundaries[3 + column], y, widths[3 + column], size);
+    }
   });
   return doc.save();
 }

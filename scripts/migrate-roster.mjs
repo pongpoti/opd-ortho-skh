@@ -12,6 +12,7 @@ import {
 } from "./import-roster.mjs";
 
 const migrationTag = "0006_canonical_roster";
+const secondCallTag = "0007_second_call_slots";
 const importName = "historical-roster-v1";
 const tableNames = ["duty_days", "duty_slots", "fixed_holidays", "opd_weekly_schedule", "roster_personnel"];
 
@@ -64,11 +65,13 @@ ${constraints.map((constraint) => `
 }
 
 export async function buildRosterMigrationStatements() {
-  const [migrationSql, legacySql, journalText, snapshotText, historical] = await Promise.all([
+  const [migrationSql, legacySql, secondCallSql, journalText, snapshotText, secondCallSnapshotText, historical] = await Promise.all([
     readFile(new URL(`../drizzle/${migrationTag}.sql`, import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0004_duty_overrides.sql", import.meta.url), "utf8"),
+    readFile(new URL(`../drizzle/${secondCallTag}.sql`, import.meta.url), "utf8"),
     readFile(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/meta/0006_snapshot.json", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/meta/0007_snapshot.json", import.meta.url), "utf8"),
     readHistoricalRoster(),
   ]);
   const monthlyImports = await readMonthlyRosterImports();
@@ -76,6 +79,16 @@ export async function buildRosterMigrationStatements() {
   const snapshot = JSON.parse(snapshotText);
   const entry = journal.entries.find((item) => item.tag === migrationTag);
   if (!entry || !Number.isSafeInteger(entry.when)) throw new Error("Invalid roster migration journal");
+  const secondCallEntry = journal.entries.find((item) => item.tag === secondCallTag);
+  if (!secondCallEntry || !Number.isSafeInteger(secondCallEntry.when) || secondCallEntry.when <= entry.when) {
+    throw new Error("Invalid second-call migration journal");
+  }
+  if (!secondCallSql.trim().startsWith('CREATE TABLE "second_call_slots" (') || secondCallSql.includes("--> statement-breakpoint")) {
+    throw new Error("Unexpected second-call migration structure");
+  }
+  const secondCallTable = JSON.parse(secondCallSnapshotText).tables["public.second_call_slots"];
+  const secondCallHash = createHash("sha256").update(secondCallSql).digest("hex");
+  const secondCallRecorded = `EXISTS (SELECT 1 FROM drizzle.__drizzle_migrations WHERE hash = ${literal(secondCallHash)} AND created_at = ${secondCallEntry.when})`;
   const hash = createHash("sha256").update(migrationSql).digest("hex");
   const sourceHash = createHash("sha256").update(JSON.stringify(historical)).digest("hex");
   const recorded = `EXISTS (SELECT 1 FROM drizzle.__drizzle_migrations WHERE hash = ${literal(hash)} AND created_at = ${entry.when})`;
@@ -127,7 +140,8 @@ export async function buildRosterMigrationStatements() {
     RAISE EXCEPTION 'Roster migration: the existing migration journal is incompatible; no data was changed';
   END IF;
   IF EXISTS (SELECT 1 FROM drizzle.__drizzle_migrations WHERE created_at IS NULL OR hash IS NULL OR (created_at > ${entry.when} AND NOT ${recorded})
-    OR (created_at = ${entry.when} AND hash <> ${literal(hash)}) OR (hash = ${literal(hash)} AND created_at <> ${entry.when})) THEN
+    OR (created_at = ${entry.when} AND hash <> ${literal(hash)}) OR (hash = ${literal(hash)} AND created_at <> ${entry.when})
+    OR (created_at = ${secondCallEntry.when} AND hash <> ${literal(secondCallHash)}) OR (hash = ${literal(secondCallHash)} AND created_at <> ${secondCallEntry.when})) THEN
     RAISE EXCEPTION 'Roster migration: journal hash or order conflicts with this deployment; no data was changed';
   END IF;`),
     // Recording 0006 must not silently baseline an unrelated empty database.
@@ -171,15 +185,26 @@ export async function buildRosterMigrationStatements() {
     `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) SELECT ${literal(hash)}, ${entry.when} WHERE NOT ${recorded}`,
     `INSERT INTO drizzle.__roster_imports (name, source_hash) SELECT ${literal(importName)}, ${literal(sourceHash)} WHERE NOT ${imported}`,
     ...monthlyImport,
+    // 0007 is additive: it only creates the saved second-call table.
+    statementBlock(`
+  IF to_regclass('public.second_call_slots') IS NULL THEN
+    IF ${secondCallRecorded} THEN
+      RAISE EXCEPTION 'Roster migration: a recorded second-call table is missing; no data was changed';
+    END IF;
+    ${secondCallSql.trim()}
+  END IF;`),
+    validateTablesSql([secondCallTable]),
+    `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) SELECT ${literal(secondCallHash)}, ${secondCallEntry.when} WHERE NOT ${secondCallRecorded}`,
     `SELECT (SELECT count(*)::integer FROM roster_personnel) AS personnel,
       (SELECT count(*)::integer FROM duty_days) AS dates,
-      (SELECT count(*)::integer FROM duty_slots) AS slots`,
+      (SELECT count(*)::integer FROM duty_slots) AS slots,
+      (SELECT count(*)::integer FROM second_call_slots) AS "secondCallSlots"`,
   ];
-  return { statements, hash, createdAt: entry.when };
+  return { statements, hash, secondCallHash, createdAt: entry.when };
 }
 
 export async function migrateRoster(url) {
-  const { statements, hash } = await buildRosterMigrationStatements();
+  const { statements, hash, secondCallHash } = await buildRosterMigrationStatements();
   const sql = neon(url);
   // READ COMMITTED gives a waiting deployment a fresh view after the lock.
   // Every DDL, import, and journal change commits together or rolls back.
@@ -187,7 +212,11 @@ export async function migrateRoster(url) {
     isolationLevel: "ReadCommitted",
     fetchOptions: { signal: AbortSignal.timeout(180_000) },
   });
-  return { migration: migrationTag, hash: hash.slice(0, 12), ...results.at(-1)[0] };
+  return {
+    migration: migrationTag, hash: hash.slice(0, 12),
+    secondCallMigration: secondCallTag, secondCallHash: secondCallHash.slice(0, 12),
+    ...results.at(-1)[0],
+  };
 }
 
 async function main() {
@@ -200,8 +229,8 @@ async function main() {
     return;
   }
   if (!values.apply && !values["vercel-production"]) {
-    const { hash } = await buildRosterMigrationStatements();
-    console.log(`Validated ${migrationTag} (${hash.slice(0, 12)}). Use --apply to migrate the selected DATABASE_URL.`);
+    const { hash, secondCallHash } = await buildRosterMigrationStatements();
+    console.log(`Validated ${migrationTag} (${hash.slice(0, 12)}) and ${secondCallTag} (${secondCallHash.slice(0, 12)}). Use --apply to migrate the selected DATABASE_URL.`);
     return;
   }
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required for roster migration");

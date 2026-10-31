@@ -19,7 +19,11 @@ export async function GET() {
           (select count(*)::integer from public.fixed_holidays) as holidays,
           (select count(*)::integer from public.opd_weekly_schedule) as opd_weekdays`)[0]
       : null;
-    return Response.json({ connected: row.ok === 1, usersTableExists: table.name !== null, rosterTablesReady: roster.ready, rosterCounts });
+    const [secondCall] = await sql`select to_regclass('public.second_call_slots') IS NOT NULL as ready`;
+    const secondCallSlots = secondCall.ready
+      ? (await sql`select count(*)::integer as count from public.second_call_slots`)[0].count
+      : null;
+    return Response.json({ connected: row.ok === 1, usersTableExists: table.name !== null, rosterTablesReady: roster.ready, rosterCounts, secondCallSlots });
   } catch (error) {
     // This route is public (proxy skips /api) — keep driver/connection
     // details in the server log, not the response.
