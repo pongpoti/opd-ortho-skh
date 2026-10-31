@@ -3,7 +3,7 @@
 import { requireAdminSession } from "@/lib/require-admin";
 import { fetchRosterPersonnel, type RosterPerson, type RosterRole } from "@/lib/roster-directory";
 
-import { DUTY_ORDER, dutyApplies, parseDutyPersonName, type DutyKey, type DutyMonthData } from "./duty-data";
+import { dutyApplies, parseDutyPersonName, type DutyKey, type DutyMonthData } from "./duty-data";
 import { fetchDutyMonthData, saveDutySlotRecords } from "./duty-repository";
 import { validSecondCallMonth } from "./second-call-share";
 
@@ -19,7 +19,10 @@ const DUTY_ROLE: Record<DutyKey, RosterRole> = {
 /** Explicit markers the planner may store besides a person. */
 const MARKERS = ["งด", "-"];
 
-const MAX_CHANGES = 31 * DUTY_ORDER.length;
+/** Duties the planner edits; the OPD outreach clinics (d3, d4) are not planned here. */
+const PLANNER_KEYS: DutyKey[] = ["d1", "d2", "d5"];
+
+const MAX_CHANGES = 31 * PLANNER_KEYS.length;
 
 /** Stored value is the first name, or the full name when a first name is shared. */
 function rosterOptions(people: RosterPerson[]): PlannerOption[] {
@@ -82,7 +85,7 @@ export async function savePlannerChanges(input: {
     const seen = new Set<string>();
     for (const change of changes) {
       const { day, dutyKey, personName } = change ?? {};
-      if (!Number.isInteger(day) || day < 1 || day > days || !DUTY_ORDER.includes(dutyKey)) {
+      if (!Number.isInteger(day) || day < 1 || day > days || !PLANNER_KEYS.includes(dutyKey)) {
         return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
       }
       if (seen.has(`${day}:${dutyKey}`)) return { ok: false, error: "ข้อมูลซ้ำ" };

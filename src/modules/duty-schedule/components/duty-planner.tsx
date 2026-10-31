@@ -17,8 +17,6 @@ import { ChevronLeft, ChevronRight, Monitor, RotateCcw, Save } from "lucide-reac
 import { GlassCard } from "@/components/ui/glass-card";
 import {
   DUTY_LABELS,
-  DUTY_ORDER,
-  dutyApplies,
   isDutyMarker,
   type DutyKey,
   type DutyMonthData,
@@ -76,10 +74,8 @@ function subscribeTextSize(listener: () => void) {
   return () => { textSizeListeners.delete(listener); };
 }
 
-/** OPD columns are mostly "ไม่มีเวร", so names get the room. */
-const COLUMN_WIDTHS: Record<DutyKey, string> = {
-  d1: "21%", d2: "21%", d3: "14%", d4: "14%", d5: "18%",
-};
+/** Duties planned here; the OPD outreach clinics (d3, d4) are left out. */
+const PLANNER_KEYS: DutyKey[] = ["d1", "d2", "d5"];
 
 /** Every day row is this tall, holiday name or not, so the month reads evenly. */
 const ROW_HEIGHT = "4.4em";
@@ -214,17 +210,14 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     draft[slotKey(day, key)] ?? ready?.data[day]?.entries[key] ?? UNSET;
 
   const counts = useMemo(() => {
-    const out = { staff: new Map<string, { d1: number; opd: number }>(), intern: new Map<string, number>(), nurse: new Map<string, number>() };
+    const out = { staff: new Map<string, number>(), intern: new Map<string, number>(), nurse: new Map<string, number>() };
     if (!ready) return out;
     for (let day = 1; day <= days; day++) {
-      for (const key of DUTY_ORDER) {
+      for (const key of PLANNER_KEYS) {
         const name = draft[slotKey(day, key)] ?? ready.data[day]?.entries[key];
         if (!name || isDutyMarker(name)) continue;
         if (DUTY_ROLE[key] === "staff") {
-          const row = out.staff.get(name) ?? { d1: 0, opd: 0 };
-          if (key === "d1") row.d1 += 1;
-          else row.opd += 1;
-          out.staff.set(name, row);
+          out.staff.set(name, (out.staff.get(name) ?? 0) + 1);
         } else {
           const map = DUTY_ROLE[key] === "intern" ? out.intern : out.nurse;
           map.set(name, (map.get(name) ?? 0) + 1);
@@ -316,12 +309,12 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
             <Box as="table" w="full" style={{ borderCollapse: "collapse", tableLayout: "fixed" }}>
               <Box as="colgroup">
                 <col style={{ width: "12%" }} />
-                {DUTY_ORDER.map((key) => <col key={key} style={{ width: COLUMN_WIDTHS[key] }} />)}
+                {PLANNER_KEYS.map((key) => <col key={key} />)}
               </Box>
               <Box as="thead">
                 <Box as="tr">
                   <HeaderCell>วันที่</HeaderCell>
-                  {DUTY_ORDER.map((key) => {
+                  {PLANNER_KEYS.map((key) => {
                     const Icon = DUTY_ICONS[key];
                     return (
                       <HeaderCell key={key}>
@@ -366,14 +359,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                           </Text>
                         )}
                       </Box>
-                      {DUTY_ORDER.map((key) => {
-                        if (!dutyApplies(key, weekday)) {
-                          return (
-                            <Box as="td" key={key} px="0.5em" textAlign="center" color="fg.muted" fontSize="0.85em">
-                              ไม่มีเวร
-                            </Box>
-                          );
-                        }
+                      {PLANNER_KEYS.map((key) => {
                         const roster = ready.rosters[DUTY_ROLE[key]];
                         const saved = info?.entries[key];
                         const value = valueOf(day, key);
@@ -496,14 +482,13 @@ function Counts({
   counts,
   rosters,
 }: {
-  counts: { staff: Map<string, { d1: number; opd: number }>; intern: Map<string, number>; nurse: Map<string, number> };
+  counts: { staff: Map<string, number>; intern: Map<string, number>; nurse: Map<string, number> };
   rosters: PlannerRosters;
 }) {
-  const staffRows = rosters.staff.map((option) => ({ ...option, ...(counts.staff.get(option.value) ?? { d1: 0, opd: 0 }) }));
   const columns = [
     {
       title: "Staff",
-      rows: staffRows.map((row) => ({ key: row.value, label: row.label, value: `เวร ${row.d1} · OPD ${row.opd}` })),
+      rows: rosters.staff.map((option) => ({ key: option.value, label: option.label, value: `${counts.staff.get(option.value) ?? 0} วัน` })),
     },
     {
       title: "Intern",
