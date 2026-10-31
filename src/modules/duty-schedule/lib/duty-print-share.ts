@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
-const SHARE_TTL_MS = 30 * 60 * 1000; // 30 minutes — enough for LINE to fetch
+const SHARE_TTL_MS = 30 * 60 * 1000; // 30 minutes — enough to open the PDF link
 
 export type DutyPrintSharePayload = {
   year: number;
@@ -71,10 +71,6 @@ export function verifyDutyPrintShareToken(token: string): DutyPrintSharePayload 
   return payload;
 }
 
-export function buildDutyPrintImagePath(
-  token: string,
-  variant: "original" | "preview" = "original"
-): string {
-  const params = new URLSearchParams({ token, variant });
-  return `/api/duty-schedule/print-image?${params.toString()}`;
+export function buildDutyPrintPdfPath(token: string): string {
+  return `/api/duty-schedule/print-pdf?${new URLSearchParams({ token }).toString()}`;
 }

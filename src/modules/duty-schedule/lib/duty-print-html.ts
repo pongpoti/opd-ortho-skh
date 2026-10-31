@@ -4,11 +4,13 @@ import path from "path";
 
 import {
   ambiguousDutyFirstNames,
+  dutyApplies,
   formatDutyDisplayName,
   getDutyDay,
   isDutyMarker,
+  type DutyKey,
+  type DutyMonthData,
 } from "./duty-data";
-import { fetchDutyMonthData, fetchOpdWeeklySchedule } from "./duty-repository";
 
 const THAI_MONTHS = [
   "มกราคม",
@@ -27,6 +29,35 @@ const THAI_MONTHS = [
 
 const WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
 const BE_OFFSET = 543;
+const DEPARTMENT = "กลุ่มงานศัลยกรรมกระดูก โรงพยาบาลสมุทรสาคร";
+
+/** Light-theme duty colors from `src/theme.ts`, used as print accents. */
+const DUTY_COLORS: Record<DutyKey, string> = {
+  d1: "#2f6fb0",
+  d2: "#7c5cbf",
+  d3: "#b8842a",
+  d4: "#2f9e6b",
+  d5: "#d1483f",
+};
+
+/** One accent per person (interns, cast-room nurses), in first-seen order. */
+const PERSON_COLORS = [
+  DUTY_COLORS.d2,
+  DUTY_COLORS.d1,
+  DUTY_COLORS.d3,
+  DUTY_COLORS.d4,
+  DUTY_COLORS.d5,
+  "#1f8f86",
+  "#c0508a",
+  "#5b6b7a",
+];
+
+export type OpdScheduleRow = {
+  weekday: number;
+  day: string;
+  morning: string;
+  afternoon: string;
+};
 
 function resolvePosterDir(): string {
   const candidates = [
@@ -66,7 +97,7 @@ function opdMorningNames(morning: string): string[] {
   return morning.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
-async function loadPosterCss(): Promise<string> {
+export async function loadPosterCss(): Promise<string> {
   const raw = await readFile(path.join(POSTER_DIR, "styles.css"), "utf8");
   const fontsDir = path.join(POSTER_DIR, "fonts");
 
@@ -92,13 +123,13 @@ async function loadPosterCss(): Promise<string> {
   return css;
 }
 
-async function buildOpdTableHtml(): Promise<string> {
+function buildOpdTableHtml(opd: OpdScheduleRow[]): string {
   const morningTime = "09.00 – 12.00 น.";
   const afternoonTime = "13.00 – 16.00 น.";
 
   let rows = `<div class="opd-row opd-head"><div class="opd-cell">วัน</div><div class="opd-cell">${morningTime}</div><div class="opd-cell opd-pm">${afternoonTime}</div></div>`;
 
-  for (const r of await fetchOpdWeeklySchedule()) {
+  for (const r of [...opd].sort((a, b) => a.weekday - b.weekday)) {
     const names = opdMorningNames(r.morning)
       .map((name, i) => {
         const sep = i > 0 ? `<span class="opd-sep">·</span>` : "";
@@ -111,11 +142,10 @@ async function buildOpdTableHtml(): Promise<string> {
   return `<div id="opd-table" class="opd-table">${rows}</div>`;
 }
 
-async function buildCalendarHtml(year: number, month: number): Promise<string> {
+function buildPosterCalendarHtml(year: number, month: number, data: DutyMonthData): string {
   const n = daysInMonth(year, month);
   const firstCol = mondayFirstCol(year, month);
   const weeks = Math.ceil((firstCol + n) / 7);
-  const overrides = await fetchDutyMonthData(year, month);
 
   let html = `<div id="calendar" class="calendar" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">`;
 
@@ -124,7 +154,7 @@ async function buildCalendarHtml(year: number, month: number): Promise<string> {
     html += `<div class="${cls}">${d}</div>`;
   });
 
-  const ambiguousStaff = ambiguousDutyFirstNames(year, month, "d1", overrides);
+  const ambiguousStaff = ambiguousDutyFirstNames(year, month, "d1", data);
 
   for (let i = 0; i < weeks * 7; i++) {
     const date = i - firstCol + 1;
@@ -134,7 +164,7 @@ async function buildCalendarHtml(year: number, month: number): Promise<string> {
     }
 
     const col = i % 7;
-    const duty = getDutyDay(year, month, date, overrides);
+    const duty = getDutyDay(year, month, date, data);
     const holiday = duty.holiday;
     const rawName = duty.entries.d1;
     // "-" (slot cleared by an admin) and "งด" both mean nobody on duty.
@@ -156,45 +186,222 @@ async function buildCalendarHtml(year: number, month: number): Promise<string> {
   return html;
 }
 
-/** Build the exact A4 poster HTML from the ortho-schedule zip template. */
-export async function buildDutyPosterHtml(year: number, month: number): Promise<{
-  html: string;
-  monthLabel: string;
-  filenameBase: string;
-}> {
-  const css = await loadPosterCss();
-  const monthLabel = `${THAI_MONTHS[month]} ${year + BE_OFFSET}`;
-  const title = "ตารางเวรแพทย์ออร์โธปิดิกส์";
-  const filenameBase = `ortho-schedule-${year + BE_OFFSET}-${String(month + 1).padStart(2, "0")}`;
+function buildPosterPage(input: DutyPrintInput, monthLabel: string): string {
+  return `<main class="page">
+    <header class="page-header">
+      <h1>ตารางเวรแพทย์ออร์โธปิดิกส์</h1>
+      <div class="month-label">${escapeHtml(monthLabel)}</div>
+    </header>
+    <section class="section">
+      <h2 class="section-title">ตารางออกตรวจ OPD</h2>
+      ${buildOpdTableHtml(input.opd)}
+    </section>
+    <section class="section section-calendar">
+      <h2 class="section-title">ตารางเวร staff</h2>
+      ${buildPosterCalendarHtml(input.year, input.month, input.data)}
+    </section>
+  </main>`;
+}
 
-  const html = `<!doctype html>
+type SheetEntry = { name: string; sub?: string; color: string; muted?: boolean };
+type LegendItem = { label: string; detail?: string; color: string };
+
+/** Display name for one slot, or null when the slot has nobody to print. */
+function slotName(raw: string | undefined, ambiguous: ReadonlySet<string>): string | null {
+  if (!raw || raw === "-") return null;
+  return formatDutyDisplayName(raw, ambiguous);
+}
+
+/** Stable color per person: sorted Thai order, so the legend reads A→Z. */
+function personColors(year: number, month: number, key: DutyKey, data: DutyMonthData) {
+  const ambiguous = ambiguousDutyFirstNames(year, month, key, data);
+  const counts = new Map<string, number>();
+  for (let day = 1; day <= daysInMonth(year, month); day++) {
+    const name = slotName(getDutyDay(year, month, day, data).entries[key], ambiguous);
+    if (name && !isDutyMarker(name)) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  const names = [...counts.keys()].sort((a, b) => a.localeCompare(b, "th"));
+  const colors = new Map(names.map((name, i) => [name, PERSON_COLORS[i % PERSON_COLORS.length]]));
+  return { ambiguous, counts, names, colors };
+}
+
+/** A landscape month grid with the app's calendar look, on white for printing. */
+function buildMonthSheet(opts: {
+  input: DutyPrintInput;
+  monthLabel: string;
+  title: string;
+  entriesFor: (day: number, jsWeekday: number) => SheetEntry[];
+  legend: LegendItem[];
+  note?: string;
+}): string {
+  const { year, month, data } = opts.input;
+  const n = daysInMonth(year, month);
+  const firstCol = mondayFirstCol(year, month);
+  const weeks = Math.ceil((firstCol + n) / 7);
+
+  let grid = WEEKDAYS.map((d, i) =>
+    `<div class="mcal-label${i >= 5 ? " is-weekend" : ""}">${d}</div>`
+  ).join("");
+
+  for (let i = 0; i < weeks * 7; i++) {
+    const date = i - firstCol + 1;
+    if (date < 1 || date > n) {
+      grid += `<div class="mcal-cell is-empty"></div>`;
+      continue;
+    }
+    const duty = getDutyDay(year, month, date, data);
+    const classes = ["mcal-cell"];
+    if (i % 7 >= 5) classes.push("is-weekend");
+    if (duty.holiday) classes.push("is-holiday");
+    const tag = duty.holiday
+      ? `<div class="mcal-tag">${escapeHtml(duty.holidayLabel ?? "วันหยุด")}</div>`
+      : "";
+    const entries = opts
+      .entriesFor(date, new Date(year, month, date).getDay())
+      .map((e) => {
+        const sub = e.sub ? `<div class="chip-sub">${escapeHtml(e.sub)}</div>` : "";
+        return `<div class="chip${e.muted ? " is-muted" : ""}" style="--c: ${e.color}"><div class="chip-name">${escapeHtml(e.name)}</div>${sub}</div>`;
+      })
+      .join("");
+    grid += `<div class="${classes.join(" ")}"><div class="mcal-top"><div class="mcal-date">${date}</div>${tag}</div><div class="mcal-body">${entries}</div></div>`;
+  }
+
+  const legend = opts.legend
+    .map((item) => {
+      const detail = item.detail ? `<span class="legend-detail">${escapeHtml(item.detail)}</span>` : "";
+      return `<span class="legend-item"><span class="legend-swatch" style="--c: ${item.color}"></span>${escapeHtml(item.label)}${detail}</span>`;
+    })
+    .join("");
+
+  return `<section class="sheet">
+    <header class="sheet-header">
+      <div>
+        <div class="sheet-eyebrow">${escapeHtml(DEPARTMENT)}</div>
+        <h1>${escapeHtml(opts.title)}</h1>
+      </div>
+      <div class="month-label">${escapeHtml(opts.monthLabel)}</div>
+    </header>
+    <div class="mcal" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">${grid}</div>
+    <footer class="sheet-foot">
+      <div class="legend">${legend}</div>
+      ${opts.note ? `<div class="sheet-note">${escapeHtml(opts.note)}</div>` : ""}
+    </footer>
+  </section>`;
+}
+
+function buildOutpatientSheet(input: DutyPrintInput, monthLabel: string): string {
+  const { year, month, data } = input;
+  const ambiguous = {
+    d3: ambiguousDutyFirstNames(year, month, "d3", data),
+    d4: ambiguousDutyFirstNames(year, month, "d4", data),
+  };
+  return buildMonthSheet({
+    input,
+    monthLabel,
+    title: "เวร OPD ท่าฉลอม · เกตุม",
+    entriesFor: (day, weekday) => {
+      const duty = getDutyDay(year, month, day, data);
+      const out: SheetEntry[] = [];
+      for (const key of ["d4", "d3"] as const) {
+        if (!dutyApplies(key, weekday)) continue;
+        const name = slotName(duty.entries[key], ambiguous[key]);
+        if (!name) continue;
+        out.push({
+          name,
+          sub: key === "d3" ? "ท่าฉลอม" : "เกตุม",
+          color: DUTY_COLORS[key],
+          muted: isDutyMarker(name),
+        });
+      }
+      return out;
+    },
+    legend: [
+      { label: "โรงพยาบาลเกตุม", detail: "วันจันทร์ · วันพฤหัสบดี", color: DUTY_COLORS.d4 },
+      { label: "โรงพยาบาลท่าฉลอม", detail: "วันอังคาร", color: DUTY_COLORS.d3 },
+    ],
+  });
+}
+
+function buildInternSheet(input: DutyPrintInput, monthLabel: string): string {
+  const { year, month, data } = input;
+  const people = personColors(year, month, "d2", data);
+  return buildMonthSheet({
+    input,
+    monthLabel,
+    title: "เวร Intern Ortho",
+    entriesFor: (day) => {
+      const name = slotName(getDutyDay(year, month, day, data).entries.d2, people.ambiguous);
+      if (!name) return [];
+      return [{ name, color: people.colors.get(name) ?? DUTY_COLORS.d2, muted: isDutyMarker(name) }];
+    },
+    legend: people.names.map((name) => ({
+      label: name,
+      detail: `${people.counts.get(name)} เวร`,
+      color: people.colors.get(name) ?? DUTY_COLORS.d2,
+    })),
+    note: "เวร intern ตลอด 24 ชม.",
+  });
+}
+
+function buildCastRoomSheet(input: DutyPrintInput, monthLabel: string): string {
+  const { year, month, data } = input;
+  const doctors = ambiguousDutyFirstNames(year, month, "d1", data);
+  const nurses = personColors(year, month, "d5", data);
+  return buildMonthSheet({
+    input,
+    monthLabel,
+    title: "เวรห้องเฝือก",
+    entriesFor: (day) => {
+      const duty = getDutyDay(year, month, day, data);
+      const doctor = slotName(duty.entries.d1, doctors);
+      const nurse = slotName(duty.entries.d5, nurses.ambiguous);
+      if (!doctor && !nurse) return [];
+      return [{
+        name: doctor ?? "—",
+        sub: nurse ? `พว.${nurse}` : undefined,
+        color: (nurse && nurses.colors.get(nurse)) || DUTY_COLORS.d5,
+        muted: !doctor || isDutyMarker(doctor),
+      }];
+    },
+    legend: nurses.names.map((name) => ({
+      label: `พว.${name}`,
+      color: nurses.colors.get(name) ?? DUTY_COLORS.d5,
+    })),
+    note: "จันทร์–ศุกร์ ปฏิบัติงาน 16.00–24.00 น. · เสาร์ อาทิตย์ วันหยุด ปฏิบัติงาน 08.00–24.00 น.",
+  });
+}
+
+export type DutyPrintInput = {
+  year: number;
+  /** 0-indexed month. */
+  month: number;
+  data: DutyMonthData;
+  opd: OpdScheduleRow[];
+};
+
+/**
+ * Printable duty schedule: the A4 portrait poster first, then landscape
+ * month sheets for OPD ท่าฉลอม/เกตุม, intern and ห้องเฝือก. White
+ * background throughout so it prints without wasting ink.
+ */
+export function renderDutyPrintHtml(input: DutyPrintInput, css: string): string {
+  const monthLabel = `${THAI_MONTHS[input.month]} ${input.year + BE_OFFSET}`;
+  return `<!doctype html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <title>${escapeHtml(title)} ${escapeHtml(monthLabel)}</title>
+  <title>ตารางเวรแพทย์ออร์โธปิดิกส์ ${escapeHtml(monthLabel)}</title>
   <style>${css}
-/* Export chrome: no outer chrome, page fills viewport like the zip exporter */
+/* Export chrome: no outer chrome, pages stack like the printed document */
 html, body { margin: 0; padding: 0; background: #fff; }
 body { display: block; min-height: 0; }
 </style>
 </head>
 <body>
-  <main class="page">
-    <header class="page-header">
-      <h1>${escapeHtml(title)}</h1>
-      <div class="month-label">${escapeHtml(monthLabel)}</div>
-    </header>
-    <section class="section">
-      <h2 class="section-title">ตารางออกตรวจ OPD</h2>
-      ${await buildOpdTableHtml()}
-    </section>
-    <section class="section section-calendar">
-      <h2 class="section-title">ตารางเวร staff</h2>
-      ${await buildCalendarHtml(year, month)}
-    </section>
-  </main>
+  ${buildPosterPage(input, monthLabel)}
+  ${buildOutpatientSheet(input, monthLabel)}
+  ${buildInternSheet(input, monthLabel)}
+  ${buildCastRoomSheet(input, monthLabel)}
 </body>
 </html>`;
-
-  return { html, monthLabel, filenameBase };
 }

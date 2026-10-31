@@ -17,7 +17,7 @@ import {
 import { ChevronLeft, ChevronRight, Pencil, Printer, Trash2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import { ensureLiffInit, ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
+import { ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
 import {
   ambiguousDutyFirstNamesByKey,
   DUTY_LABELS,
@@ -32,7 +32,7 @@ import {
 } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
 import { loadDutyMonthData, getDutyScheduleAdminFlag } from "../lib/duty-actions";
-import { sendDutySchedulePrint } from "../lib/duty-print-actions";
+import { createDutyPrintPdfLink } from "../lib/duty-print-actions";
 import { createSecondCallPdfLink } from "../lib/second-call-actions";
 import { DutySlotDeleteDialog } from "./duty-slot-delete-dialog";
 import { DutySlotEditSheet } from "./duty-slot-edit-sheet";
@@ -171,59 +171,40 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
     };
   }, [isAdminProp]);
 
-  function handlePrint() {
-    if (!monthReady) return;
+  /** Open a signed PDF link: external browser from LIFF, same tab elsewhere. */
+  async function openPdf(createLink: typeof createSecondCallPdfLink) {
+    const { year, month } = view;
     setPrintMessage(null);
-    startPrint(async () => {
-      const result = await sendDutySchedulePrint(view.year, view.month);
+    try {
+      const result = await createLink(year, month);
       if (!result.ok) {
         setPrintMessage({ tone: "err", text: result.error });
         return;
       }
-
+      const url = new URL(result.path, window.location.origin).toString();
       try {
-        await ensureLiffInit();
+        await ensureLiffInitWithTimeout();
         if (liff.isInClient()) {
-          liff.closeWindow();
+          liff.openWindow({ url, external: true });
           return;
         }
       } catch {
-        // External browser / LIFF unavailable — fall through with on-page hint.
+        // Open the signed HTTP download directly in ordinary browsers.
       }
+      window.location.assign(url);
+    } catch {
+      setPrintMessage({ tone: "err", text: "เปิด PDF ไม่สำเร็จ กรุณาลองอีกครั้ง" });
+    }
+  }
 
-      setPrintMessage({
-        tone: "ok",
-        text: "กำลังสร้างรูปในแชท LINE — เปิดแชท OA เพื่อดู loading และรูป",
-      });
-    });
+  function handlePrint() {
+    if (!monthReady) return;
+    startPrint(() => openPdf(createDutyPrintPdfLink));
   }
 
   function handleSecondCall() {
     if (!monthReady) return;
-    const { year, month } = view;
-    setPrintMessage(null);
-    startSecondCallExport(async () => {
-      try {
-        const result = await createSecondCallPdfLink(year, month);
-        if (!result.ok) {
-          setPrintMessage({ tone: "err", text: result.error });
-          return;
-        }
-        const url = new URL(result.path, window.location.origin).toString();
-        try {
-          await ensureLiffInitWithTimeout();
-          if (liff.isInClient()) {
-            liff.openWindow({ url, external: true });
-            return;
-          }
-        } catch {
-          // Open the signed HTTP download directly in ordinary browsers.
-        }
-        window.location.assign(url);
-      } catch {
-        setPrintMessage({ tone: "err", text: "เปิด PDF ไม่สำเร็จ กรุณาลองอีกครั้ง" });
-      }
-    });
+    startSecondCallExport(() => openPdf(createSecondCallPdfLink));
   }
 
   function changeMonth(delta: number) {
@@ -301,7 +282,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             </Text>
           </IconButton>
           <IconButton
-            aria-label="พิมพ์ตารางเวรส่ง LINE"
+            aria-label="พิมพ์ตารางเวร (PDF)"
             size="md"
             variant="solid"
             colorPalette="brand"
