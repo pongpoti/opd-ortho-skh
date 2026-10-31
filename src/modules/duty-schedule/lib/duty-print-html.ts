@@ -186,17 +186,20 @@ function buildPosterCalendarHtml(year: number, month: number, data: DutyMonthDat
   return html;
 }
 
-/** Top-right block on every page: department above the month. */
-function headerSideHtml(monthLabel: string): string {
-  return `<div class="header-side"><div class="department">${escapeHtml(DEPARTMENT)}</div><div class="month-label">${escapeHtml(monthLabel)}</div></div>`;
+/** Small bone mark beside every page title. */
+const TITLE_MARK = `<span class="title-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><g transform="rotate(-45 12 12)" fill="#fff"><rect x="6.5" y="10" width="11" height="4" rx="1"/><circle cx="6.5" cy="9.6" r="2.7"/><circle cx="6.5" cy="14.4" r="2.7"/><circle cx="17.5" cy="9.6" r="2.7"/><circle cx="17.5" cy="14.4" r="2.7"/></g></svg></span>`;
+
+/** Banner on every page: title on the left, department above the month on the right. */
+function pageHeaderHtml(className: string, title: string, monthLabel: string): string {
+  return `<header class="${className}">
+      <h1>${TITLE_MARK}<span>${escapeHtml(title)}</span></h1>
+      <div class="header-side"><div class="department">${escapeHtml(DEPARTMENT)}</div><div class="month-label">${escapeHtml(monthLabel)}</div></div>
+    </header>`;
 }
 
 function buildPosterPage(input: DutyPrintInput, monthLabel: string): string {
   return `<main class="page">
-    <header class="page-header">
-      <h1>ตารางเวรแพทย์ออร์โธปิดิกส์</h1>
-      ${headerSideHtml(monthLabel)}
-    </header>
+    ${pageHeaderHtml("page-header", "ตารางเวรแพทย์ออร์โธปิดิกส์", monthLabel)}
     <section class="section">
       <h2 class="section-title">ตารางออกตรวจ OPD</h2>
       ${buildOpdTableHtml(input.opd)}
@@ -281,10 +284,7 @@ function buildMonthSheet(opts: {
     .join("");
 
   return `<section class="sheet${opts.variant ? ` ${opts.variant}` : ""}">
-    <header class="sheet-header">
-      <h1>${escapeHtml(opts.title)}</h1>
-      ${headerSideHtml(opts.monthLabel)}
-    </header>
+    ${pageHeaderHtml("sheet-header", opts.title, opts.monthLabel)}
     <div class="mcal" style="grid-template-rows: auto repeat(${weeks}, minmax(0, 1fr))">${grid}</div>
     ${legend || opts.note ? `<footer class="sheet-foot">
       <div class="legend">${legend}</div>

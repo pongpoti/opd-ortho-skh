@@ -31,6 +31,11 @@
   --opd-line: #AFC6CD;
   --sub-ink: #3D525E;        /* ตัวหนังสือรองในช่องวันที่หน้า 2–4 */
 
+  /* แถบหัวกระดาษ: ไล่สีเขียวมิ้นต์ไปฟ้า แบบพื้นโปสเตอร์เดิมในแอป แต่อยู่ในกรอบเดียว */
+  --banner-a: #C9EBE2;
+  --banner-b: #D3E2F7;
+  --accent-2: #237F80;       /* ปลายไล่สีของหัวตาราง OPD และป้ายเดือน (ตัวขาวยังอ่านชัด) */
+
   --font-display: "Sarabun", "Noto Sans Thai", sans-serif;
   --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
 
@@ -65,37 +70,62 @@ body {
   print-color-adjust: exact;
 }
 
-.page-header {
+/* หัวกระดาษทุกหน้า: แถบสีมุมมน หน้ากระดาษรอบนอกยังเป็นสีขาว */
+.page-header,
+.sheet-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--accent);
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px 14px 14px;
+  border-radius: 16px;
+  background: linear-gradient(100deg, var(--banner-a) 0%, var(--banner-b) 100%);
+  border-bottom: 3px solid var(--accent);
 }
 
-.page-header h1 {
+.page-header h1,
+.sheet-header h1 {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: 29px;
   font-weight: 700;
   line-height: 1.3;
+  white-space: nowrap;
+  color: var(--ink-strong);
 }
 
-.header-side { text-align: right; }
+.title-mark {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+}
+
+.header-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .department {
-  margin-bottom: 4px;
-  font-size: 15px;
-  font-weight: 500;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.4;
-  color: #5B7380;
+  color: #165F6C;
 }
 
+/* ชื่อเดือนเป็นป้ายสีหลัก ตัวหนังสือขาว */
 .month-label {
+  padding: 2px 18px 3px;
+  border-radius: 999px;
+  background: linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 100%);
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1.3;
-  color: var(--accent);
+  line-height: 1.35;
+  color: #fff;
 }
 
 .section { display: flex; flex-direction: column; gap: 12px; }
@@ -103,10 +133,21 @@ body {
 
 .section-title {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
   line-height: 1.3;
+  color: var(--ink-strong);
+}
+.section-title::before {
+  content: "";
+  width: 6px;
+  height: 24px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--accent) 0%, #5FB8A6 100%);
 }
 
 /* ---------- OPD table ---------- */
@@ -132,7 +173,7 @@ body {
 
 .opd-head {
   height: 42px;
-  background: var(--accent);
+  background: linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 100%);
   color: #fff;
   font-size: 15px;
   font-weight: 700;
@@ -169,13 +210,18 @@ body {
   gap: 6px;
 }
 
-.cal-label {
-  padding: 2px 9px;
+/* ชื่อวัน: แถบสีใต้ชื่อ ตามสีช่องวันในคอลัมน์นั้น */
+.cal-label,
+.mcal-label {
+  padding: 0 9px 4px;
   font-size: 16px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--ink-strong);
+  border-bottom: 4px solid var(--workday-line);
+  border-radius: 0 0 2px 2px;
 }
-.cal-label.is-weekend { color: var(--weekend-ink); }
+.cal-label.is-weekend,
+.mcal-label.is-weekend { color: var(--weekend-ink); border-bottom-color: var(--weekend-line); }
 
 .cal-cell {
   padding: 7px 9px;
@@ -205,19 +251,28 @@ body {
 
 .cal-cell.is-missing { border-style: dashed; }
 
-.cal-top { display: flex; justify-content: space-between; align-items: baseline; }
+.cal-top { display: flex; justify-content: space-between; align-items: center; }
 
-.cal-date {
+/* วันที่อยู่ในป้ายกลมสีขาว ตัวเลขสีเข้ม อ่านง่ายทุกสีพื้น */
+.cal-date,
+.mcal-date {
+  flex: none;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fff;
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1;
+  color: var(--ink-strong);
 }
-.is-weekend .cal-date { color: var(--weekend-ink); }
-.is-holiday .cal-date,
-.cal-tag { color: var(--holiday-ink); }
 
-.cal-tag { font-size: 12px; font-weight: 600; }
+.cal-tag { font-size: 12px; font-weight: 700; color: var(--sub-ink); }
 
 .cal-name {
   font-size: 17px;
@@ -243,20 +298,10 @@ body {
   print-color-adjust: exact;
 }
 
-.sheet-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: 14px;
-  border-bottom: 2px solid var(--accent);
-}
-.sheet-header h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.4;
-}
+.sheet-header { padding: 10px 18px 10px 12px; }
+.sheet-header h1 { font-size: 28px; }
+.sheet-header .title-mark { width: 40px; height: 40px; }
+.sheet-header .month-label { font-size: 24px; }
 
 .mcal {
   flex: 1;
@@ -265,12 +310,6 @@ body {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
 }
-.mcal-label {
-  padding: 0 8px;
-  font-size: 16px;
-  font-weight: 700;
-}
-.mcal-label.is-weekend { color: var(--weekend-ink); }
 
 .mcal-cell {
   min-width: 0;
@@ -287,15 +326,9 @@ body {
 .mcal-cell.is-holiday { background: var(--holiday-fill); border-color: var(--holiday-line); }
 .mcal-cell.is-empty { background: none; border: 1px dashed var(--empty-line); }
 
-.mcal-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-.mcal-date {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.1;
-}
+.mcal-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mcal-date { min-width: 28px; height: 28px; font-size: 17px; }
 /* หน้า 2–4: ตัวหนังสือในช่องเป็นสีเข้มทั้งหมด ไม่ใช้สีเดียวกับพื้นช่อง */
-.mcal-date { color: var(--ink-strong); }
 .mcal-tag { color: var(--sub-ink); }
 /* overflow ตัดเฉพาะแนวนอนไม่ได้ จึงเผื่อ padding บนไว้ให้วรรณยุกต์/การันต์ที่ซ้อนสูง */
 .mcal-tag {
@@ -310,10 +343,20 @@ body {
 
 .mcal-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
 
-/* ชื่อในช่อง: แถบสีด้านซ้าย + พื้นสีจางมาก (ประหยัดหมึก) */
+/* ชื่อในช่อง: แถบสีมุมมนด้านซ้าย ไม่มีพื้นหลัง */
 .chip {
-  padding: 0 6px 2px;
-  border-left: 4px solid var(--c);
+  position: relative;
+  padding: 0 6px 2px 12px;
+}
+.chip::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 3px;
+  width: 5px;
+  border-radius: 3px;
+  background: var(--c);
 }
 .chip-name {
   padding-top: 0.25em;
@@ -329,7 +372,7 @@ body {
 .sheet-castroom .chip-name { font-size: 20px; }
 .sheet-castroom .chip-sub { margin-top: 3px; }
 .chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--sub-ink); }
-.chip.is-muted { border-left-color: var(--cell-line-strong); }
+.chip.is-muted::before { background: var(--cell-line-strong); }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
 .sheet-foot {
@@ -341,7 +384,7 @@ body {
 }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-.legend-swatch { width: 4px; height: 16px; background: var(--c); }
+.legend-swatch { width: 5px; height: 16px; border-radius: 3px; background: var(--c); }
 .legend-detail { font-weight: 400; color: #5B7380; }
 .sheet-note { color: #5B7380; text-align: right; }
 
