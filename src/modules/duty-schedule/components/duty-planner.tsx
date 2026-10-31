@@ -335,8 +335,10 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                 {Array.from({ length: days }, (_, i) => i + 1).map((day) => {
                   const weekday = new Date(view.year, view.month, day).getDay();
                   const info = ready.data[day];
+                  const holiday = !!info?.holiday;
                   const weekend = weekday === 0 || weekday === 6;
-                  const rowBg = weekend ? "weekend.subtle" : "transparent";
+                  const rowBg = holiday ? "holiday.subtle" : weekend ? "weekend.subtle" : "transparent";
+                  const dayColor = holiday ? "holiday.fg" : weekend ? "weekend.fg" : "fg";
                   return (
                     <Box as="tr" key={day} bg={rowBg} borderTopWidth="2px" borderColor="border">
                       <Box as="td" px="0.75em" py="0.5em" verticalAlign="middle">
@@ -346,14 +348,19 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                             fontSize="1.5em"
                             fontWeight="bold"
                             fontFamily="var(--font-plex-sans)"
-                            color={weekend ? "weekend.fg" : "fg"}
+                            color={dayColor}
                           >
                             {day}
                           </Text>
-                          <Text as="span" fontWeight="semibold" color={weekend ? "weekend.fg" : "fg"}>
+                          <Text as="span" fontWeight="semibold" color={dayColor}>
                             {THAI_WD_FULL[weekday]}
                           </Text>
                         </HStack>
+                        {holiday && (
+                          <Text fontSize="0.8em" fontWeight="semibold" color="holiday.fg" lineHeight="1.4" lineClamp={2} title={info?.holidayLabel ?? undefined}>
+                            {info?.holidayLabel ?? "วันหยุด"}
+                          </Text>
+                        )}
                       </Box>
                       {DUTY_ORDER.map((key) => {
                         if (!dutyApplies(key, weekday)) {
