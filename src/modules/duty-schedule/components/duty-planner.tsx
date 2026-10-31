@@ -81,6 +81,9 @@ const COLUMN_WIDTHS: Record<DutyKey, string> = {
   d1: "21%", d2: "21%", d3: "14%", d4: "14%", d5: "18%",
 };
 
+/** Every day row is this tall, holiday name or not, so the month reads evenly. */
+const ROW_HEIGHT = "4.4em";
+
 /** Value of the empty option: a slot nobody has filled yet. */
 const UNSET = "";
 
@@ -340,12 +343,13 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                   const rowBg = holiday ? "holiday.subtle" : weekend ? "weekend.subtle" : "transparent";
                   const dayColor = holiday ? "holiday.fg" : weekend ? "weekend.fg" : "fg";
                   return (
-                    <Box as="tr" key={day} bg={rowBg} borderTopWidth="2px" borderColor="border">
+                    <Box as="tr" key={day} bg={rowBg} borderTopWidth="2px" borderColor="border" h={ROW_HEIGHT}>
                       <Box as="td" px="0.75em" py="0.5em" verticalAlign="middle">
                         <HStack gap="0.5em" align="baseline">
                           <Text
                             as="span"
                             fontSize="1.5em"
+                            lineHeight="1.2"
                             fontWeight="bold"
                             fontFamily="var(--font-plex-sans)"
                             color={dayColor}
@@ -357,7 +361,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                           </Text>
                         </HStack>
                         {holiday && (
-                          <Text fontSize="0.8em" fontWeight="semibold" color="holiday.fg" lineHeight="1.4" lineClamp={2} title={info?.holidayLabel ?? undefined}>
+                          <Text fontSize="0.8em" fontWeight="semibold" color="holiday.fg" lineHeight="1.3" truncate title={info?.holidayLabel ?? undefined}>
                             {info?.holidayLabel ?? "วันหยุด"}
                           </Text>
                         )}
