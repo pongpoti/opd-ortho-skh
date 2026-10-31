@@ -115,6 +115,33 @@ export const fixedHolidays = pgTable(
   ]
 );
 
+/**
+ * Saved second-call (standby) assignments, refreshed daily by the cron route.
+ * Sub-duties of duty days already worked are never reassigned, and a
+ * sub-duty an admin set (`source = 'admin'`) is kept as the admin left it.
+ */
+export const secondCallSlots = pgTable(
+  "second_call_slots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Date of the real duty this sub-duty belongs to. */
+    dutyDate: date("duty_date").notNull(),
+    /** Date the sub-duty falls on; ด is the morning after the duty date. */
+    shiftDate: date("shift_date").notNull(),
+    shift: text("shift", { enum: ["ด", "ช", "บ"] }).notNull(),
+    personName: text("person_name").notNull(),
+    source: text("source", { enum: ["auto", "admin"] }).notNull().default("auto"),
+    updatedByLineUserId: text("updated_by_line_user_id"),
+    assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique("second_call_slots_shift_person_unique").on(table.shiftDate, table.shift, table.personName),
+    check("second_call_slots_shift_check", sql`${table.shift} IN ('ด', 'ช', 'บ')`),
+    check("second_call_slots_person_name_check", sql`length(trim(${table.personName})) > 0`),
+    check("second_call_slots_source_check", sql`${table.source} IN ('auto', 'admin')`),
+  ]
+);
+
 /** Weekly OPD reference, independent of the monthly duty roster. */
 export const opdWeeklySchedule = pgTable(
   "opd_weekly_schedule",

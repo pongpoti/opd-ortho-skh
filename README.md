@@ -32,6 +32,39 @@ exports read the same database data. The original September–December 2026
 rosters live under `scripts/data/` only as a historical import snapshot.
 See [the migration and import instructions](scripts/ROSTER_IMPORT.md).
 
+The monthly second-call PDF (the "2nd" button on the duty calendar) fills in
+each staff member's real duty (`d1`) and intern duty (`d2`) as ช/บ/ด
+sub-duties and assigns second-call on top of them, one doctor per sub-duty,
+in turn, the way the paper sheets are made: whoever has waited longest since
+their last second-call goes next, and the turn order carries over from the
+previous month. A day gets second-call only once its real duty is entered;
+a day whose `d1` is empty, `-` or `งด` gets none. The rules (who is
+excluded, weekday bans) live in `SECOND_CALL_RULES` in
+`src/modules/duty-schedule/lib/second-call-assign.ts`.
+The signed paper sheets for September and October 2026 are kept in
+`second-call-sheets.ts`: those months show them as they were, and later months
+carry on from them.
+
+A daily Vercel Cron job (`vercel.json`, 00:05 Bangkok) calls
+`/api/cron/second-call`, which saves this month's and next month's
+assignments in `second_call_slots`. Saved names stay put while they still fit
+the roster; only sub-duties a roster edit breaks are refilled, and only if
+that leaves doctors more than two second-calls apart are days after today
+given out again.
+The PDF reads the saved assignments the same way. The route needs a
+`CRON_SECRET` environment variable in Vercel (any long random string); Vercel
+sends it with each cron call and the route refuses requests without it.
+
+Holidays are weekends, the recurring `fixed_holidays`, and any date marked in
+`duty_days`. Before saving second-call, the same cron job adds this year's and
+next year's holidays from the Bank of Thailand "Financial Institutions'
+Holidays" API to `duty_days` (`bot-holidays.ts`), which covers the Buddhist
+holidays, substitution days and special holidays that move every year. It
+needs `BOT_API_TOKEN` in Vercel: create an app at
+[portal.api.bot.or.th](https://portal.api.bot.or.th), subscribe it to that
+product, and copy the app's token. Without the token the job skips this step.
+Holidays are only added, never removed, so a failed call changes nothing.
+
 ## Auth setup (LINE LIFF)
 
 The whole app is gated behind LINE Login via LIFF. To make it actually work:
