@@ -208,7 +208,7 @@ function buildPosterPage(input: DutyPrintInput, monthLabel: string): string {
   </main>`;
 }
 
-type SheetEntry = { name: string; sub?: string; color: string; muted?: boolean };
+type SheetEntry = { name: string; prefix?: string; sub?: string; color: string; muted?: boolean };
 type LegendItem = { label: string; detail?: string; color: string };
 
 /** Display name for one slot, or null when the slot has nobody to print. */
@@ -265,7 +265,8 @@ function buildMonthSheet(opts: {
       .entriesFor(date, new Date(year, month, date).getDay())
       .map((e) => {
         const sub = e.sub ? `<div class="chip-sub">${escapeHtml(e.sub)}</div>` : "";
-        return `<div class="chip${e.muted ? " is-muted" : ""}" style="--c: ${e.color}"><div class="chip-name">${escapeHtml(e.name)}</div>${sub}</div>`;
+        const prefix = e.prefix ? `<span class="chip-prefix">${escapeHtml(e.prefix)}</span>` : "";
+        return `<div class="chip${e.muted ? " is-muted" : ""}" style="--c: ${e.color}"><div class="chip-name">${prefix}${escapeHtml(e.name)}</div>${sub}</div>`;
       })
       .join("");
     grid += `<div class="${classes.join(" ")}"><div class="mcal-top"><div class="mcal-date">${date}</div>${tag}</div><div class="mcal-body">${entries}</div></div>`;
@@ -352,11 +353,13 @@ function buildCastRoomSheet(input: DutyPrintInput, monthLabel: string): string {
       const doctor = slotName(duty.entries.d1, doctors);
       const nurse = slotName(duty.entries.d5, nurses.ambiguous);
       if (!doctor && !nurse) return [];
+      // Nurse is the emphasis: large name first, staff doctor in parentheses below.
       return [{
-        name: doctor ?? "—",
-        sub: nurse ? `พว.${nurse}` : undefined,
+        name: nurse ?? "—",
+        prefix: nurse ? "พว." : undefined,
+        sub: doctor ? `(${doctor})` : undefined,
         color: (nurse && nurses.colors.get(nurse)) || DUTY_COLORS.d5,
-        muted: !doctor || isDutyMarker(doctor),
+        muted: !nurse || isDutyMarker(nurse),
       }];
     },
     note: "จันทร์–ศุกร์ ปฏิบัติงาน 16.00–24.00 น. · เสาร์ อาทิตย์ วันหยุด ปฏิบัติงาน 08.00–24.00 น.",
