@@ -25,6 +25,12 @@
   --holiday-line: #E3A57E;
   --holiday-ink: #9C3F17;    /* holiday.fg ในแอป เข้มขึ้นให้อ่านชัดบนกระดาษ */
 
+  /* ตาราง OPD: หัวตารางสีหลักแบบโปสเตอร์เดิมในแอป พื้นเทาอมฟ้า
+     เข้มเท่าช่องวันที่ แต่ไม่ออกเขียวแบบช่องวันทำงาน */
+  --opd-fill: #D6E4E8;
+  --opd-line: #AFC6CD;
+  --sub-ink: #3D525E;        /* ตัวหนังสือรองในช่องวันที่หน้า 2–4 */
+
   --font-display: "Sarabun", "Noto Sans Thai", sans-serif;
   --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
 
@@ -104,14 +110,14 @@ body {
 }
 
 /* ---------- OPD table ---------- */
-/* พื้นขาวไม่มีแถบสลับสี ใช้เส้นและสีหลักแบบเดียวกับหัวหน้าและช่องวันที่
+/* ไม่มีแถบสลับสี: พื้นเดียวทั้งตาราง
    หมายเหตุ: ใช้ขอบล่างสีเข้มแทน box-shadow โดยตั้งใจ (ดู .cursor/rules) */
 .opd-table {
-  border: 1px solid var(--cell-line);
+  border: 1px solid var(--opd-line);
   border-bottom: 2px solid var(--cell-line-strong);
   border-radius: 12px;
   overflow: hidden;
-  background: #fff;
+  background: var(--opd-fill);
 }
 
 .opd-row {
@@ -120,17 +126,18 @@ body {
   height: 40px;
   align-items: center;
   font-size: 17px;
-  border-bottom: 1px solid var(--cell-line);
+  border-bottom: 1px solid var(--opd-line);
 }
 .opd-row:last-child { border-bottom: 0; }
 
 .opd-head {
   height: 42px;
-  color: var(--accent);
+  background: var(--accent);
+  color: #fff;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 0;
 }
 
 .opd-cell { padding: 0 14px; }
@@ -138,8 +145,9 @@ body {
   align-self: stretch;
   display: flex;
   align-items: center;
-  border-left: 1px solid var(--cell-line);
+  border-left: 1px solid var(--opd-line);
 }
+.opd-head .opd-pm { border-left-color: rgba(255, 255, 255, 0.35); }
 
 .opd-day { align-self: stretch; display: flex; align-items: center; font-weight: 700; color: var(--accent); }
 .opd-names {
@@ -286,9 +294,9 @@ body {
   font-weight: 700;
   line-height: 1.1;
 }
-.is-weekend .mcal-date { color: var(--weekend-ink); }
-.is-holiday .mcal-date,
-.mcal-tag { color: var(--holiday-ink); }
+/* หน้า 2–4: ตัวหนังสือในช่องเป็นสีเข้มทั้งหมด ไม่ใช้สีเดียวกับพื้นช่อง */
+.mcal-date { color: var(--ink-strong); }
+.mcal-tag { color: var(--sub-ink); }
 /* overflow ตัดเฉพาะแนวนอนไม่ได้ จึงเผื่อ padding บนไว้ให้วรรณยุกต์/การันต์ที่ซ้อนสูง */
 .mcal-tag {
   min-width: 0;
@@ -320,8 +328,7 @@ body {
 /* ห้องเฝือก: ชื่อพยาบาลเล็กลงเล็กน้อย เว้นระยะก่อนชื่อแพทย์ */
 .sheet-castroom .chip-name { font-size: 20px; }
 .sheet-castroom .chip-sub { margin-top: 3px; }
-/* สีตัวอักษรเข้มขึ้นจากสีประจำคน ให้อ่านชัดบนกระดาษ */
-.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: color-mix(in srgb, var(--c) 65%, #000); }
+.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--sub-ink); }
 .chip.is-muted { border-left-color: var(--cell-line-strong); }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
