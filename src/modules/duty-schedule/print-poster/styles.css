@@ -21,9 +21,9 @@
   --weekend-fill: #D3E0F5;
   --weekend-line: #9DB8E0;
   --weekend-ink: #1F4E8C;
-  --holiday-fill: #F6D3CA;
-  --holiday-line: #E3A598;
-  --holiday-ink: #B42318;
+  --holiday-fill: #F8DDC9;   /* = holiday.subtle ในแอป */
+  --holiday-line: #E3A57E;
+  --holiday-ink: #9C3F17;    /* holiday.fg ในแอป เข้มขึ้นให้อ่านชัดบนกระดาษ */
 
   /* ตาราง OPD โทนเบจ แยกจากช่องวันทำงานสีเขียว */
   --opd-head: #E6D4B0;
