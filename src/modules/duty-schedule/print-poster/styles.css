@@ -335,10 +335,13 @@ body {
 .mcal-date { min-width: 26px; height: 26px; font-size: 16px; }
 /* หน้า 2–4: ตัวหนังสือในช่องเป็นสีเข้มทั้งหมด ไม่ใช้สีเดียวกับพื้นช่อง */
 .mcal-tag { color: var(--sub-ink); }
-/* overflow ตัดเฉพาะแนวนอนไม่ได้ จึงเผื่อ padding บนไว้ให้วรรณยุกต์/การันต์ที่ซ้อนสูง */
+/* overflow ตัดเฉพาะแนวนอนไม่ได้ จึงเผื่อ padding บนให้วรรณยุกต์/การันต์ที่ซ้อนสูง
+   และ padding ล่างให้หาง ญ ฐ ฎ ฏ กับสระ ุ ู ไม่ถูกตัด */
 .mcal-tag {
   min-width: 0;
   padding-top: 0.25em;
+  padding-bottom: 0.35em;
+  margin-bottom: -0.35em;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -365,6 +368,8 @@ body {
 }
 .chip-name {
   padding-top: 0.25em;
+  padding-bottom: 0.35em;
+  margin-bottom: -0.35em;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
