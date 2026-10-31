@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import NextLink from "next/link";
 import {
   Box,
   Button,
@@ -14,7 +15,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, Pencil, Printer, Trash2, X } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, Pencil, Printer, Trash2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { ensureLiffInitWithTimeout, liff } from "@/lib/liff-client";
@@ -268,6 +269,13 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
           </Text>
         </Heading>
         <HStack gap={2}>
+          {isAdmin && (
+            <Button asChild size="md" variant="outline" colorPalette="brand" display={{ base: "none", lg: "inline-flex" }}>
+              <NextLink href="/duty-schedule/planner">
+                <CalendarRange size={20} /> วางแผนเวร
+              </NextLink>
+            </Button>
+          )}
           <IconButton
             aria-label="ตารางเวร second-call"
             size="md"

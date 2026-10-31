@@ -49,27 +49,39 @@ export async function fetchDutyMonthData(year: number, month: number): Promise<D
   return data;
 }
 
-export async function saveDutySlotRecord(input: {
+export type DutySlotRecordInput = {
   year: number; month: number; day: number; dutyKey: DutyKey;
   personName: string; updatedByLineUserId: string | null;
-}): Promise<void> {
-  const { prefix, days } = monthRange(input.year, input.month);
-  if (!Number.isInteger(input.day) || input.day < 1 || input.day > days || !DUTY_ORDER.includes(input.dutyKey) || !input.personName.trim()) {
-    throw new Error("Invalid duty slot");
-  }
-  const shiftDate = `${prefix}-${String(input.day).padStart(2, "0")}`;
-  const values = { shiftDate, dutyKey: input.dutyKey, personName: input.personName.trim(), updatedByLineUserId: input.updatedByLineUserId, updatedAt: sql`now()` };
-  // Keep the old table synchronized until prior deployment instances finish.
-  // Both statements commit together, so a partial write cannot change a duty.
-  await db.batch([
-    db.insert(dutySlots).values({ ...values, source: "admin" }).onConflictDoUpdate({
-      target: [dutySlots.shiftDate, dutySlots.dutyKey],
-      set: { ...values, source: "admin" },
-    }),
-    db.insert(dutyOverrides).values(values).onConflictDoUpdate({
-      target: [dutyOverrides.shiftDate, dutyOverrides.dutyKey], set: values,
-    }),
-  ]);
+};
+
+export async function saveDutySlotRecord(input: DutySlotRecordInput): Promise<void> {
+  await saveDutySlotRecords([input]);
+}
+
+/** Save several slots in one batch: either every slot changes or none does. */
+export async function saveDutySlotRecords(inputs: DutySlotRecordInput[]): Promise<void> {
+  const statements = inputs.flatMap((input) => {
+    const { prefix, days } = monthRange(input.year, input.month);
+    if (!Number.isInteger(input.day) || input.day < 1 || input.day > days || !DUTY_ORDER.includes(input.dutyKey) || !input.personName.trim()) {
+      throw new Error("Invalid duty slot");
+    }
+    const shiftDate = `${prefix}-${String(input.day).padStart(2, "0")}`;
+    const values = { shiftDate, dutyKey: input.dutyKey, personName: input.personName.trim(), updatedByLineUserId: input.updatedByLineUserId, updatedAt: sql`now()` };
+    // Keep the old table synchronized until prior deployment instances finish.
+    return [
+      db.insert(dutySlots).values({ ...values, source: "admin" }).onConflictDoUpdate({
+        target: [dutySlots.shiftDate, dutySlots.dutyKey],
+        set: { ...values, source: "admin" },
+      }),
+      db.insert(dutyOverrides).values(values).onConflictDoUpdate({
+        target: [dutyOverrides.shiftDate, dutyOverrides.dutyKey], set: values,
+      }),
+    ] as const;
+  });
+  const [first, ...rest] = statements;
+  if (!first) return;
+  // All statements commit together, so a partial write cannot change a duty.
+  await db.batch([first, ...rest]);
 }
 
 export async function fetchOpdWeeklySchedule() {

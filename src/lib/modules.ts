@@ -18,6 +18,16 @@ export const modules: AppModule[] = [
     description: "ตารางเวรแพทย์และพยาบาลประจำวัน",
     href: "/duty-schedule",
     icon: "calendar",
+    subitems: [
+      {
+        slug: "planner",
+        name: "วางแผนเวร",
+        description: "วางแผนตารางเวรเดือนถัดไปบนคอมพิวเตอร์ (ผู้ดูแลระบบ)",
+        href: "/duty-schedule/planner",
+        icon: "planner",
+        adminOnly: true,
+      },
+    ],
   },
   {
     slug: "cast-room",
