@@ -117,13 +117,7 @@ function monthRules(input: Omit<SecondCallInput, "fixed">) {
     return slot.shift === "ช" && wd === 6 && realOn(slot.day - 1) === p ? "friday" : null;
   };
   const allowed = (p: string, slot: SecondCallSlot) => !conflict(p, slot);
-  return { slots, people, allowed, conflict };
-}
-
-/** Eligible staff (excluded first names dropped) and the rule check behind the assignment. */
-export function secondCallRules(input: Omit<SecondCallInput, "fixed">) {
-  const { people, conflict } = monthRules(input);
-  return { people, conflict };
+  return { slots, people, allowed };
 }
 
 /**
