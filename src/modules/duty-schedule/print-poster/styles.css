@@ -1,8 +1,10 @@
 /* ---------- Fonts (bundled locally, SIL OFL — ใช้ได้แม้ไม่มีอินเทอร์เน็ต) ---------- */
-@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Regular.ttf") format("truetype"); font-weight: 400; }
-@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Medium.ttf") format("truetype"); font-weight: 500; }
-@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-SemiBold.ttf") format("truetype"); font-weight: 600; }
-@font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Bold.ttf") format("truetype"); font-weight: 700; }
+/* Noto Sans Thai Looped: ตัวมีหัว อ่านง่าย มีอักษรอังกฤษในตัว
+   ใช้ไฟล์แยกน้ำหนัก (ตัดจากไฟล์แปรผัน) เพราะ Chromium ฝังฟอนต์แปรผันใน PDF เป็น Type 3 */
+@font-face { font-family: "Noto Sans Thai Looped"; src: url("fonts/NotoSansThaiLooped-Regular.ttf") format("truetype"); font-weight: 400; }
+@font-face { font-family: "Noto Sans Thai Looped"; src: url("fonts/NotoSansThaiLooped-Medium.ttf") format("truetype"); font-weight: 500; }
+@font-face { font-family: "Noto Sans Thai Looped"; src: url("fonts/NotoSansThaiLooped-SemiBold.ttf") format("truetype"); font-weight: 600; }
+@font-face { font-family: "Noto Sans Thai Looped"; src: url("fonts/NotoSansThaiLooped-Bold.ttf") format("truetype"); font-weight: 700; }
 
 /* ---------- Design tokens ---------- */
 :root {
@@ -36,8 +38,8 @@
   --banner-b: #D3E2F7;
   --accent-2: #237F80;       /* ปลายไล่สีของหัวตาราง OPD และป้ายเดือน (ตัวขาวยังอ่านชัด) */
 
-  --font-display: "Sarabun", "Noto Sans Thai", sans-serif;
-  --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
+  --font-display: "Noto Sans Thai Looped", sans-serif;
+  --font-body: "Noto Sans Thai Looped", sans-serif;
 
   --page-w: 794px;   /* A4 ที่ 96 dpi */
   --page-h: 1123px;
@@ -213,9 +215,10 @@ body {
 /* ชื่อวัน: แถบสีใต้ชื่อ ตามสีช่องวันในคอลัมน์นั้น */
 .cal-label,
 .mcal-label {
-  padding: 0 9px 4px;
+  padding: 0 9px 3px;
   font-size: 16px;
   font-weight: 700;
+  line-height: 1.35;
   color: var(--ink-strong);
   border-bottom: 4px solid var(--workday-line);
   border-radius: 0 0 2px 2px;
@@ -272,7 +275,7 @@ body {
   color: var(--ink-strong);
 }
 
-.cal-tag { font-size: 12px; font-weight: 700; color: var(--sub-ink); }
+.cal-tag { font-size: 13px; font-weight: 700; color: var(--sub-ink); }
 
 .cal-name {
   font-size: 17px;
@@ -285,10 +288,10 @@ body {
   page: landscape;
   width: 297mm;
   height: 210mm;
-  padding: 30px 36px 24px;
+  padding: 24px 32px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   overflow: hidden;
   color: var(--ink);
   font-family: var(--font-body);
@@ -298,9 +301,11 @@ body {
   print-color-adjust: exact;
 }
 
-.sheet-header { padding: 10px 18px 10px 12px; }
+/* หน้าแนวนอน: หัวกระดาษเตี้ยลง (ภาควิชาอยู่แถวเดียวกับเดือน) เพื่อเหลือที่ให้ช่องวันที่ */
+.sheet-header { padding: 8px 14px 8px 10px; }
 .sheet-header h1 { font-size: 28px; }
 .sheet-header .title-mark { width: 40px; height: 40px; }
+.sheet-header .header-side { flex-direction: row; align-items: center; gap: 14px; }
 .sheet-header .month-label { font-size: 24px; }
 
 .mcal {
@@ -313,7 +318,7 @@ body {
 
 .mcal-cell {
   min-width: 0;
-  padding: 4px 5px 5px;
+  padding: 5px 7px 6px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -327,7 +332,7 @@ body {
 .mcal-cell.is-empty { background: none; border: 1px dashed var(--empty-line); }
 
 .mcal-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.mcal-date { min-width: 28px; height: 28px; font-size: 17px; }
+.mcal-date { min-width: 26px; height: 26px; font-size: 16px; }
 /* หน้า 2–4: ตัวหนังสือในช่องเป็นสีเข้มทั้งหมด ไม่ใช้สีเดียวกับพื้นช่อง */
 .mcal-tag { color: var(--sub-ink); }
 /* overflow ตัดเฉพาะแนวนอนไม่ได้ จึงเผื่อ padding บนไว้ให้วรรณยุกต์/การันต์ที่ซ้อนสูง */
@@ -337,7 +342,7 @@ body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -370,8 +375,8 @@ body {
 }
 /* ห้องเฝือก: ชื่อพยาบาลเล็กลงเล็กน้อย เว้นระยะก่อนชื่อแพทย์ */
 .sheet-castroom .chip-name { font-size: 20px; }
-.sheet-castroom .chip-sub { margin-top: 3px; }
-.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--sub-ink); }
+.chip-sub { margin-top: 3px; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--sub-ink); }
+.sheet-castroom .chip-sub { margin-top: 5px; }
 .chip.is-muted::before { background: var(--cell-line-strong); }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
@@ -380,13 +385,13 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  font-size: 15px;
+  font-size: 18px;
 }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-.legend-swatch { width: 5px; height: 16px; border-radius: 3px; background: var(--c); }
-.legend-detail { font-weight: 400; color: #5B7380; }
-.sheet-note { color: #5B7380; text-align: right; }
+.legend-swatch { width: 5px; height: 18px; border-radius: 3px; background: var(--c); }
+.legend-detail { font-weight: 500; color: var(--sub-ink); }
+.sheet-note { font-weight: 600; color: var(--sub-ink); text-align: right; }
 
 /* ---------- Print / PDF ---------- */
 @page { size: A4; margin: 0; }
