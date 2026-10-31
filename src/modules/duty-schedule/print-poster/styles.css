@@ -24,7 +24,6 @@
   --holiday-fill: #F6D3CA;
   --holiday-line: #E3A598;
   --holiday-ink: #B42318;
-  --tint: 22%;
 
   /* ตาราง OPD โทนเบจ แยกจากช่องวันทำงานสีเขียว */
   --opd-head: #E6D4B0;
@@ -279,9 +278,9 @@ body {
   flex-direction: column;
   gap: 2px;
   border-radius: 8px;
-  background: #fff;
-  border: 1px solid var(--cell-line);
-  border-bottom: 2px solid var(--cell-line-strong);
+  background: var(--workday-fill);
+  border: 1px solid var(--workday-line);
+  border-bottom-width: 2px;
 }
 .mcal-cell.is-weekend { background: var(--weekend-fill); border-color: var(--weekend-line); }
 .mcal-cell.is-holiday { background: var(--holiday-fill); border-color: var(--holiday-line); }
@@ -297,8 +296,10 @@ body {
 .is-weekend .mcal-date { color: var(--weekend-ink); }
 .is-holiday .mcal-date,
 .mcal-tag { color: var(--holiday-ink); }
+/* overflow ตัดเฉพาะแนวนอนไม่ได้ จึงเผื่อ padding บนไว้ให้วรรณยุกต์/การันต์ที่ซ้อนสูง */
 .mcal-tag {
   min-width: 0;
+  padding-top: 0.25em;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -310,18 +311,17 @@ body {
 
 /* ชื่อในช่อง: แถบสีด้านซ้าย + พื้นสีจางมาก (ประหยัดหมึก) */
 .chip {
-  padding: 2px 6px 3px;
+  padding: 0 6px 2px;
   border-left: 4px solid var(--c);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--c) var(--tint), #fff);
 }
 .chip-name {
+  padding-top: 0.25em;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 22px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
   color: var(--ink-strong);
 }
 /* ห้องเฝือก: ชื่อพยาบาลเล็กลงเล็กน้อย เว้นระยะก่อนชื่อแพทย์ */
@@ -329,7 +329,7 @@ body {
 .sheet-castroom .chip-sub { margin-top: 3px; }
 /* สีตัวอักษรเข้มขึ้นจากสีประจำคน ให้อ่านชัดบนกระดาษ */
 .chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: color-mix(in srgb, var(--c) 65%, #000); }
-.chip.is-muted { border-left-color: var(--cell-line-strong); background: none; }
+.chip.is-muted { border-left-color: var(--cell-line-strong); }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
 .sheet-foot {
@@ -341,13 +341,7 @@ body {
 }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-.legend-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--c) var(--tint), #fff);
-  border-left: 4px solid var(--c);
-}
+.legend-swatch { width: 4px; height: 16px; background: var(--c); }
 .legend-detail { font-weight: 400; color: #5B7380; }
 .sheet-note { color: #5B7380; text-align: right; }
 
