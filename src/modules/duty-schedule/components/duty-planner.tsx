@@ -8,11 +8,12 @@ import {
   Grid,
   Heading,
   HStack,
+  IconButton,
   NativeSelect,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, Monitor, RotateCcw, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, GraduationCap, Monitor, RotateCcw, Save, Wand2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -80,6 +81,9 @@ const PLANNER_KEYS: DutyKey[] = ["d1", "d2", "d5"];
 /** Every day row is this tall, holiday name or not, so the month reads evenly. */
 const ROW_HEIGHT = "4.4em";
 
+/** Wider than the app's column, but narrow enough that a row reads at a glance. */
+const PLANNER_WIDTH = "min(1120px, calc(100vw - 64px))";
+
 /** Value of the empty option: a slot nobody has filled yet. */
 const UNSET = "";
 
@@ -114,6 +118,8 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
   const [loaded, setLoaded] = useState<Loaded>({ key: "", status: "loading" });
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
+  /** Interns picked for each month before any day is filled, keyed by month. */
+  const [pickedInterns, setPickedInterns] = useState<Record<string, string[]>>({});
   const textSize = useSyncExternalStore(subscribeTextSize, readTextSize, () => DEFAULT_TEXT_SIZE);
   const [isSaving, startSave] = useTransition();
   const [, startLoad] = useTransition();
@@ -227,6 +233,64 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     return out;
   }, [draft, ready, days]);
 
+  // This month's interns: those already on a day plus those picked above the
+  // table. Only they appear in the daily intern dropdown.
+  const monthInterns = useMemo(() => {
+    if (!ready) return [];
+    const chosen = new Set(pickedInterns[currentKey] ?? []);
+    for (const name of counts.intern.keys()) chosen.add(name);
+    const known = ready.rosters.intern.filter((option) => chosen.has(option.value));
+    const unknown = [...chosen]
+      .filter((name) => !ready.rosters.intern.some((option) => option.value === name))
+      .map((name) => ({ value: name, label: name }));
+    return [...known, ...unknown];
+  }, [ready, pickedInterns, currentKey, counts]);
+
+  function setSlot(day: number, key: DutyKey, next: string) {
+    const saved = ready?.data[day]?.entries[key];
+    setNotice(null);
+    setDraft((current) => {
+      const copy = { ...current };
+      if (next === (saved ?? UNSET)) delete copy[slotKey(day, key)];
+      else copy[slotKey(day, key)] = next;
+      return copy;
+    });
+  }
+
+  function pickIntern(value: string) {
+    if (!value) return;
+    setPickedInterns((current) => ({
+      ...current,
+      [currentKey]: [...(current[currentKey] ?? []).filter((name) => name !== value), value],
+    }));
+  }
+
+  function unpickIntern(value: string) {
+    setPickedInterns((current) => ({
+      ...current,
+      [currentKey]: (current[currentKey] ?? []).filter((name) => name !== value),
+    }));
+  }
+
+  /** Fill every empty intern day in turn, carrying on from the last filled day. */
+  function fillInternDays() {
+    if (!monthInterns.length) return;
+    const order = monthInterns.map((option) => option.value);
+    let next = 0;
+    const fills: Record<string, string> = {};
+    for (let day = 1; day <= days; day++) {
+      const value = valueOf(day, "d2");
+      if (value === UNSET) {
+        fills[slotKey(day, "d2")] = order[next % order.length];
+        next += 1;
+      } else if (order.includes(value)) {
+        next = order.indexOf(value) + 1;
+      }
+    }
+    setNotice(null);
+    setDraft((current) => ({ ...current, ...fills }));
+  }
+
   const title = `${THAI_MONTHS[view.month]} ${view.year + BE_OFFSET}`;
 
   return (
@@ -250,7 +314,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         position="relative"
         left="50%"
         transform="translateX(-50%)"
-        w="min(1440px, calc(100vw - 64px))"
+        w={PLANNER_WIDTH}
         style={{ fontSize: `${textSize}px` }}
         lineHeight="1.6"
         pb="6em"
@@ -292,6 +356,18 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         </Flex>
 
         <Legend />
+
+        {ready && (
+          <InternPicker
+            roster={ready.rosters.intern}
+            monthInterns={monthInterns}
+            counts={counts.intern}
+            emptyDays={Array.from({ length: days }, (_, i) => valueOf(i + 1, "d2")).filter((value) => value === UNSET).length}
+            onPick={pickIntern}
+            onUnpick={unpickIntern}
+            onFill={fillInternDays}
+          />
+        )}
 
         {!ready && (
           <VStack gap={3} py="2em" role={loadError ? "alert" : "status"}>
@@ -360,7 +436,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                         )}
                       </Box>
                       {PLANNER_KEYS.map((key) => {
-                        const roster = ready.rosters[DUTY_ROLE[key]];
+                        const roster = key === "d2" ? monthInterns : ready.rosters[DUTY_ROLE[key]];
                         const saved = info?.entries[key];
                         const value = valueOf(day, key);
                         const changed = value !== UNSET && value !== saved;
@@ -370,16 +446,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                               <NativeSelect.Field
                                 aria-label={`${DUTY_LABELS[key]} วันที่ ${day}`}
                                 value={value}
-                                onChange={(event) => {
-                                  const next = event.target.value;
-                                  setNotice(null);
-                                  setDraft((current) => {
-                                    const copy = { ...current };
-                                    if (next === (saved ?? UNSET)) delete copy[slotKey(day, key)];
-                                    else copy[slotKey(day, key)] = next;
-                                    return copy;
-                                  });
-                                }}
+                                onChange={(event) => setSlot(day, key, event.target.value)}
                                 h="2.6em"
                                 fontSize="1em"
                                 fontWeight={value && !isDutyMarker(value) ? "semibold" : "normal"}
@@ -423,7 +490,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           backdropFilter="blur(12px)"
           boxShadow="0 -6px 24px rgba(15, 23, 32, 0.12)"
         >
-          <Flex mx="auto" w="min(1440px, calc(100vw - 64px))" align="center" gap={4} py={3}>
+          <Flex mx="auto" w={PLANNER_WIDTH} align="center" gap={4} py={3}>
             <Text fontSize="1.05em" fontWeight="semibold" color={notice?.tone === "err" ? "fg.error" : dirty ? "brand.fg" : "fg"} role="status">
               {notice?.text ?? (dirty ? `มีการแก้ไข ${changes.length} ช่อง ยังไม่ได้บันทึก` : "ไม่มีการแก้ไข")}
             </Text>
@@ -458,6 +525,86 @@ function HeaderCell({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Box>
+  );
+}
+
+function InternPicker({
+  roster,
+  monthInterns,
+  counts,
+  emptyDays,
+  onPick,
+  onUnpick,
+  onFill,
+}: {
+  roster: PlannerOption[];
+  monthInterns: PlannerOption[];
+  counts: Map<string, number>;
+  emptyDays: number;
+  onPick: (value: string) => void;
+  onUnpick: (value: string) => void;
+  onFill: () => void;
+}) {
+  const available = roster.filter((option) => !monthInterns.some((chosen) => chosen.value === option.value));
+  return (
+    <GlassCard variant="solid" p="1em" mb="1em">
+      <Flex align="center" gap={4} wrap="wrap">
+        <HStack gap={2} color="duty.d2">
+          <GraduationCap size={26} />
+          <Text fontSize="1.05em" fontWeight="bold" color="fg">อินเทิร์นที่หมุนมาเดือนนี้</Text>
+        </HStack>
+        {monthInterns.length === 0 && (
+          <Text color="fg.muted">ยังไม่ได้เลือก เลือกจากรายชื่อทางขวา</Text>
+        )}
+        {monthInterns.map((option) => {
+          const count = counts.get(option.value) ?? 0;
+          return (
+            <HStack
+              key={option.value}
+              gap={2}
+              pl="0.8em"
+              pr={count ? "0.8em" : "0.3em"}
+              py="0.2em"
+              borderRadius="full"
+              bg="brand.subtle"
+              borderWidth="2px"
+              borderColor="brand.solid"
+            >
+              <Text fontWeight="semibold">{option.label}</Text>
+              <Text fontFamily="var(--font-plex-sans)" color="brand.fg" fontWeight="semibold">{count} วัน</Text>
+              {count === 0 && (
+                <IconButton aria-label={`เอา ${option.label} ออก`} size="sm" variant="ghost" borderRadius="full" onClick={() => onUnpick(option.value)}>
+                  <X size={20} />
+                </IconButton>
+              )}
+            </HStack>
+          );
+        })}
+        <HStack gap={3} ml="auto">
+          <NativeSelect.Root w="15em">
+            <NativeSelect.Field
+              aria-label="เพิ่มอินเทิร์นเดือนนี้"
+              value=""
+              onChange={(event) => onPick(event.target.value)}
+              h="2.6em"
+              fontSize="1em"
+              borderWidth="2px"
+              borderColor="border.emphasized"
+              bg="bg.panel"
+            >
+              <option value="">＋ เพิ่มอินเทิร์น</option>
+              {available.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+          <Button size="xl" fontSize="0.95em" colorPalette="brand" variant="subtle" disabled={!monthInterns.length || !emptyDays} onClick={onFill}>
+            <Wand2 size={22} /> เติมวันที่ว่างแบบสลับกัน
+          </Button>
+        </HStack>
+      </Flex>
+    </GlassCard>
   );
 }
 
