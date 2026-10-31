@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { bangkokToday } from "@/lib/bangkok-date";
 import { fetchRosterPersonnel } from "@/lib/roster-directory";
+import { syncBotHolidays } from "@/modules/duty-schedule/lib/bot-holidays";
 import {
   nextMonth, planSecondCallMonth, previousMonth, saveSecondCallMonth,
 } from "@/modules/duty-schedule/lib/second-call-repository";
@@ -17,14 +18,16 @@ function authorized(request: Request): boolean {
 }
 
 /**
- * Daily second-call save (vercel.json crons, 00:05 Bangkok). This month is
- * saved with every day so far kept, next month once its staff roster exists,
- * and last month is finished if it was saved before (months before the job
- * started are not backfilled).
+ * Daily second-call save (vercel.json crons, 00:05 Bangkok). It first adds
+ * this year's and next year's BOT holidays, so new holidays get their ช
+ * sub-duty tonight. This month is then saved with every day so far kept,
+ * next month once its staff roster exists, and last month is finished if it
+ * was saved before (months before the job started are not backfilled).
  */
 export async function GET(request: Request) {
   if (!authorized(request)) return new Response("Unauthorized", { status: 401 });
   const today = bangkokToday();
+  const holidays = await syncBotHolidays([today.year, today.year + 1]);
   const personnel = await fetchRosterPersonnel();
   const months = [previousMonth(today.year, today.month), today, nextMonth(today.year, today.month)];
   let failed = false;
@@ -42,5 +45,5 @@ export async function GET(request: Request) {
       results.push({ month: label, failed: true });
     }
   }
-  return Response.json({ today: { ...today, month: today.month + 1 }, results }, { status: failed ? 500 : 200 });
+  return Response.json({ today: { ...today, month: today.month + 1 }, holidays, results }, { status: failed ? 500 : 200 });
 }

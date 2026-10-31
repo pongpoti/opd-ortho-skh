@@ -55,6 +55,16 @@ The PDF reads the saved assignments the same way. The route needs a
 `CRON_SECRET` environment variable in Vercel (any long random string); Vercel
 sends it with each cron call and the route refuses requests without it.
 
+Holidays are weekends, the recurring `fixed_holidays`, and any date marked in
+`duty_days`. Before saving second-call, the same cron job adds this year's and
+next year's holidays from the Bank of Thailand "Financial Institutions'
+Holidays" API to `duty_days` (`bot-holidays.ts`), which covers the Buddhist
+holidays, substitution days and special holidays that move every year. It
+needs `BOT_API_TOKEN` in Vercel: create an app at
+[portal.api.bot.or.th](https://portal.api.bot.or.th), subscribe it to that
+product, and copy the app's token. Without the token the job skips this step.
+Holidays are only added, never removed, so a failed call changes nothing.
+
 ## Auth setup (LINE LIFF)
 
 The whole app is gated behind LINE Login via LIFF. To make it actually work:
