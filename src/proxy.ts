@@ -33,6 +33,10 @@ export default auth((req) => {
     }
   }
 
+  if (isAuthed && isRegistered && pathname.startsWith("/duty-schedule/planner") && role !== "admin") {
+    return NextResponse.redirect(new URL("/duty-schedule", req.url));
+  }
+
   return NextResponse.next();
 });
 
