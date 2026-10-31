@@ -10,18 +10,21 @@
   --ink: #1A2E3B;             /* ตัวหนังสือหลัก */
   --ink-strong: #0F1E28;      /* ชื่อแพทย์ในตาราง OPD */
   --sep: #8FAAB5;             /* จุดคั่นชื่อ */
-  --cell-line: #C9DCE1;       /* กรอบช่องวันที่ */
-  --cell-line-strong: #A9C4CB;
+  --cell-line: #B3CDD3;       /* กรอบช่องวันที่ */
+  --cell-line-strong: #94B4BC;
+  --empty-line: #D5E1E4;      /* ช่องว่างนอกเดือน: จางโดยตั้งใจ */
 
-  /* พื้นหน้ากระดาษขาว: ช่องวันที่ใช้สีอ่อนเพื่อไม่เปลืองหมึกเวลาพิมพ์จริง */
-  --workday-fill: #E5F3F0;
-  --workday-line: #A9D3CB;
-  --weekend-fill: #EAF0FB;
-  --weekend-line: #B9CDEA;
+  /* พื้นหน้ากระดาษขาว ช่องวันที่ใช้สีอ่อนเพื่อประหยัดหมึก แต่ไม่จางเกิน
+     ~12% หมึก: เครื่องพิมพ์เลเซอร์ส่วนใหญ่พิมพ์สีที่อ่อนกว่านี้ไม่ติด */
+  --workday-fill: #CDE8E2;
+  --workday-line: #93C6BC;
+  --weekend-fill: #D3E0F5;
+  --weekend-line: #9DB8E0;
   --weekend-ink: #1F4E8C;
-  --holiday-fill: #FCEAE6;
-  --holiday-line: #EDBFB6;
+  --holiday-fill: #F6D3CA;
+  --holiday-line: #E3A598;
   --holiday-ink: #B42318;
+  --tint: 22%;                /* พื้นชื่อในปฏิทินหน้า 2–4 */
 
   --font-display: "Sarabun", "Noto Sans Thai", sans-serif;
   --font-body: "Sarabun", "Noto Sans Thai", sans-serif;
@@ -114,7 +117,7 @@ body {
 
 .opd-head {
   height: 42px;
-  background: #C8E6E1;
+  background: #ADD7CF;
   color: var(--ink-strong);
   font-size: 15px;
   font-weight: 700;
@@ -181,7 +184,7 @@ body {
 
 .cal-cell.is-empty {
   background: none;
-  border: 1px dashed #E3ECEE;
+  border: 1px dashed var(--empty-line);
 }
 
 .cal-cell.is-missing { border-style: dashed; }
@@ -267,7 +270,7 @@ body {
 }
 .mcal-cell.is-weekend { background: var(--weekend-fill); border-color: var(--weekend-line); }
 .mcal-cell.is-holiday { background: var(--holiday-fill); border-color: var(--holiday-line); }
-.mcal-cell.is-empty { background: none; border: 1px dashed #E3ECEE; }
+.mcal-cell.is-empty { background: none; border: 1px dashed var(--empty-line); }
 
 .mcal-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .mcal-date {
@@ -295,7 +298,7 @@ body {
   padding: 2px 8px 3px;
   border-left: 4px solid var(--c);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--c) 8%, #fff);
+  background: color-mix(in srgb, var(--c) var(--tint), #fff);
 }
 .chip-name {
   overflow: hidden;
@@ -306,7 +309,8 @@ body {
   line-height: 1.3;
   color: var(--ink-strong);
 }
-.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--c); }
+/* สีตัวอักษรเข้มขึ้นจากสีประจำคน ให้อ่านชัดบนกระดาษ */
+.chip-sub { font-size: 16px; font-weight: 600; line-height: 1.25; color: color-mix(in srgb, var(--c) 72%, #000); }
 .chip.is-muted { border-left-color: var(--cell-line-strong); background: none; }
 .chip.is-muted .chip-name { color: #7A8C96; }
 
@@ -323,7 +327,7 @@ body {
   width: 12px;
   height: 12px;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--c) 8%, #fff);
+  background: color-mix(in srgb, var(--c) var(--tint), #fff);
   border-left: 4px solid var(--c);
 }
 .legend-detail { font-weight: 400; color: #5B7380; }
