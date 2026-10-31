@@ -36,7 +36,6 @@ import { sendDutySchedulePrint } from "../lib/duty-print-actions";
 import { createSecondCallPdfLink } from "../lib/second-call-actions";
 import { DutySlotDeleteDialog } from "./duty-slot-delete-dialog";
 import { DutySlotEditSheet } from "./duty-slot-edit-sheet";
-import { SecondCallDaySection } from "./second-call-day";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -114,8 +113,6 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   const [isPrinting, startPrint] = useTransition();
   const [isExportingSecondCall, startSecondCallExport] = useTransition();
   const [, startLoadMonth] = useTransition();
-  // A roster edit can move second-call, so the day's section reloads after it.
-  const [secondCallRefresh, setSecondCallRefresh] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const [editTarget, setEditTarget] = useState<{
@@ -278,7 +275,6 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
 
   function afterMutation() {
     reloadMonthData(view.year, view.month);
-    setSecondCallRefresh((n) => n + 1);
   }
 
   return (
@@ -563,15 +559,6 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                     );
                   })}
                 </VStack>}
-                {monthReady && selected && (
-                  <SecondCallDaySection
-                    year={selected.year}
-                    month={selected.month}
-                    day={selected.day}
-                    isAdmin={isAdmin}
-                    refreshKey={secondCallRefresh}
-                  />
-                )}
               </Drawer.Body>
             </Drawer.Content>
           </Drawer.Positioner>

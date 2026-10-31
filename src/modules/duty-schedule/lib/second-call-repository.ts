@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, gte, inArray, lte } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "@/db";
 import { secondCallSlots } from "@/db/schema";
@@ -152,30 +152,6 @@ export async function planSecondCallMonth(
     lockedThrough: lockedThrough(year, month, today),
   });
   return { ...current, input, slots, counts, saved, pinned: byKey.pinned };
-}
-
-/**
- * An admin's choice for one sub-duty (no names = back to automatic). The
- * month is then re-planned around it and saved, so the change shows at once.
- */
-export async function setSecondCallSubDuty(input: {
-  year: number; month: number;
-  slot: { day: number; shift: SubDuty; dutyDay: number };
-  names: string[];
-  updatedByLineUserId: string | null;
-  personnel: RosterPerson[];
-}) {
-  const { year, month, slot } = input;
-  const shiftDate = isoDate(year, month, slot.day);
-  const clear = db.delete(secondCallSlots).where(and(eq(secondCallSlots.shiftDate, shiftDate), eq(secondCallSlots.shift, slot.shift)));
-  await db.batch(input.names.length
-    ? [clear, db.insert(secondCallSlots).values(input.names.map((personName) => ({
-      dutyDate: isoDate(year, month, slot.dutyDay), shiftDate, shift: slot.shift, personName,
-      source: "admin" as const, updatedByLineUserId: input.updatedByLineUserId,
-    })))]
-    : [clear]);
-  const plan = await planSecondCallMonth(year, month, input.personnel);
-  if (plan.slots) await saveSecondCallMonth(year, month, plan.slots, plan.saved);
 }
 
 /** Write the month's plan, touching only rows that changed. Both steps commit together. */
