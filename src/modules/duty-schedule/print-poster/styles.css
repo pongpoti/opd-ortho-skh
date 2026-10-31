@@ -10,8 +10,6 @@
   --ink: #1A2E3B;             /* ตัวหนังสือหลัก */
   --ink-strong: #0F1E28;      /* ชื่อแพทย์ในตาราง OPD */
   --sep: #8FAAB5;             /* จุดคั่นชื่อ */
-  --rule: #D6E6EA;            /* เส้นแบ่งแถวตาราง */
-  --accent-soft: #E7F2F4;     /* หัวตารางแบบประหยัดหมึก */
   --cell-line: #C9DCE1;       /* กรอบช่องวันที่ */
   --cell-line-strong: #A9C4CB;
 
@@ -97,7 +95,7 @@ body {
 /* ---------- OPD table ---------- */
 /* หมายเหตุ: ใช้ขอบล่างสีเข้มแทน box-shadow โดยตั้งใจ (ดู .cursor/rules) */
 .opd-table {
-  border: 1px solid var(--cell-line);
+  border: 1.5px solid var(--workday-line);
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
@@ -109,15 +107,15 @@ body {
   height: 40px;
   align-items: center;
   font-size: 17px;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--workday-line);
 }
 .opd-row:last-child { border-bottom: 0; }
-.opd-row:nth-child(odd):not(.opd-head) { background: #F6FAFA; }
+.opd-row:nth-child(odd):not(.opd-head) { background: var(--workday-fill); }
 
 .opd-head {
   height: 42px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: #C8E6E1;
+  color: var(--ink-strong);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -129,11 +127,10 @@ body {
   align-self: stretch;
   display: flex;
   align-items: center;
-  border-left: 1px solid var(--rule);
+  border-left: 1px solid var(--workday-line);
 }
-.opd-head .opd-pm { border-left-color: var(--cell-line); }
 
-.opd-day { font-weight: 700; color: var(--accent); }
+.opd-day { align-self: stretch; display: flex; align-items: center; font-weight: 700; color: var(--accent); }
 .opd-names {
   display: flex;
   align-items: center;
