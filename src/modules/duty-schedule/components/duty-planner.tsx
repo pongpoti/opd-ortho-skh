@@ -43,9 +43,9 @@ const DUTY_ROLE: Record<DutyKey, keyof PlannerRosters> = {
 
 /** Base text sizes for the "ขนาดตัวอักษร" switch; everything scales with em. */
 const TEXT_SIZES = [
-  { label: "ปกติ", px: 18 },
-  { label: "ใหญ่", px: 21 },
-  { label: "ใหญ่มาก", px: 24 },
+  { label: "ปกติ", px: 15 },
+  { label: "ใหญ่", px: 18 },
+  { label: "ใหญ่มาก", px: 21 },
 ] as const;
 const TEXT_SIZE_KEY = "opd-planner-text-size";
 const DEFAULT_TEXT_SIZE: number = TEXT_SIZES[1].px;
@@ -614,12 +614,24 @@ function Legend() {
     { bg: "brand.subtle", fg: "brand.fg", label: "ช่องที่แก้ไข ยังไม่บันทึก" },
   ];
   return (
-    <HStack gap={6} mb="1em" wrap="wrap">
+    <HStack gap={3} mb="1em" wrap="wrap" aria-label="ความหมายของสี">
+      <Text fontSize="0.9em" color="fg.muted">สีในตาราง:</Text>
       {swatches.map((swatch) => (
-        <HStack key={swatch.label} gap={2}>
-          <Box w="1.4em" h="1.4em" borderRadius="md" bg={swatch.bg} borderWidth="2px" borderColor={swatch.fg} />
-          <Text fontSize="0.9em" fontWeight="medium">{swatch.label}</Text>
-        </HStack>
+        <Box
+          key={swatch.label}
+          as="span"
+          px="0.8em"
+          py="0.25em"
+          borderRadius="full"
+          bg={swatch.bg}
+          color={swatch.fg}
+          borderLeftWidth="0.4em"
+          borderColor={swatch.fg}
+          fontSize="0.9em"
+          fontWeight="medium"
+        >
+          {swatch.label}
+        </Box>
       ))}
     </HStack>
   );
