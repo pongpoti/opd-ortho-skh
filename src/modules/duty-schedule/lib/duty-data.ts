@@ -185,3 +185,25 @@ export function getDutyDay(
 ): DutyDay {
   return monthData?.[day] ?? { holiday: false, holidayLabel: null, entries: {} };
 }
+
+/**
+ * What still blocks the month's PDFs: days without a staff (d1) or cast-room
+ * nurse (d5) entry, and whether no intern is entered at all. Interns need not
+ * cover every day, so only an intern-less month counts. "-" and "งด" are
+ * explicit choices and count as filled.
+ */
+export function dutyMonthGaps(year: number, month: number, data: DutyMonthData) {
+  const days = new Date(year, month + 1, 0).getDate();
+  const staff: number[] = [];
+  const nurse: number[] = [];
+  let hasIntern = false;
+  for (let day = 1; day <= days; day++) {
+    const entries = data[day]?.entries ?? {};
+    if (!entries.d1?.trim()) staff.push(day);
+    if (!entries.d5?.trim()) nurse.push(day);
+    const intern = entries.d2?.trim();
+    if (intern && !isDutyMarker(intern)) hasIntern = true;
+  }
+  return { staff, nurse, noIntern: !hasIntern, complete: !staff.length && !nurse.length && hasIntern };
+}
+

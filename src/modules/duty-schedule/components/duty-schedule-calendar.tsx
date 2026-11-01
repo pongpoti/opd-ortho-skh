@@ -24,6 +24,7 @@ import {
   DUTY_LABELS,
   DUTY_ORDER,
   dutyApplies,
+  dutyMonthGaps,
   formatDutyDisplayName,
   getDutyDay,
   isDutyMarker,
@@ -131,6 +132,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   } | null>(null);
 
   const monthDisabled = isDutyMonthDisabled(view.year, view.month);
+  const monthIncomplete = monthReady && !dutyMonthGaps(view.year, view.month, monthData).complete;
 
   const reloadMonthData = useCallback((year: number, month: number) => {
     const key = monthKey(year, month);
@@ -282,7 +284,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             variant="solid"
             colorPalette="brand"
             onClick={handleSecondCall}
-            disabled={isExportingSecondCall || !monthReady || monthDisabled}
+            disabled={isExportingSecondCall || !monthReady || monthDisabled || monthIncomplete}
             loading={isExportingSecondCall}
           >
             <Text as="span" fontSize="md" fontWeight="bold" lineHeight="1">
@@ -295,7 +297,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             variant="solid"
             colorPalette="brand"
             onClick={handlePrint}
-            disabled={isPrinting || !monthReady || monthDisabled}
+            disabled={isPrinting || !monthReady || monthDisabled || monthIncomplete}
             loading={isPrinting}
           >
             <Printer size={20} />
