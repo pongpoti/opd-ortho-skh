@@ -43,9 +43,9 @@ const DUTY_ROLE: Record<DutyKey, keyof PlannerRosters> = {
 
 /** Base text sizes for the "ขนาดตัวอักษร" switch; everything scales with em. */
 const TEXT_SIZES = [
-  { label: "ปกติ", px: 18 },
-  { label: "ใหญ่", px: 21 },
-  { label: "ใหญ่มาก", px: 24 },
+  { label: "ปกติ", px: 15 },
+  { label: "ใหญ่", px: 18 },
+  { label: "ใหญ่มาก", px: 21 },
 ] as const;
 const TEXT_SIZE_KEY = "opd-planner-text-size";
 const DEFAULT_TEXT_SIZE: number = TEXT_SIZES[1].px;
@@ -355,7 +355,6 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           </HStack>
         </Flex>
 
-        <Legend />
 
         {ready && (
           <InternPicker
@@ -460,7 +459,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                                 {slotOptions(roster, saved).map((option) => (
                                   <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
-                                <option value="งด">งด</option>
+                                {saved === "งด" && <option value="งด">งด</option>}
                                 <option value="-">ว่าง (-)</option>
                               </NativeSelect.Field>
                               <NativeSelect.Indicator />
@@ -605,23 +604,6 @@ function InternPicker({
         </HStack>
       </Flex>
     </GlassCard>
-  );
-}
-
-function Legend() {
-  const swatches = [
-    { bg: "weekend.subtle", fg: "weekend.fg", label: "เสาร์-อาทิตย์" },
-    { bg: "brand.subtle", fg: "brand.fg", label: "ช่องที่แก้ไข ยังไม่บันทึก" },
-  ];
-  return (
-    <HStack gap={6} mb="1em" wrap="wrap">
-      {swatches.map((swatch) => (
-        <HStack key={swatch.label} gap={2}>
-          <Box w="1.4em" h="1.4em" borderRadius="md" bg={swatch.bg} borderWidth="2px" borderColor={swatch.fg} />
-          <Text fontSize="0.9em" fontWeight="medium">{swatch.label}</Text>
-        </HStack>
-      ))}
-    </HStack>
   );
 }
 
