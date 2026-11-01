@@ -355,7 +355,6 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           </HStack>
         </Flex>
 
-        <Legend />
 
         {ready && (
           <InternPicker
@@ -605,35 +604,6 @@ function InternPicker({
         </HStack>
       </Flex>
     </GlassCard>
-  );
-}
-
-function Legend() {
-  const swatches = [
-    { bg: "weekend.subtle", fg: "weekend.fg", label: "เสาร์-อาทิตย์" },
-    { bg: "brand.subtle", fg: "brand.fg", label: "ช่องที่แก้ไข ยังไม่บันทึก" },
-  ];
-  return (
-    <HStack gap={3} mb="1em" wrap="wrap" aria-label="ความหมายของสี">
-      <Text fontSize="0.9em" color="fg.muted">สีในตาราง:</Text>
-      {swatches.map((swatch) => (
-        <Box
-          key={swatch.label}
-          as="span"
-          px="0.8em"
-          py="0.25em"
-          borderRadius="full"
-          bg={swatch.bg}
-          color={swatch.fg}
-          borderLeftWidth="0.4em"
-          borderColor={swatch.fg}
-          fontSize="0.9em"
-          fontWeight="medium"
-        >
-          {swatch.label}
-        </Box>
-      ))}
-    </HStack>
   );
 }
 
