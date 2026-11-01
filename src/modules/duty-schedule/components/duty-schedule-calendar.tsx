@@ -24,7 +24,6 @@ import {
   DUTY_LABELS,
   DUTY_ORDER,
   dutyApplies,
-  describeDutyMonthGaps,
   dutyMonthGaps,
   formatDutyDisplayName,
   getDutyDay,
@@ -133,8 +132,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   } | null>(null);
 
   const monthDisabled = isDutyMonthDisabled(view.year, view.month);
-  const monthGaps = monthReady ? dutyMonthGaps(view.year, view.month, monthData) : null;
-  const monthIncomplete = !!monthGaps && !monthGaps.complete;
+  const monthIncomplete = monthReady && !dutyMonthGaps(view.year, view.month, monthData).complete;
 
   const reloadMonthData = useCallback((year: number, month: number) => {
     const key = monthKey(year, month);
@@ -324,12 +322,6 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             </Button>
           )}
         </VStack>
-      )}
-
-      {monthGaps && monthIncomplete && !monthDisabled && (
-        <Text fontSize="sm" color="fg.muted" bg="bg.muted" borderRadius="md" px={3} py={2} role="status">
-          {describeDutyMonthGaps(monthGaps)}
-        </Text>
       )}
 
       {printMessage && (

@@ -207,12 +207,3 @@ export function dutyMonthGaps(year: number, month: number, data: DutyMonthData) 
   return { staff, nurse, noIntern: !hasIntern, complete: !staff.length && !nurse.length && hasIntern };
 }
 
-/** Short Thai list of what is missing, for the disabled PDF buttons. */
-export function describeDutyMonthGaps(gaps: ReturnType<typeof dutyMonthGaps>): string {
-  const list = (days: number[]) => (days.length > 6 ? `${days.slice(0, 6).join(", ")} และอีก ${days.length - 6} วัน` : days.join(", "));
-  const parts: string[] = [];
-  if (gaps.staff.length) parts.push(`เวร staff วันที่ ${list(gaps.staff)}`);
-  if (gaps.nurse.length) parts.push(`เวรห้องเฝือก วันที่ ${list(gaps.nurse)}`);
-  if (gaps.noIntern) parts.push("ยังไม่มีเวร intern ในเดือนนี้");
-  return `ยังพิมพ์ตารางและ second-call ไม่ได้ ต้องกรอกเวรให้ครบก่อน: ${parts.join(" · ")}`;
-}
