@@ -13,22 +13,27 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { CalendarDays, ChevronLeft, ChevronRight, GraduationCap, Monitor, PhoneCall, RotateCcw, Save, Wand2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Cross, GraduationCap, Monitor, PhoneCall, Printer, RotateCcw, Save, Wand2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { openPdfLink } from "@/lib/open-pdf-link";
+import { CastRoomAdminDays } from "@/modules/cast-room/components/cast-room-admin-days";
 import {
   DUTY_LABELS,
+  dutyMonthGaps,
   isDutyMarker,
   type DutyKey,
   type DutyMonthData,
 } from "../lib/duty-data";
 import { DUTY_ICON_COLORS, DUTY_ICONS } from "../lib/duty-icons";
+import { createDutyPrintPdfLink } from "../lib/duty-print-actions";
 import {
   loadPlannerMonth,
   savePlannerChanges,
   type PlannerOption,
   type PlannerRosters,
 } from "../lib/planner-actions";
+import { createSecondCallPdfLink } from "../lib/second-call-actions";
 import { SecondCallEditor } from "./second-call-editor";
 
 const THAI_MONTHS = [
@@ -95,11 +100,12 @@ type Loaded =
 
 type Notice = { tone: "ok" | "err"; text: string } | null;
 
-/** What the planner edits: the duty roster or its second-call. */
-type Tab = "duty" | "second";
+/** Admin dashboard sections: the duty roster, its second-call, the cast-room log. */
+type Tab = "duty" | "second" | "cast";
 const TABS: { value: Tab; label: string; icon: typeof CalendarDays }[] = [
   { value: "duty", label: "เวรหลัก", icon: CalendarDays },
   { value: "second", label: "Second call", icon: PhoneCall },
+  { value: "cast", label: "ห้องเฝือก", icon: Cross },
 ];
 
 const monthKey = (year: number, month: number) => `${year}-${month}`;
@@ -133,6 +139,8 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
   const [pickedInterns, setPickedInterns] = useState<Record<string, string[]>>({});
   const textSize = useSyncExternalStore(subscribeTextSize, readTextSize, () => DEFAULT_TEXT_SIZE);
   const [isSaving, startSave] = useTransition();
+  const [isPrinting, startPrint] = useTransition();
+  const [printError, setPrintError] = useState<string | null>(null);
   const [, startLoad] = useTransition();
   const latestLoad = useRef(0);
 
@@ -151,7 +159,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     });
   }, [draft, ready]);
   const dirty = changes.length > 0;
-  const anyDirty = tab === "duty" ? dirty : secondDirty;
+  const anyDirty = tab === "duty" ? dirty : tab === "second" ? secondDirty : false;
 
   const reload = useCallback((year: number, month: number) => {
     const key = monthKey(year, month);
@@ -200,6 +208,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     if (anyDirty && !window.confirm("ยังไม่ได้บันทึกการแก้ไข ต้องการเปลี่ยนเดือนและทิ้งการแก้ไขหรือไม่?")) return;
     setDraft({});
     setNotice(null);
+    setPrintError(null);
     setView((current) => shiftMonth(current, delta));
   }
 
@@ -208,9 +217,34 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     if (anyDirty && !window.confirm("ยังไม่ได้บันทึกการแก้ไข ต้องการเปลี่ยนหน้าและทิ้งการแก้ไขหรือไม่?")) return;
     setDraft({});
     setNotice(null);
+    setPrintError(null);
     setTab(next);
     // Second-call follows the roster, so show the duty tab's latest save.
     if (next === "duty") reload(view.year, view.month);
+  }
+
+  // Same rule as the app's calendar: no PDF until every day has its staff and
+  // cast-room nurse and the month has an intern. Saved data only, so unsaved
+  // edits block printing too.
+  const monthComplete = !!ready && dutyMonthGaps(view.year, view.month, ready.data).complete;
+  const printTarget = tab === "duty"
+    ? { label: "พิมพ์ตารางเวร", create: createDutyPrintPdfLink, blocked: dirty }
+    : tab === "second"
+      ? { label: "พิมพ์ second call", create: createSecondCallPdfLink, blocked: secondDirty }
+      : null;
+
+  function handlePrint() {
+    if (!printTarget) return;
+    const { year, month } = view;
+    const create = printTarget.create;
+    setPrintError(null);
+    startPrint(async () => {
+      const error = await openPdfLink(async () => {
+        const result = await create(year, month);
+        return result.ok ? { ok: true, url: result.path } : result;
+      });
+      if (error) setPrintError(error);
+    });
   }
 
   function handleSave() {
@@ -323,7 +357,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
             <Monitor size={44} />
             <Heading size="xl">กรุณาเปิดบนคอมพิวเตอร์</Heading>
             <Text fontSize="lg" lineHeight="1.7" textWrap="balance">
-              หน้าวางแผนเวรใช้ได้บนจอคอมพิวเตอร์เท่านั้น
+              แดชบอร์ดผู้ดูแลระบบใช้ได้บนจอคอมพิวเตอร์เท่านั้น
             </Text>
           </VStack>
         </GlassCard>
@@ -338,14 +372,27 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         w={PLANNER_WIDTH}
         style={{ fontSize: `${textSize}px` }}
         lineHeight="1.6"
-        pb="6em"
+        pb="2em"
       >
         <Flex align="center" justify="space-between" gap={6} mb="1em" wrap="wrap">
           <VStack align="start" gap={0}>
-            <Text fontSize="0.9em" fontWeight="semibold" color="brand.fg">วางแผนตารางเวร</Text>
+            <Text fontSize="0.9em" fontWeight="semibold" color="brand.fg">แดชบอร์ดผู้ดูแลระบบ</Text>
             <Heading as="h1" fontSize="1.9em" lineHeight="1.3">{title}</Heading>
           </VStack>
           <HStack gap={3} wrap="wrap">
+            {printTarget && (
+              <Button
+                size="xl"
+                fontSize="0.95em"
+                colorPalette="brand"
+                disabled={!monthComplete || printTarget.blocked}
+                loading={isPrinting}
+                loadingText="กำลังเปิด PDF…"
+                onClick={handlePrint}
+              >
+                <Printer size={22} /> {printTarget.label}
+              </Button>
+            )}
             <Button size="xl" fontSize="0.95em" variant="outline" onClick={() => changeMonth(-1)}>
               <ChevronLeft size={24} /> เดือนก่อน
             </Button>
@@ -397,8 +444,16 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         </Flex>
 
 
+        {printError && (
+          <Text mb="1em" fontSize="0.95em" color="fg.error" role="alert">{printError}</Text>
+        )}
+
+        {tab === "cast" && (
+          <CastRoomAdminDays year={view.year} month={view.month} dutyData={ready?.data ?? null} />
+        )}
+
         {tab === "second" && (
-          <SecondCallEditor key={currentKey} year={view.year} month={view.month} width={PLANNER_WIDTH} onDirtyChange={setSecondDirty} />
+          <SecondCallEditor key={currentKey} year={view.year} month={view.month} onDirtyChange={setSecondDirty} />
         )}
 
         {tab === "duty" && ready && (
@@ -524,18 +579,18 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
 
         <Box
           display={tab === "duty" ? undefined : "none"}
-          position="fixed"
-          left={0}
-          right={0}
-          bottom={0}
+          position="sticky"
+          bottom="1em"
           zIndex={20}
+          mt="1.5em"
           bg="glass.solid"
-          borderTopWidth="2px"
+          borderWidth="2px"
+          borderRadius="l3"
           borderColor={dirty ? "brand.solid" : "glass.border"}
           backdropFilter="blur(12px)"
           boxShadow="0 -6px 24px rgba(15, 23, 32, 0.12)"
         >
-          <Flex mx="auto" w={PLANNER_WIDTH} align="center" gap={4} py={3}>
+          <Flex align="center" gap={4} px="1.25em" py="0.75em">
             <Text fontSize="1.05em" fontWeight="semibold" color={notice?.tone === "err" ? "fg.error" : dirty ? "brand.fg" : "fg"} role="status">
               {notice?.text ?? (dirty ? `มีการแก้ไข ${changes.length} ช่อง ยังไม่ได้บันทึก` : "ไม่มีการแก้ไข")}
             </Text>
@@ -596,7 +651,7 @@ function InternPicker({
       <Flex align="center" gap={4} wrap="wrap">
         <HStack gap={2} color="duty.d2">
           <GraduationCap size={26} />
-          <Text fontSize="1.05em" fontWeight="bold" color="fg">อินเทิร์นที่หมุนมาเดือนนี้</Text>
+          <Text fontSize="1.05em" fontWeight="bold" color="fg">อินเทิร์นที่วนมาเดือนนี้</Text>
         </HStack>
         {monthInterns.length === 0 && (
           <Text color="fg.muted">ยังไม่ได้เลือก เลือกจากรายชื่อทางขวา</Text>

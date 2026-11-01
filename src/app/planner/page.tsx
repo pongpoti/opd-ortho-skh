@@ -11,7 +11,7 @@ import { nextMonth } from "@/modules/duty-schedule/lib/second-call-repository";
 import { SubmitButton } from "./submit-button";
 
 export const metadata = {
-  title: "วางแผนเวร - OPD Ortho SKH",
+  title: "แดชบอร์ดผู้ดูแลระบบ - OPD Ortho SKH",
 };
 
 /**
@@ -38,11 +38,11 @@ export default async function DesktopPlannerPage() {
         <GlassCard p={10} maxW="lg" w="full">
           <VStack gap={5} textAlign="center">
             <Bone size={44} />
-            <Heading as="h1" fontSize="2xl">วางแผนตารางเวร</Heading>
+            <Heading as="h1" fontSize="2xl">แดชบอร์ดผู้ดูแลระบบ</Heading>
             {session ? (
               <>
                 <Text fontSize="xl" lineHeight="1.7">
-                  บัญชี LINE นี้ไม่มีสิทธิ์ใช้หน้าวางแผนเวร (เฉพาะผู้ดูแลระบบ)
+                  บัญชี LINE นี้ไม่มีสิทธิ์ใช้แดชบอร์ดนี้ (เฉพาะผู้ดูแลระบบ)
                 </Text>
                 <form action={logout}>
                   <SubmitButton size="xl" fontSize="lg" variant="outline" loadingText="กำลังออกจากระบบ…">

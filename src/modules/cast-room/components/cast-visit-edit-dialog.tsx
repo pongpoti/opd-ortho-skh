@@ -18,7 +18,7 @@ import { Stethoscope } from "lucide-react";
 import { DigitBoxInput } from "@/components/ui/digit-box-input";
 import { scrollFocusedIntoView } from "@/lib/scroll-into-view-on-focus";
 
-import { updateCastLog } from "../lib/cast-actions";
+import { submitCastLog, updateCastLog } from "../lib/cast-actions";
 import type { CastVisitSummary } from "../lib/cast-dashboard-actions";
 import { castLabel } from "../lib/cast-types";
 import { resolveDutyDoctorAction } from "../lib/duty-doctor-actions";
@@ -30,6 +30,8 @@ const HN_LEN = 7;
 
 type CastVisitEditDialogProps = {
   visit: CastVisitSummary | null;
+  /** With no `visit`, the dialog adds a new visit on this date (YYYY-MM-DD). */
+  createDate?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
@@ -37,20 +39,22 @@ type CastVisitEditDialogProps = {
 
 function CastVisitEditForm({
   visit,
+  createDate,
   onCancel,
   onSaved,
 }: {
-  visit: CastVisitSummary;
+  visit: CastVisitSummary | null;
+  createDate: string;
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const [date, setDate] = useState(visit.shiftDate);
-  const [time, setTime] = useState(visit.visitTime ?? "");
+  const [date, setDate] = useState(visit?.shiftDate ?? createDate);
+  const [time, setTime] = useState(visit?.visitTime ?? "");
   const [useCurrentTime, setUseCurrentTime] = useState(false);
-  const [hn, setHn] = useState(visit.hn);
-  const [name, setName] = useState(visit.patientName);
-  const [diagnosis, setDiagnosis] = useState(visit.diagnosis);
-  const [castItems, setCastItems] = useState(() => new Map(visit.casts.map((c) => [c.id, c.count])));
+  const [hn, setHn] = useState(visit?.hn ?? "");
+  const [name, setName] = useState(visit?.patientName ?? "");
+  const [diagnosis, setDiagnosis] = useState(visit?.diagnosis ?? "");
+  const [castItems, setCastItems] = useState(() => new Map((visit?.casts ?? []).map((c) => [c.id, c.count])));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [dutyDoctor, setDutyDoctor] = useState<{
@@ -91,8 +95,7 @@ function CastVisitEditForm({
     setError(null);
 
     startTransition(async () => {
-      const result = await updateCastLog({
-        visitId: visit.visitId,
+      const input = {
         shiftDate: date,
         visitTime: useCurrentTime ? nowHHMM() : time || null,
         hn: hn.trim(),
@@ -100,7 +103,8 @@ function CastVisitEditForm({
         diagnosis: diagnosis.trim(),
         doctorName,
         casts: [...castItems].map(([id, count]) => ({ id, count })),
-      });
+      };
+      const result = visit ? await updateCastLog({ ...input, visitId: visit.visitId }) : await submitCastLog(input);
 
       if (!result.ok) {
         setError(result.error);
@@ -209,14 +213,14 @@ function CastVisitEditForm({
           ยกเลิก
         </Button>
         <Button colorPalette="brand" disabled={!canSave} onClick={save}>
-          {isPending ? "กำลังบันทึก…" : "บันทึกการแก้ไข"}
+          {isPending ? "กำลังบันทึก…" : visit ? "บันทึกการแก้ไข" : "เพิ่มรายการ"}
         </Button>
       </Dialog.Footer>
     </>
   );
 }
 
-export function CastVisitEditDialog({ visit, open, onOpenChange, onSaved }: CastVisitEditDialogProps) {
+export function CastVisitEditDialog({ visit, createDate = null, open, onOpenChange, onSaved }: CastVisitEditDialogProps) {
   return (
     <Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
       <Portal>
@@ -231,12 +235,13 @@ export function CastVisitEditDialog({ visit, open, onOpenChange, onSaved }: Cast
             borderColor="glass.border"
           >
             <Dialog.Header>
-              <Dialog.Title>แก้ไขรายการ</Dialog.Title>
+              <Dialog.Title>{visit ? "แก้ไขรายการ" : "เพิ่มรายการ"}</Dialog.Title>
             </Dialog.Header>
-            {visit && open ? (
+            {open && (visit || createDate) ? (
               <CastVisitEditForm
-                key={visit.visitId}
+                key={visit?.visitId ?? `new-${createDate}`}
                 visit={visit}
+                createDate={visit?.shiftDate ?? createDate ?? ""}
                 onCancel={() => onOpenChange(false)}
                 onSaved={() => {
                   onOpenChange(false);

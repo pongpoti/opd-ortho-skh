@@ -21,8 +21,8 @@ export const modules: AppModule[] = [
     subitems: [
       {
         slug: "planner",
-        name: "วางแผนเวร",
-        description: "วางแผนตารางเวรเดือนถัดไปบนคอมพิวเตอร์ (ผู้ดูแลระบบ)",
+        name: "แดชบอร์ดผู้ดูแล",
+        description: "จัดตารางเวร second call และบันทึกห้องเฝือก พร้อมพิมพ์ PDF บนคอมพิวเตอร์ (ผู้ดูแลระบบ)",
         href: "/duty-schedule/planner",
         icon: "planner",
         adminOnly: true,
