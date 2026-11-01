@@ -83,25 +83,28 @@ export default async function DesktopPlannerPage() {
         backdropFilter="blur(16px)"
         boxShadow="sm"
       >
-        <Flex mx="auto" w="full" maxW="1120px" align="center" gap={3} px={6} py={3}>
-          <HStack gap={2} fontWeight="semibold" fontSize="xl">
+        <Flex mx="auto" w="full" maxW="1120px" align="center" gap={3} px={{ base: 4, md: 6 }} py={3}>
+          <HStack gap={2} fontWeight="semibold" fontSize={{ base: "lg", md: "xl" }} whiteSpace="nowrap" flexShrink={0}>
             <Bone size={24} />
             <span>OPD Ortho SKH</span>
           </HStack>
-          <HStack ml="auto" gap={3}>
+          <HStack ml="auto" gap={{ base: 2, md: 3 }} minW={0}>
             {session.user.lineDisplayName && (
-              <Text fontSize="lg" fontWeight="medium">{session.user.lineDisplayName}</Text>
+              <Text fontSize="lg" fontWeight="medium" truncate display={{ base: "none", md: "block" }}>
+                {session.user.lineDisplayName}
+              </Text>
             )}
             <ColorModeToggle />
             <form action={logout}>
-              <Button type="submit" size="lg" variant="outline">
-                <LogOut size={20} /> ออกจากระบบ
+              <Button type="submit" size="lg" variant="outline" aria-label="ออกจากระบบ" px={{ base: 3, md: 4 }}>
+                <LogOut size={20} />
+                <Box as="span" display={{ base: "none", md: "inline" }}>ออกจากระบบ</Box>
               </Button>
             </form>
           </HStack>
         </Flex>
       </Box>
-      <Box as="main" mx="auto" w="full" maxW="5xl" px={6} pt={8}>
+      <Box as="main" mx="auto" w="full" maxW="5xl" px={{ base: 4, md: 6 }} pt={{ base: 4, md: 8 }}>
         <DutyPlanner initialYear={upcoming.year} initialMonth={upcoming.month} />
       </Box>
     </Box>

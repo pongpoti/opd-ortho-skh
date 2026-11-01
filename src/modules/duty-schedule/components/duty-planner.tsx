@@ -295,14 +295,16 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
 
   return (
     <>
-      <Flex display={{ base: "flex", lg: "none" }} justify="center" py={8}>
-        <GlassCard p={8} maxW="md" w="full">
-          <VStack gap={4} textAlign="center">
-            <Monitor size={48} />
+      <Flex display={{ base: "flex", lg: "none" }} justify="center" py={{ base: 4, md: 8 }}>
+        <GlassCard p={{ base: 6, md: 8 }} maxW="md" w="full">
+          <VStack gap={3} textAlign="center">
+            <Monitor size={44} />
             <Heading size="xl">กรุณาเปิดบนคอมพิวเตอร์</Heading>
-            <Text fontSize="lg" lineHeight="1.7">
-              หน้าวางแผนเวรออกแบบสำหรับจอคอมพิวเตอร์ กรุณาเปิดด้วย LINE บนคอมพิวเตอร์
-              และขยายหน้าต่างให้กว้างขึ้น
+            <Text fontSize="lg" lineHeight="1.7" textWrap="balance">
+              หน้าวางแผนเวรใช้ได้บนจอคอมพิวเตอร์เท่านั้น
+            </Text>
+            <Text fontSize="md" lineHeight="1.7" color="fg.muted" textWrap="balance">
+              เปิด opd-ortho-skh.vercel.app/planner บนคอมพิวเตอร์ หรือขยายหน้าต่างให้กว้างขึ้น
             </Text>
           </VStack>
         </GlassCard>
