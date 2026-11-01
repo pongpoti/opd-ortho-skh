@@ -295,7 +295,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
 
   return (
     <>
-      <Flex display={{ base: "flex", lg: "none" }} justify="center" py={{ base: 4, md: 8 }}>
+      <Flex display={{ base: "flex", lg: "none" }} justify="center" align="center" minH="calc(var(--app-vh, 100vh) - 11rem)" py={{ base: 4, md: 8 }}>
         <GlassCard p={{ base: 6, md: 8 }} maxW="md" w="full">
           <VStack gap={3} textAlign="center">
             <Monitor size={44} />
