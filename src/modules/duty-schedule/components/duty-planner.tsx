@@ -459,7 +459,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
                                 {slotOptions(roster, saved).map((option) => (
                                   <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
-                                <option value="งด">งด</option>
+                                {saved === "งด" && <option value="งด">งด</option>}
                                 <option value="-">ว่าง (-)</option>
                               </NativeSelect.Field>
                               <NativeSelect.Indicator />

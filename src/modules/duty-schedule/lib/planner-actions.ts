@@ -16,8 +16,8 @@ const DUTY_ROLE: Record<DutyKey, RosterRole> = {
   d1: "staff", d2: "intern", d3: "staff", d4: "staff", d5: "nurse",
 };
 
-/** Explicit markers the planner may store besides a person. */
-const MARKERS = ["งด", "-"];
+/** Explicit marker the planner may store besides a person ("งด" only stays if already saved). */
+const MARKERS = ["-"];
 
 /** Duties the planner edits; the OPD outreach clinics (d3, d4) are not planned here. */
 const PLANNER_KEYS: DutyKey[] = ["d1", "d2", "d5"];
