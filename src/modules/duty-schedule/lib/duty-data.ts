@@ -185,3 +185,34 @@ export function getDutyDay(
 ): DutyDay {
   return monthData?.[day] ?? { holiday: false, holidayLabel: null, entries: {} };
 }
+
+/**
+ * What still blocks the month's PDFs: days without a staff (d1) or cast-room
+ * nurse (d5) entry, and whether no intern is entered at all. Interns need not
+ * cover every day, so only an intern-less month counts. "-" and "งด" are
+ * explicit choices and count as filled.
+ */
+export function dutyMonthGaps(year: number, month: number, data: DutyMonthData) {
+  const days = new Date(year, month + 1, 0).getDate();
+  const staff: number[] = [];
+  const nurse: number[] = [];
+  let hasIntern = false;
+  for (let day = 1; day <= days; day++) {
+    const entries = data[day]?.entries ?? {};
+    if (!entries.d1?.trim()) staff.push(day);
+    if (!entries.d5?.trim()) nurse.push(day);
+    const intern = entries.d2?.trim();
+    if (intern && !isDutyMarker(intern)) hasIntern = true;
+  }
+  return { staff, nurse, noIntern: !hasIntern, complete: !staff.length && !nurse.length && hasIntern };
+}
+
+/** Short Thai list of what is missing, for the disabled PDF buttons. */
+export function describeDutyMonthGaps(gaps: ReturnType<typeof dutyMonthGaps>): string {
+  const list = (days: number[]) => (days.length > 6 ? `${days.slice(0, 6).join(", ")} และอีก ${days.length - 6} วัน` : days.join(", "));
+  const parts: string[] = [];
+  if (gaps.staff.length) parts.push(`เวร staff วันที่ ${list(gaps.staff)}`);
+  if (gaps.nurse.length) parts.push(`เวรห้องเฝือก วันที่ ${list(gaps.nurse)}`);
+  if (gaps.noIntern) parts.push("ยังไม่มีเวร intern ในเดือนนี้");
+  return `ยังพิมพ์ตารางและ second-call ไม่ได้ ต้องกรอกเวรให้ครบก่อน: ${parts.join(" · ")}`;
+}
