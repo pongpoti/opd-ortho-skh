@@ -75,9 +75,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user?.id) {
-        token.lineUserId = user.id;
+    async jwt({ token, user, account }) {
+      // Auth.js gives OAuth users a random id; the LINE user id is the
+      // account's providerAccountId (the LIFF credentials path returns it as id).
+      const lineUserId = account?.provider === "line" ? account.providerAccountId : user?.id;
+      if (lineUserId) {
+        token.lineUserId = lineUserId;
       }
       if (typeof user?.name === "string") {
         token.lineDisplayName = user.name;

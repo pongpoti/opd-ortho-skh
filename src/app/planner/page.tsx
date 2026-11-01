@@ -8,6 +8,8 @@ import { bangkokToday } from "@/lib/bangkok-date";
 import { DutyPlanner } from "@/modules/duty-schedule/components/duty-planner";
 import { nextMonth } from "@/modules/duty-schedule/lib/second-call-repository";
 
+import { SubmitButton } from "./submit-button";
+
 export const metadata = {
   title: "วางแผนเวร - OPD Ortho SKH",
 };
@@ -43,9 +45,9 @@ export default async function DesktopPlannerPage() {
                   บัญชี LINE นี้ไม่มีสิทธิ์ใช้หน้าวางแผนเวร (เฉพาะผู้ดูแลระบบ)
                 </Text>
                 <form action={logout}>
-                  <Button type="submit" size="xl" fontSize="lg" variant="outline">
+                  <SubmitButton size="xl" fontSize="lg" variant="outline" loadingText="กำลังออกจากระบบ…">
                     <LogOut size={22} /> ออกจากระบบ
-                  </Button>
+                  </SubmitButton>
                 </form>
               </>
             ) : (
@@ -54,9 +56,9 @@ export default async function DesktopPlannerPage() {
                   กรุณาเข้าสู่ระบบด้วยบัญชี LINE ของผู้ดูแลระบบ
                 </Text>
                 <form action={login}>
-                  <Button type="submit" size="xl" fontSize="lg" bg="#06C755" color="white" _hover={{ opacity: 0.9 }}>
+                  <SubmitButton size="xl" fontSize="lg" bg="#06C755" color="white" _hover={{ opacity: 0.9 }} loadingText="กำลังเปิด LINE…">
                     เข้าสู่ระบบด้วย LINE
-                  </Button>
+                  </SubmitButton>
                 </form>
               </>
             )}
