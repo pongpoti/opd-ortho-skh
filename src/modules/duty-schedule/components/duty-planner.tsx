@@ -338,7 +338,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         w={PLANNER_WIDTH}
         style={{ fontSize: `${textSize}px` }}
         lineHeight="1.6"
-        pb="6em"
+        pb="2em"
       >
         <Flex align="center" justify="space-between" gap={6} mb="1em" wrap="wrap">
           <VStack align="start" gap={0}>
@@ -398,7 +398,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
 
 
         {tab === "second" && (
-          <SecondCallEditor key={currentKey} year={view.year} month={view.month} width={PLANNER_WIDTH} onDirtyChange={setSecondDirty} />
+          <SecondCallEditor key={currentKey} year={view.year} month={view.month} onDirtyChange={setSecondDirty} />
         )}
 
         {tab === "duty" && ready && (
@@ -524,18 +524,18 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
 
         <Box
           display={tab === "duty" ? undefined : "none"}
-          position="fixed"
-          left={0}
-          right={0}
-          bottom={0}
+          position="sticky"
+          bottom="1em"
           zIndex={20}
+          mt="1.5em"
           bg="glass.solid"
-          borderTopWidth="2px"
+          borderWidth="2px"
+          borderRadius="l3"
           borderColor={dirty ? "brand.solid" : "glass.border"}
           backdropFilter="blur(12px)"
           boxShadow="0 -6px 24px rgba(15, 23, 32, 0.12)"
         >
-          <Flex mx="auto" w={PLANNER_WIDTH} align="center" gap={4} py={3}>
+          <Flex align="center" gap={4} px="1.25em" py="0.75em">
             <Text fontSize="1.05em" fontWeight="semibold" color={notice?.tone === "err" ? "fg.error" : dirty ? "brand.fg" : "fg"} role="status">
               {notice?.text ?? (dirty ? `มีการแก้ไข ${changes.length} ช่อง ยังไม่ได้บันทึก` : "ไม่มีการแก้ไข")}
             </Text>
@@ -596,7 +596,7 @@ function InternPicker({
       <Flex align="center" gap={4} wrap="wrap">
         <HStack gap={2} color="duty.d2">
           <GraduationCap size={26} />
-          <Text fontSize="1.05em" fontWeight="bold" color="fg">อินเทิร์นที่หมุนมาเดือนนี้</Text>
+          <Text fontSize="1.05em" fontWeight="bold" color="fg">อินเทิร์นที่วนมาเดือนนี้</Text>
         </HStack>
         {monthInterns.length === 0 && (
           <Text color="fg.muted">ยังไม่ได้เลือก เลือกจากรายชื่อทางขวา</Text>

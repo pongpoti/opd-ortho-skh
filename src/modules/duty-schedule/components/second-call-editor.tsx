@@ -58,12 +58,10 @@ const firstName = (name: string) => name.trim().split(/\s+/u)[0];
 export function SecondCallEditor({
   year,
   month,
-  width,
   onDirtyChange,
 }: {
   year: number;
   month: number;
-  width: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const key = `${year}-${month}`;
@@ -280,18 +278,18 @@ export function SecondCallEditor({
       </Box>
 
       <Box
-        position="fixed"
-        left={0}
-        right={0}
-        bottom={0}
+        position="sticky"
+        bottom="1em"
         zIndex={20}
+        mt="1.5em"
         bg="glass.solid"
-        borderTopWidth="2px"
+        borderWidth="2px"
+        borderRadius="l3"
         borderColor={dirty ? "brand.solid" : "glass.border"}
         backdropFilter="blur(12px)"
         boxShadow="0 -6px 24px rgba(15, 23, 32, 0.12)"
       >
-        <Flex mx="auto" w={width} align="center" gap={4} py={3}>
+        <Flex align="center" gap={4} px="1.25em" py="0.75em">
           <Text fontSize="1.05em" fontWeight="semibold" color={notice?.tone === "err" ? "fg.error" : dirty ? "brand.fg" : "fg"} role="status">
             {notice?.text ?? (dirty ? `มีการแก้ไข ${edits.length} ช่อง ยังไม่ได้บันทึก` : "ไม่มีการแก้ไข")}
           </Text>
