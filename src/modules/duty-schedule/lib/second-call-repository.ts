@@ -1,4 +1,4 @@
-import { and, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "@/db";
 import { secondCallSlots } from "@/db/schema";
@@ -152,6 +152,35 @@ export async function planSecondCallMonth(
     lockedThrough: lockedThrough(year, month, today),
   });
   return { ...current, input, slots, counts, saved, pinned: byKey.pinned };
+}
+
+/**
+ * An admin's choices for some sub-duties (null = back to automatic), written
+ * together. The month is then re-planned around them and saved, so the
+ * change shows at once and the nightly job keeps the admin's names.
+ */
+export async function setSecondCallSubDuties(input: {
+  year: number; month: number;
+  changes: { day: number; shift: SubDuty; dutyDay: number; name: string | null }[];
+  updatedByLineUserId: string | null;
+  personnel: RosterPerson[];
+}) {
+  const { year, month } = input;
+  const writes: BatchItem<"pg">[] = [];
+  for (const change of input.changes) {
+    const shiftDate = isoDate(year, month, change.day);
+    writes.push(db.delete(secondCallSlots).where(and(eq(secondCallSlots.shiftDate, shiftDate), eq(secondCallSlots.shift, change.shift))));
+    if (change.name) {
+      writes.push(db.insert(secondCallSlots).values({
+        dutyDate: isoDate(year, month, change.dutyDay), shiftDate, shift: change.shift, personName: change.name,
+        source: "admin", updatedByLineUserId: input.updatedByLineUserId,
+      }));
+    }
+  }
+  const [first, ...rest] = writes;
+  if (first) await db.batch([first, ...rest]);
+  const plan = await planSecondCallMonth(year, month, input.personnel);
+  if (plan.slots) await saveSecondCallMonth(year, month, plan.slots, plan.saved);
 }
 
 /** Write the month's plan, touching only rows that changed. Both steps commit together. */

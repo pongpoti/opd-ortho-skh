@@ -13,7 +13,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, GraduationCap, Monitor, RotateCcw, Save, Wand2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, GraduationCap, Monitor, PhoneCall, RotateCcw, Save, Wand2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -29,6 +29,7 @@ import {
   type PlannerOption,
   type PlannerRosters,
 } from "../lib/planner-actions";
+import { SecondCallEditor } from "./second-call-editor";
 
 const THAI_MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -94,6 +95,13 @@ type Loaded =
 
 type Notice = { tone: "ok" | "err"; text: string } | null;
 
+/** What the planner edits: the duty roster or its second-call. */
+type Tab = "duty" | "second";
+const TABS: { value: Tab; label: string; icon: typeof CalendarDays }[] = [
+  { value: "duty", label: "เวรหลัก", icon: CalendarDays },
+  { value: "second", label: "Second call", icon: PhoneCall },
+];
+
 const monthKey = (year: number, month: number) => `${year}-${month}`;
 const slotKey = (day: number, key: DutyKey) => `${day}:${key}`;
 const daysIn = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -118,6 +126,9 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
   const [loaded, setLoaded] = useState<Loaded>({ key: "", status: "loading" });
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
+  const [tab, setTab] = useState<Tab>("duty");
+  /** Unsaved second-call edits, reported by the editor. */
+  const [secondDirty, setSecondDirty] = useState(false);
   /** Interns picked for each month before any day is filled, keyed by month. */
   const [pickedInterns, setPickedInterns] = useState<Record<string, string[]>>({});
   const textSize = useSyncExternalStore(subscribeTextSize, readTextSize, () => DEFAULT_TEXT_SIZE);
@@ -140,6 +151,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
     });
   }, [draft, ready]);
   const dirty = changes.length > 0;
+  const anyDirty = tab === "duty" ? dirty : secondDirty;
 
   const reload = useCallback((year: number, month: number) => {
     const key = monthKey(year, month);
@@ -178,17 +190,27 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
   }, []);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!anyDirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [anyDirty]);
 
   function changeMonth(delta: number) {
-    if (dirty && !window.confirm("ยังไม่ได้บันทึกการแก้ไข ต้องการเปลี่ยนเดือนและทิ้งการแก้ไขหรือไม่?")) return;
+    if (anyDirty && !window.confirm("ยังไม่ได้บันทึกการแก้ไข ต้องการเปลี่ยนเดือนและทิ้งการแก้ไขหรือไม่?")) return;
     setDraft({});
     setNotice(null);
     setView((current) => shiftMonth(current, delta));
+  }
+
+  function changeTab(next: Tab) {
+    if (next === tab) return;
+    if (anyDirty && !window.confirm("ยังไม่ได้บันทึกการแก้ไข ต้องการเปลี่ยนหน้าและทิ้งการแก้ไขหรือไม่?")) return;
+    setDraft({});
+    setNotice(null);
+    setTab(next);
+    // Second-call follows the roster, so show the duty tab's latest save.
+    if (next === "duty") reload(view.year, view.month);
   }
 
   function handleSave() {
@@ -337,7 +359,27 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         </Flex>
 
         <Flex align="center" gap={6} mb="1em" wrap="wrap">
-          <HStack gap={3}>
+          <HStack gap={1} role="tablist" aria-label="เลือกสิ่งที่จะจัด" p="0.25em" borderRadius="l3" bg="bg.muted">
+            {TABS.map((item) => {
+              const Icon = item.icon;
+              const active = tab === item.value;
+              return (
+                <Button
+                  key={item.value}
+                  role="tab"
+                  aria-selected={active}
+                  size="xl"
+                  fontSize="1em"
+                  variant={active ? "solid" : "ghost"}
+                  colorPalette="brand"
+                  onClick={() => changeTab(item.value)}
+                >
+                  <Icon size={22} /> {item.label}
+                </Button>
+              );
+            })}
+          </HStack>
+          <HStack gap={3} ml="auto">
             <Text fontSize="0.95em" fontWeight="semibold">ขนาดตัวอักษร</Text>
             <HStack gap={1} role="group" aria-label="ขนาดตัวอักษร">
               {TEXT_SIZES.map((size) => (
@@ -358,7 +400,11 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
         </Flex>
 
 
-        {ready && (
+        {tab === "second" && (
+          <SecondCallEditor key={currentKey} year={view.year} month={view.month} width={PLANNER_WIDTH} onDirtyChange={setSecondDirty} />
+        )}
+
+        {tab === "duty" && ready && (
           <InternPicker
             roster={ready.rosters.intern}
             monthInterns={monthInterns}
@@ -370,7 +416,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           />
         )}
 
-        {!ready && (
+        {tab === "duty" && !ready && (
           <VStack gap={3} py="2em" role={loadError ? "alert" : "status"}>
             <Text fontSize="1.1em" color={loadError ? "fg.error" : "fg"}>
               {loadError ?? "กำลังโหลดตารางเวร…"}
@@ -381,7 +427,7 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           </VStack>
         )}
 
-        {ready && (
+        {tab === "duty" && ready && (
           <GlassCard variant="solid" overflow="clip">
             <Box as="table" w="full" style={{ borderCollapse: "collapse", tableLayout: "fixed" }}>
               <Box as="colgroup">
@@ -477,9 +523,10 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           </GlassCard>
         )}
 
-        {ready && <Counts counts={counts} rosters={ready.rosters} />}
+        {tab === "duty" && ready && <Counts counts={counts} rosters={ready.rosters} />}
 
         <Box
+          display={tab === "duty" ? undefined : "none"}
           position="fixed"
           left={0}
           right={0}
