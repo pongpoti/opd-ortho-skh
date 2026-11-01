@@ -303,9 +303,6 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
             <Text fontSize="lg" lineHeight="1.7" textWrap="balance">
               หน้าวางแผนเวรใช้ได้บนจอคอมพิวเตอร์เท่านั้น
             </Text>
-            <Text fontSize="md" lineHeight="1.7" color="fg.muted" textWrap="balance">
-              เปิด opd-ortho-skh.vercel.app/planner บนคอมพิวเตอร์ หรือขยายหน้าต่างให้กว้างขึ้น
-            </Text>
           </VStack>
         </GlassCard>
       </Flex>
