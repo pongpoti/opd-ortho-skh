@@ -10,6 +10,7 @@ import {
   Flex,
   HStack,
   NativeSelect,
+  Skeleton,
   Portal,
   Text,
   VStack,
@@ -18,6 +19,7 @@ import {
 import { Pencil, Plus, Printer, Trash2 } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { bangkokToday } from "@/lib/bangkok-date";
 import { openPdfLink } from "@/lib/open-pdf-link";
 import { isDutyMarker, type DutyMonthData } from "@/modules/duty-schedule/lib/duty-data";
@@ -166,9 +168,13 @@ export function CastRoomAdminDays({
         <Flex align="center" gap="1em" wrap="wrap">
           <VStack align="start" gap={0}>
             <Text fontSize="1.05em" fontWeight="bold">บันทึกห้องเฝือกเดือนนี้</Text>
-            <Text fontSize="0.9em" color="fg.muted">
-              {visits ? `${visits.length} ราย · เฝือก ${castTotal} ชิ้น` : "กำลังโหลด…"}
-            </Text>
+            {visits ? (
+              <Text fontSize="0.9em" color="fg.muted">
+                {`${visits.length} ราย · เฝือก ${castTotal} ชิ้น`}
+              </Text>
+            ) : (
+              <Skeleton h="1.2em" w="9em" mt="0.25em" />
+            )}
           </VStack>
           <HStack ml="auto" gap="0.75em" wrap="wrap">
             <NativeSelect.Root size="lg" w="16em" disabled={!printable || !doctors.length || isPrinting}>
@@ -204,12 +210,14 @@ export function CastRoomAdminDays({
         {printError && <Text mt="0.5em" fontSize="0.9em" color="fg.error" role="alert">{printError}</Text>}
       </GlassCard>
 
-      {!visits && (
-        <VStack gap={3} py="2em" role={loadError ? "alert" : "status"}>
-          <Text fontSize="1.1em" color={loadError ? "fg.error" : "fg"}>{loadError ?? "กำลังโหลดรายการห้องเฝือก…"}</Text>
-          {loadError && <Button size="lg" variant="outline" onClick={reload}>ลองอีกครั้ง</Button>}
+      {!visits && loadError && (
+        <VStack gap={3} py="2em" role="alert">
+          <Text fontSize="1.1em" color="fg.error">{loadError}</Text>
+          <Button size="lg" variant="outline" onClick={reload}>ลองอีกครั้ง</Button>
         </VStack>
       )}
+
+      {!visits && !loadError && <TableSkeleton columns={1} rowHeight="3.2em" />}
 
       {visits && lastDay === 0 && (
         <Text fontSize="1.05em" color="fg.muted" textAlign="center" py="2em">

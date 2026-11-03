@@ -6,6 +6,7 @@ import {
   Button,
   HStack,
   NativeSelect,
+  Skeleton,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -215,13 +216,13 @@ export function CastCaseLogPdfPage({
             borderRadius="lg"
             bg="brand.subtle"
           >
-            <Text fontSize="sm" color="fg.muted">
-              {isPending
-                ? "กำลังโหลด…"
-                : doctorName
-                  ? doctorName
-                  : "ยังไม่ได้เลือกแพทย์"}
-            </Text>
+            {isPending ? (
+              <Skeleton h="1.2em" w="8em" />
+            ) : (
+              <Text fontSize="sm" color="fg.muted">
+                {doctorName || "ยังไม่ได้เลือกแพทย์"}
+              </Text>
+            )}
             <Text fontSize="sm" fontWeight="medium">
               {doctorName
                 ? `${caseCount} รายการ · ${pageCount} หน้า · รวม ${payTotal} บาท`

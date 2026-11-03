@@ -8,6 +8,7 @@ import {
   HStack,
   IconButton,
   Portal,
+  Skeleton,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -155,9 +156,11 @@ export function DutySlotEditSheet({
                     </Text>
                   )}
                   {isLoading && !options.length ? (
-                    <Text fontSize="sm" color="fg.muted">
-                      กำลังโหลด…
-                    </Text>
+                    <VStack align="stretch" gap={2} aria-busy>
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <Skeleton key={i} h="44px" borderRadius="lg" />
+                      ))}
+                    </VStack>
                   ) : (
                     <VStack align="stretch" gap={0}>
                       {options.map((opt) => {

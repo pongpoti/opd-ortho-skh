@@ -13,6 +13,7 @@ import {
   HStack,
   Input,
   Portal,
+  Skeleton,
   Text,
   VStack,
   Wrap,
@@ -83,6 +84,7 @@ export function CastRoomForm() {
   } | null>(null);
   const doctorName = dutyDoctor?.date === date ? dutyDoctor.name : null;
   const doctorLoadError = dutyDoctor?.date === date ? dutyDoctor.error : null;
+  const doctorLoading = dutyDoctor?.date !== date;
   const visibleError = doctorLoadError ?? submitError;
 
   useEffect(() => {
@@ -227,7 +229,9 @@ export function CastRoomForm() {
               <StepBadge n={2} />
               <Text fontWeight="medium">แพทย์</Text>
             </HStack>
-            {doctorName ? (
+            {doctorLoading ? (
+              <Skeleton h="40px" w="180px" borderRadius="full" aria-busy aria-label="แพทย์" />
+            ) : doctorName ? (
               <Badge
                 colorPalette="brand"
                 variant="subtle"

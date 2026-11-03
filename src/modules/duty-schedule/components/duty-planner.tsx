@@ -16,6 +16,7 @@ import {
 import { CalendarDays, ChevronLeft, ChevronRight, Cross, GraduationCap, Monitor, PhoneCall, Printer, RotateCcw, Save, Wand2, X } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { openPdfLink } from "@/lib/open-pdf-link";
 import { CastRoomAdminDays } from "@/modules/cast-room/components/cast-room-admin-days";
 import {
@@ -468,16 +469,14 @@ export function DutyPlanner({ initialYear, initialMonth }: { initialYear: number
           />
         )}
 
-        {tab === "duty" && !ready && (
-          <VStack gap={3} py="2em" role={loadError ? "alert" : "status"}>
-            <Text fontSize="1.1em" color={loadError ? "fg.error" : "fg"}>
-              {loadError ?? "กำลังโหลดตารางเวร…"}
-            </Text>
-            {loadError && (
-              <Button size="lg" variant="outline" onClick={() => reload(view.year, view.month)}>ลองอีกครั้ง</Button>
-            )}
+        {tab === "duty" && !ready && loadError && (
+          <VStack gap={3} py="2em" role="alert">
+            <Text fontSize="1.1em" color="fg.error">{loadError}</Text>
+            <Button size="lg" variant="outline" onClick={() => reload(view.year, view.month)}>ลองอีกครั้ง</Button>
           </VStack>
         )}
+
+        {tab === "duty" && !ready && !loadError && <TableSkeleton columns={PLANNER_KEYS.length} />}
 
         {tab === "duty" && ready && (
           <GlassCard variant="solid" overflow="clip">

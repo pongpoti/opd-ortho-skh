@@ -12,6 +12,7 @@ import {
   HStack,
   IconButton,
   Portal,
+  Skeleton,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -109,6 +110,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
   const loadError = loadedMonth.key === currentMonthKey && loadedMonth.status === "error"
     ? loadedMonth.error
     : null;
+  const monthLoading = !monthReady && !loadError;
   const [adminFromServer, setAdminFromServer] = useState(false);
   const isAdmin = !!isAdminProp || adminFromServer;
   const [printMessage, setPrintMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -278,6 +280,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
               </NextLink>
             </Button>
           )}
+          <Skeleton loading={monthLoading} borderRadius="l2">
           <IconButton
             aria-label="ตารางเวร second-call"
             size="md"
@@ -291,6 +294,8 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
               2<Text as="sup" fontSize="10px" ml="1px">nd</Text>
             </Text>
           </IconButton>
+          </Skeleton>
+          <Skeleton loading={monthLoading} borderRadius="l2">
           <IconButton
             aria-label="พิมพ์ตารางเวร (PDF)"
             size="md"
@@ -302,6 +307,7 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
           >
             <Printer size={20} />
           </IconButton>
+          </Skeleton>
           <IconButton aria-label="เดือนก่อนหน้า" size="md" variant="outline" onClick={() => changeMonth(-1)}>
             <ChevronLeft size={20} />
           </IconButton>
@@ -311,16 +317,14 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
         </HStack>
       </Flex>
 
-      {!monthReady && (
-        <VStack gap={2} role={loadError ? "alert" : "status"}>
-          <Text fontSize="sm" color={loadError ? "holiday.fg" : "fg.muted"} textAlign="center">
-            {loadError ?? "กำลังโหลดตารางเวร…"}
+      {loadError && (
+        <VStack gap={2} role="alert">
+          <Text fontSize="sm" color="holiday.fg" textAlign="center">
+            {loadError}
           </Text>
-          {loadError && (
-            <Button size="sm" variant="outline" onClick={() => reloadMonthData(view.year, view.month)}>
-              ลองอีกครั้ง
-            </Button>
-          )}
+          <Button size="sm" variant="outline" onClick={() => reloadMonthData(view.year, view.month)}>
+            ลองอีกครั้ง
+          </Button>
         </VStack>
       )}
 
@@ -352,8 +356,18 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
             </Text>
           ))}
         </Grid>
-        <Grid templateColumns="repeat(7, 1fr)" gap={1.5}>
+        <Grid templateColumns="repeat(7, 1fr)" gap={1.5} aria-busy={monthLoading || undefined}>
           {cells.map((cell) => {
+            if (monthLoading && !cell.outside) {
+              return (
+                <Skeleton
+                  key={`${cell.year}-${cell.month}-${cell.day}-skeleton`}
+                  aspectRatio={1}
+                  w="full"
+                  borderRadius="lg"
+                />
+              );
+            }
             const weekday = new Date(cell.year, cell.month, cell.day).getDay();
             const isWeekend = weekday === 0 || weekday === 6;
             const duty = !cell.outside && monthReady
@@ -459,16 +473,27 @@ export function DutyScheduleCalendar({ isAdmin: isAdminProp }: DutyScheduleCalen
                 </Drawer.CloseTrigger>
               </Drawer.Header>
               <Drawer.Body overflowY="auto" pb="max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))">
-                {!monthReady && (
-                  <VStack role={loadError ? "alert" : "status"} py={4} gap={3}>
-                    <Text textAlign="center" color={loadError ? "holiday.fg" : "fg.muted"}>
-                      {loadError ?? "กำลังโหลดตารางเวร…"}
+                {loadError && (
+                  <VStack role="alert" py={4} gap={3}>
+                    <Text textAlign="center" color="holiday.fg">
+                      {loadError}
                     </Text>
-                    {loadError && (
-                      <Button size="sm" variant="outline" onClick={() => reloadMonthData(view.year, view.month)}>
-                        ลองอีกครั้ง
-                      </Button>
-                    )}
+                    <Button size="sm" variant="outline" onClick={() => reloadMonthData(view.year, view.month)}>
+                      ลองอีกครั้ง
+                    </Button>
+                  </VStack>
+                )}
+                {monthLoading && (
+                  <VStack align="stretch" gap={0} aria-busy>
+                    {DUTY_ORDER.filter((key) => dutyApplies(key, selectedWeekday)).map((key) => (
+                      <HStack key={key} gap={3} py={4} borderTopWidth="1px" borderColor="glass.border" _first={{ borderTopWidth: 0 }}>
+                        <Skeleton boxSize="20px" borderRadius="md" flexShrink={0} />
+                        <VStack align="start" gap={2.5} flex="1" minW={0}>
+                          <Skeleton h="18px" w="40%" />
+                          <Skeleton h="28px" w="65%" />
+                        </VStack>
+                      </HStack>
+                    ))}
                   </VStack>
                 )}
                 {selectedDuty?.holiday && (
