@@ -5,6 +5,7 @@ import { Box, Button, Flex, Grid, Heading, HStack, IconButton, NativeSelect, Tex
 import { Pin, RotateCcw, Save, Undo2 } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/glass-card";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { SecondCallConflict, SubDuty } from "../lib/second-call-assign";
 import {
   loadSecondCallEditor,
@@ -165,10 +166,11 @@ export function SecondCallEditor({
   }, [slots, draft, ready]);
 
   if (!ready) {
+    if (!loadError) return <TableSkeleton columns={COLUMNS.length + 1} />;
     return (
-      <VStack gap={3} py="2em" role={loadError ? "alert" : "status"}>
-        <Text fontSize="1.1em" color={loadError ? "fg.error" : "fg"}>{loadError ?? "กำลังโหลด second-call…"}</Text>
-        {loadError && <Button size="lg" variant="outline" onClick={() => reload(year, month)}>ลองอีกครั้ง</Button>}
+      <VStack gap={3} py="2em" role="alert">
+        <Text fontSize="1.1em" color="fg.error">{loadError}</Text>
+        <Button size="lg" variant="outline" onClick={() => reload(year, month)}>ลองอีกครั้ง</Button>
       </VStack>
     );
   }
