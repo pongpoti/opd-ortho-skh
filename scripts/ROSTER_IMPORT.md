@@ -81,7 +81,9 @@ and a unique `name` like `roster-2026-11-v1`. The deploy hook applies each file
 once, inside the same transaction, after the historical seed, and records its
 own marker in `drizzle.__roster_imports`. It inserts missing dates and slots and
 replaces a slot only while it still holds an imported value. Slots edited in the
-app (`admin` or `legacy`) are kept. Editing an applied file fails the build;
+app (`admin` or `legacy`) are kept. A day the file marks `"holiday": true` becomes a
+holiday even when the date already exists, keeping any saved label; an import
+never removes a holiday. Editing an applied file fails the build;
 correct a month with a new file and a new `-vN` name instead.
 
 ## Second-call table
