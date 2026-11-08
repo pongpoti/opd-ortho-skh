@@ -113,7 +113,10 @@ WHERE duty_slots.source = 'import' OR duty_slots.updated_at < EXCLUDED.updated_a
 }
 
 /** Reviewed monthly rosters applied by the deploy hook, each under its own marker. */
-const monthlyImportUrls = [new URL("./data/roster-2026-11.json", import.meta.url)];
+const monthlyImportUrls = [
+  new URL("./data/roster-2026-11.json", import.meta.url),
+  new URL("./data/roster-2026-12.json", import.meta.url),
+];
 
 export async function readMonthlyRosterImports() {
   return Promise.all(monthlyImportUrls.map(async (url) => JSON.parse(await readFile(url, "utf8"))));
