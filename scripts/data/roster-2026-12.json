@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "roster-2026-12-v1",
-  "description": "December 2026 (ธ.ค. 2569) roster from the hospital PDF: page 1 ท่าฉลอม (d3) and เกตุม (d4), page 2 intern (d2), page 3 ห้องเฝือก doctor (d1) and nurse (d5). Staff duty (d1) on 9, 16, 19, 20, 23 and 30 follows Pong's corrections, not the PDF. วันหยุด on page 1 is stored as งด and blank cells as -. Month keys are zero-indexed like historical-roster.json.",
+  "description": "December 2026 (ธ.ค. 2569) roster from the hospital PDF: page 1 ท่าฉลอม (d3) and เกตุม (d4), page 2 intern (d2), page 3 ห้องเฝือก doctor (d1) and nurse (d5). Staff duty (d1) on 9, 16, 19, 20, 23 and 30 follows Pong's corrections, not the PDF. วันหยุด on page 1 is stored as งด and blank cells as -. Pong confirmed Dec 15 (grey in the PDF) as a holiday. Month keys are zero-indexed like historical-roster.json.",
   "rosters": {
     "2026-11": {
       "1": { "d1": "ธีรฉัตต์", "d2": "วิชญะชัย", "d3": "-", "d5": "ณัฐวุฒิ" },
@@ -18,7 +18,7 @@
       "12": { "d1": "ปองสิทธิ์", "d2": "ปวริศา", "d5": "หทัยรัตน์" },
       "13": { "d1": "ปองสิทธิ์", "d2": "ปวริศา", "d5": "ณัฐวุฒิ" },
       "14": { "d1": "เทพรักษา", "d2": "ปวริศา", "d4": "ปราการ", "d5": "ธัญญ์ฐิตา" },
-      "15": { "d1": "ธีรฉัตต์", "d2": "วิชญะชัย", "d3": "งด", "d5": "อรัญญา" },
+      "15": { "holiday": true, "holidayLabel": "วันหยุดตามตารางเวร", "d1": "ธีรฉัตต์", "d2": "วิชญะชัย", "d3": "งด", "d5": "อรัญญา" },
       "16": { "d1": "ธนกร", "d2": "ปรัชญวัต", "d5": "หทัยรัตน์" },
       "17": { "d1": "เฉลิมพล", "d2": "วิชญะชัย", "d4": "ชวพล", "d5": "ณัฐวุฒิ" },
       "18": { "d1": "วันทนันท์", "d2": "ปรัชญวัต", "d5": "ธัญญ์ฐิตา" },

@@ -131,7 +131,9 @@ export function validateMonthlyRosterImport(data) {
 }
 
 /** Adds the month's confirmed dates and slots. Replaces only slots still holding
- * imported values; admin and legacy edits made in the app are kept.
+ * imported values; admin and legacy edits made in the app are kept. A holiday the
+ * file marks is added to an existing date too, keeping any label already saved;
+ * like the BOT holiday sync, an import never takes a holiday away.
  */
 export function buildMonthlyRosterImportStatements(data) {
   validateMonthlyRosterImport(data);
@@ -149,7 +151,11 @@ export function buildMonthlyRosterImportStatements(data) {
     }
   }
   return [
-    `INSERT INTO duty_days (shift_date, holiday, holiday_label) VALUES\n${dayRows.join(",\n")}\nON CONFLICT (shift_date) DO NOTHING`,
+    `INSERT INTO duty_days (shift_date, holiday, holiday_label) VALUES\n${dayRows.join(",\n")}
+ON CONFLICT (shift_date) DO UPDATE
+SET holiday = TRUE,
+    holiday_label = coalesce(duty_days.holiday_label, EXCLUDED.holiday_label)
+WHERE EXCLUDED.holiday AND (NOT duty_days.holiday OR duty_days.holiday_label IS NULL)`,
     `INSERT INTO duty_slots (shift_date, duty_key, person_name, source) VALUES\n${slotRows.join(",\n")}
 ON CONFLICT (shift_date, duty_key) DO UPDATE
 SET person_name = EXCLUDED.person_name,
