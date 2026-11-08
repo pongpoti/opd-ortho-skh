@@ -1,6 +1,6 @@
 import { internNamesForMonth, isDutyMarker, type DutyDay } from "@/modules/duty-schedule/lib/duty-data";
 import { fetchRosterPersonnel, resolveRosterFullName } from "@/lib/roster-directory";
-import { secondCallSheetCells, subDutiesOf } from "@/modules/duty-schedule/lib/second-call-assign";
+import { secondCallSheetCells, subDutiesOf, type SecondCallSlot } from "@/modules/duty-schedule/lib/second-call-assign";
 import { buildSecondCallPdf } from "@/modules/duty-schedule/lib/second-call-pdf";
 import { planSecondCallMonth, previousMonth } from "@/modules/duty-schedule/lib/second-call-repository";
 import { verifySecondCallToken } from "@/modules/duty-schedule/lib/second-call-share";
@@ -32,9 +32,11 @@ export async function GET(request: Request) {
       ({ key: raw, name: await resolveRosterFullName(raw, "intern", personnel) })));
 
     let cells: Map<string, string[]> | undefined;
+    let orderSlots: SecondCallSlot[] | undefined;
     // Months without a staff roster stay a blank template.
     if (slots) {
       const carriedIn = prevSlots?.find((slot) => slot.day === prevDays.length + 1);
+      orderSlots = [...(carriedIn ? [{ ...carriedIn, day: 1 }] : []), ...slots];
       const extra = Object.entries(data).flatMap(([day, info]) => {
         const raw = internRaw(info);
         return raw ? subDutiesOf(year, month, Number(day), info.holiday).map((sub) => ({ person: raw, ...sub })) : [];
@@ -44,7 +46,7 @@ export async function GET(request: Request) {
       cells = secondCallSheetCells({ days: days.length, slots, carriedIn: carriedIn && { ...carriedIn, day: 1 }, extra });
     }
 
-    const bytes = await buildSecondCallPdf({ year, month, interns, staff, cells });
+    const bytes = await buildSecondCallPdf({ year, month, interns, staff, cells, days, slots: orderSlots });
     const filename = `second-call-${year + 543}-${String(month + 1).padStart(2, "0")}.pdf`;
     return new Response(Uint8Array.from(bytes), {
       headers: {
